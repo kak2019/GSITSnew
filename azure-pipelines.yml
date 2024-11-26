@@ -1,0 +1,85 @@
+name: $(TeamProject)_$(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+resources:
+  - repo: self
+
+trigger:
+  branches:
+    include:
+      - develop
+      - feature
+      - release
+      - master
+     
+      
+stages:
+  - stage: 'build_DEV'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+    displayName: build_DEV
+    jobs:
+      - template: ./azure-pipelines-build.yml
+        parameters:
+          name: 'build_solution'
+          variable_group_name: 'app-GSITS DEV'
+  
+  - stage: 'deploy_DEV'
+    condition: and(succeeded('build_DEV'), startsWith(variables['Build.SourceBranch'], 'refs/heads/develop') )
+    jobs:
+      - template: ./azure-pipelines-deploy.yml
+        parameters:
+          job_name: deploy_solution
+          target_environment: 'app-GSITS DEV'
+          variable_group_name: 'app-GSITS DEV'
+
+  - stage: 'build_TEST'
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/heads/feature')
+    displayName: build_TEST
+    jobs:
+      - template: ./azure-pipelines-build.yml
+        parameters:
+          name: 'build_solution'
+          variable_group_name: 'app-GSITS TEST'
+  
+  - stage: 'deploy_TEST'
+    condition: and(succeeded('build_TEST'), startsWith(variables['Build.SourceBranch'], 'refs/heads/feature') )
+    jobs:
+      - template: ./azure-pipelines-deploy.yml
+        parameters:
+          job_name: deploy_solution
+          target_environment: 'app-GSITS TEST'
+          variable_group_name: 'app-GSITS TEST'  
+        
+  - stage: 'build_qa'
+    condition: startsWith(variables['Build.SourceBranch'], 'refs/heads/release')
+    displayName: build_qa
+    jobs:
+      - template: ./azure-pipelines-build.yml
+        parameters:
+          name: 'build_solution'
+          variable_group_name: 'app-GSITS QA'
+          
+  - stage: 'deploy_qa'
+    condition: and(succeeded('build_qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release') )
+    jobs:
+      - template: ./azure-pipelines-deploy.yml
+        parameters:
+          job_name: deploy_solution
+          target_environment: 'app-GSITS QA'
+          variable_group_name: 'app-GSITS QA'
+          
+  - stage: 'build_prod'
+    condition:  startsWith(variables['Build.SourceBranch'], 'refs/heads/main')
+    displayName: build_prod
+    jobs:
+      - template: ./azure-pipelines-build.yml
+        parameters:
+          name: 'build_solution'
+          variable_group_name: 'app-GSITS PROD'
+          
+  - stage: 'deploy_prod'
+    condition: and(succeeded('build_prod'), startsWith(variables['Build.SourceBranch'], 'refs/heads/main') )
+    jobs:
+      - template: ./azure-pipelines-deploy.yml
+        parameters:
+          job_name: deploy_solution
+          target_environment: 'app-GSITS PROD'
+          variable_group_name: 'app-GSITS PROD'

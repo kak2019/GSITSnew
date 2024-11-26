@@ -1,0 +1,38 @@
+.user-list-container {
+    margin: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .user-list-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .user-list-table th,
+  .user-list-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    white-space: nowrap;
+  }
+  
+  .user-list-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+  }
+  
+  .user-list-table tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  .user-list-table td {
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  
+  .user-list-table tr:last-child td {
+    border-bottom: none;
+  }
+  

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "gsits-frontend-client-side-solution",
+    "id": "9b820252-435d-45cc-a520-37be04406224",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "gsits-frontend description"
+      },
+      "longDescription": {
+        "default": "gsits-frontend description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "gsits-frontend Feature",
+        "description": "The feature that activates elements of the gsits-frontend solution.",
+        "id": "55612e1e-1e6b-44c2-adf5-c27fb8f018f8",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/gsits-frontend.sppkg"
+  }
+}
