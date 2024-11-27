@@ -1,22 +1,26 @@
 export interface IFile {
-    Id: number;
-    Title: string;
-    Name: string;
-    Size: number;
+  Id: number;
+  Title: string;
+  Name: string;
+  Size: number;
 }
 
 export interface IResponseFile {
-    Length: number;
+  Length: number;
 }
 
 export interface IResponseItem {
-    Id: number;
-    File: IResponseFile;
-    FileLeafRef: string;
-    Title: string;
+  Id: number;
+  File: IResponseFile;
+  FileLeafRef: string;
+  Title: string;
+}
+export interface IRFQAttachment {
+  File: File;
+  Url: string;
 }
 export enum DocumentsStatus {
-    Idle,
-    Loading,
-    Failed,
+  Idle,
+  Loading,
+  Failed,
 }

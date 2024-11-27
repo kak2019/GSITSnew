@@ -1,10 +1,10 @@
-import { DocumentsStatus, IFile } from "../../model/documents";
+import { DocumentsStatus, IFile, IRFQAttachment } from "../../model/documents";
 
 export interface IDocumentsState {
   status: DocumentsStatus;
   message: string;
   items: IFile[];
-  rfqAttachments: File[];
+  rfqAttachments: IRFQAttachment[];
 }
 export const initialState: IDocumentsState = {
   status: DocumentsStatus.Idle,

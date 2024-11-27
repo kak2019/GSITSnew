@@ -65,6 +65,7 @@ const Requisition: React.FC = () => {
     sectionCode: "",
     handlercode: ""
   });
+  const code = React.useRef(null)
   //console.log(userEmail);
   // const [currentUserIDCode, setCurrentUserIDCode] = useState<string>("");
   const [isSearchVisible, setIsSearchVisible] = useState(true);
@@ -77,6 +78,7 @@ const Requisition: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredItems, setFilteredItems] =
       useState<IRequisitionGrid[]>(allRequisitions);
+  const [msg, setMsg] = useState('')
 
   const paginatedItems = filteredItems.slice(
       (currentPage - 1) * PAGE_SIZE,
@@ -85,6 +87,7 @@ const Requisition: React.FC = () => {
   const status = React.useRef(false)
   // 定义 Selection，用于 DetailsList 的选择
   const [selection] = useState(new Selection({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     getKey(item: any, index) {
       return item.ID
     },
@@ -94,7 +97,7 @@ const Requisition: React.FC = () => {
       // const arr: Item[] = selection.getSelection()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // 如果 Parma 有值，返回 false，否则返回 true //&& item.handler === userDetails.handlercode;
-      return !item.Parma
+      return !item.Parma && String(item?.Handler) === code?.current
     },
     onSelectionChanged: () => {
       if(status.current) return
@@ -168,6 +171,7 @@ const Requisition: React.FC = () => {
             sectionCode: result.sectionCode,
             handlercode: result.handlercode,
           });
+          code.current = result.handlercode
 
         } else {
           console.warn("Incomplete data received:", result);
@@ -295,10 +299,12 @@ const Requisition: React.FC = () => {
   ];
 
   const [filters, setFilters] = useState<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     requisitionType: any[];
     buyer: string;
     parma: string;
     section: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     status: any[];
     partNumber: string;
     qualifier: string;
@@ -347,10 +353,10 @@ const Requisition: React.FC = () => {
 
       return (
           (requisitionType.length === 0 || requisitionType.includes(item.RequisitionType)) &&
-          (!buyer || (item.ReqBuyer.toLowerCase().includes(buyer.toLowerCase()) || item.HandlerName.toLowerCase().includes(buyer.toLowerCase()))) &&
+          (!buyer || (item.ReqBuyer && item.ReqBuyer.toLowerCase().includes(buyer.toLowerCase()) ||  (item.HandlerName && item.HandlerName.toLowerCase().includes(buyer.toLowerCase())))) &&
           (!parma || item.Parma?.toLowerCase().includes(parma.toLowerCase())) &&
           (!section ||
-              item.Section.toLowerCase().includes(section.toLowerCase()) || item.SectionDescription.toLowerCase().includes(section.toLowerCase()) ) &&
+              (item.Section?.toLowerCase().includes(section.toLowerCase())) || (item.SectionDescription && item.SectionDescription.toLowerCase().includes(section.toLowerCase())) ) &&
           (status.length===0 || status.includes(item.Status)) &&
           (!partNumber ||
               item.PartNumber.toLowerCase().includes(partNumber.toLowerCase())) &&
@@ -367,6 +373,7 @@ const Requisition: React.FC = () => {
           (!createdDateTo ||
               (item.CreateDate && new Date(item.CreateDate) <= createdDateTo))
       );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }).sort((a:any, b:any) => {
       return b.RequiredWeek - a.RequiredWeek
     });
@@ -377,13 +384,13 @@ const Requisition: React.FC = () => {
   const [message, setMessage] = React.useState<string>("");
 
   // 弹出对话框时触发的函数
-  const showDialog = (msg: string) => {
+  const showDialog = (msg: string) :void=> {
     setMessage(msg);
     setIsDialogVisible(true);
   };
 
   // 关闭对话框
-  const closeDialog = () => {
+  const closeDialog = () :void=> {
     setIsDialogVisible(false);
   };
   // useEffect(() => {
@@ -410,9 +417,12 @@ const Requisition: React.FC = () => {
         section: userDetails.sectionCode || "",
       }));
     } else if (userDetails.role === "Buyer") {
+      const curDate = getCurrentWeekYYYYWW()
       setFilters((prev) => ({
         ...prev,
         buyer: userDetails.handlercode || "",
+        requiredWeekFrom: curDate,
+        requiredWeekTo: addWeeksToYYYYWW(curDate, 12)
       }));
     }
   }, [userDetails]);
@@ -475,7 +485,6 @@ const Requisition: React.FC = () => {
                   >
                     <Dropdown
                         label={t("Requisition Type")}
-                        placeholder="Please Select"
                         multiSelect={true}
                         options={RequisitionsType}
                         style={{ width: Number(itemWidth) - 30 }}
@@ -484,7 +493,7 @@ const Requisition: React.FC = () => {
                             const newSelectedKeys = option.selected
                                 ? [...filters.requisitionType, option.key as string] // 添加选中项
                                 : filters.requisitionType.filter((key) => key !== option.key); // 移除未选中项
-
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             return setFilters((prev: any) => ({
                               ...prev,
                               requisitionType: newSelectedKeys,
@@ -538,7 +547,6 @@ const Requisition: React.FC = () => {
                       </TooltipHost>
                     </div>
                     <TextField
-                        placeholder="Entered text"
                         style={{ width: Number(itemWidth) - 30 }}
                         value={filters.buyer}
                         onChange={(e, newValue) =>
@@ -552,7 +560,6 @@ const Requisition: React.FC = () => {
                   >
                     <TextField
                         label={t("Parma")}
-                        placeholder="Placeholder text"
                         style={{ width: Number(itemWidth) - 30 }}
                         onChange={(e, newValue) =>
                             setFilters((prev) => ({ ...prev, parma: newValue || "" }))
@@ -598,7 +605,6 @@ const Requisition: React.FC = () => {
                     </div>
                     <TextField
                         // label={t("Section")}
-                        placeholder="Placeholder text"
                         value={filters.section}
                         style={{ width: Number(itemWidth) - 30 }}
                         onChange={(e, newValue) =>
@@ -612,7 +618,6 @@ const Requisition: React.FC = () => {
                   >
                     <Dropdown
                         label={t("Status")}
-                        placeholder="Optional"
                         multiSelect
                         options={StatesType}
                         style={{ width: Number(itemWidth) - 30 }}
@@ -639,7 +644,6 @@ const Requisition: React.FC = () => {
                   >
                     <TextField
                         label={t("Part Number")}
-                        placeholder="Placeholder text"
                         onChange={(e, newValue) =>
                             setFilters((prev) => ({
                               ...prev,
@@ -654,7 +658,6 @@ const Requisition: React.FC = () => {
                   >
                     <Dropdown
                         label={t("Qualifier")}
-                        placeholder="Optional"
                         options={QualifierType}
                         onChange={(e, option) =>
                             setFilters((prev) => ({
@@ -670,7 +673,6 @@ const Requisition: React.FC = () => {
                   >
                     <TextField
                         label={t("Project")}
-                        placeholder="Placeholder text"
                         onChange={(e, newValue) =>
                             setFilters((prev) => ({ ...prev, project: newValue || "" }))
                         }
@@ -691,7 +693,6 @@ const Requisition: React.FC = () => {
                     {/*/>*/}
                     <Dropdown
                         label={t("Material User")}
-                        placeholder="Please select"
                         options={[
                           { key: "8374", text: "8374" },
                           { key: "2921", text: "2921" },
@@ -730,19 +731,23 @@ const Requisition: React.FC = () => {
                   >
                     <TextField
                         label={t("Required Week From")}
-                        placeholder="YYYYWW"
+                        defaultValue={getCurrentWeekYYYYWW()}
                         onChange={(e, newValue) => {
                           if (isValidYYYYWW(newValue)) {
                             setFilters((prev) => ({
                               ...prev,
                               requiredWeekTo: addWeeksToYYYYWW(newValue, 12) || "",
                             }));
+                            setMsg('')
+                          } else {
+                            setMsg('Format should be YYYYMM')
                           }
                           setFilters((prev) => ({
                             ...prev,
                             requiredWeekFrom: newValue || "",
                           }));
                         }}
+                        errorMessage={msg}
                     />
                   </Stack.Item>
                   <Stack.Item
@@ -752,7 +757,6 @@ const Requisition: React.FC = () => {
                     <TextField
                         label={t("Required Week To")}
                         value={filters.requiredWeekTo}
-                        placeholder="YYYYWW"
                         onChange={(e, newValue) =>
                             setFilters((prev) => ({
                               ...prev,
@@ -767,7 +771,6 @@ const Requisition: React.FC = () => {
                   >
                     <DatePicker
                         label={t("Created Date From")}
-                        placeholder="Select Date"
                         ariaLabel="Select a date"
                         onSelectDate={(date) =>
                             setFilters((prev) => ({
@@ -783,7 +786,6 @@ const Requisition: React.FC = () => {
                   >
                     <DatePicker
                         label={t("Created Date To")}
-                        placeholder="Select Date"
                         ariaLabel="Select a date"
                         onSelectDate={(date) =>
                             setFilters((prev) => ({
@@ -1009,9 +1011,10 @@ function addWeeksToYYYYWW(dateStr: any, weeksToAdd: any) {
   return `${targetYear}${String(targetWeek).padStart(2, "0")}`;
 }
 
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
 function getDifferentTypes(arr: any) {
   // 使用 Set 获取所有唯一的 type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const types = new Set(arr.map((item:any) => item.RequisitionType));
 
   // 如果 Set 的 size 大于 1，说明有不同的类型
@@ -1020,4 +1023,15 @@ function getDifferentTypes(arr: any) {
   }
 
   return [];  // 如果只有一种 type，返回空数组
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function getCurrentWeekYYYYWW() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const today: any = new Date();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const firstDayOfYear: any = new Date(today.getFullYear(), 0, 1);
+  const pastDaysOfYear = Math.floor((today - firstDayOfYear) / 86400000 + 1);
+  const weekNumber = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  return today.getFullYear().toString() + String(weekNumber).padStart(2, '0');
 }

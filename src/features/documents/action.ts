@@ -3,7 +3,7 @@ import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
 import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
-import { IResponseItem, IFile } from "../../model/documents";
+import { IResponseItem, IFile, IRFQAttachment } from "../../model/documents";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
 
@@ -174,10 +174,11 @@ export const initialUploadRFQAttachmentsAction = createAsyncThunk(
 );
 export const getRFQAttachmentsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getRFQAttachments`,
-  async (rfqId: string): Promise<File[]> => {
+  async (rfqId: string): Promise<IRFQAttachment[]> => {
     const sp = spfi(getSP());
     const spCache = sp.using(Caching({ store: "session" }));
     try {
+      const siteUrl = window.location.origin;
       const filesInfo = await spCache.web
         .getFolderByServerRelativePath(
           `${CONST.LIBRARY_RFQATTACHMENTS_NAME}/${rfqId}`
@@ -188,7 +189,10 @@ export const getRFQAttachmentsAction = createAsyncThunk(
           const file = await spCache.web
             .getFileByServerRelativePath(fileInfo.ServerRelativeUrl)
             .getBlob();
-          return new File([file], fileInfo.Name, { type: file.type });
+          return {
+            File: new File([file], fileInfo.Name, { type: file.type }),
+            Url: `${siteUrl}${fileInfo.ServerRelativeUrl}`,
+          };
         })
       );
       return files;

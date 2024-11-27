@@ -7,15 +7,17 @@ import {
   itemsSelector,
   messageSelector,
   readAllFilesSizeAction,
+  rfqAttachmentsSelector,
   updateTitlesAction,
 } from "../features/documents";
-import { DocumentsStatus, IFile } from "../model/documents";
+import { DocumentsStatus, IFile, IRFQAttachment } from "../model/documents";
 import { useAppDispatch, useAppSelector } from "./useApp";
 
 type DocumentOperators = [
   isFetching: DocumentsStatus,
   items: IFile[],
   errorMessage: string,
+  rfqAttachments: IRFQAttachment[],
   readAllFilesSize: () => void,
   updateTitles: (ids: number[]) => void,
   getDocuments: () => void,
@@ -27,6 +29,7 @@ export const useDocument = (): Readonly<DocumentOperators> => {
   const dispatch = useAppDispatch();
   const isFetching = useAppSelector(isFetchingSelector);
   const errorMessage = useAppSelector(messageSelector);
+  const rfqAttachments = useAppSelector(rfqAttachmentsSelector);
   const items = useAppSelector(itemsSelector);
   const readAllFilesSize = useCallback(() => {
     return dispatch(readAllFilesSizeAction(items));
@@ -56,6 +59,7 @@ export const useDocument = (): Readonly<DocumentOperators> => {
     isFetching,
     items,
     errorMessage,
+    rfqAttachments,
     readAllFilesSize,
     updateTitles,
     getDocuments,

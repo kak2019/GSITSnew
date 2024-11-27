@@ -27,6 +27,7 @@ import { getAADClient } from "../../../../pnpjsConfig";
 import { CONST } from "../../../../config/const";
 import { AadHttpClient } from "@microsoft/sp-http";
 import { useUsers } from "../../../../hooks/useUsers";
+import { useNavigate } from "react-router-dom";
 
 
 // 定义接口
@@ -47,26 +48,17 @@ interface Item {
 }
 
 const RFQ: React.FC = () => {
-    const [, supplierId, , getSupplierId] = useUsers() ;
+    const [, supplierId, , getSupplierId] = useUsers();
     let userEmail = "";
     const [isFetchingRFQ, allRFQs, , getAllRFQs, , , ,] = useRFQ();
-    const {getUserType} =useUser();
+    const { getUserType } = useUser();
     const [userType, setUserType] = useState<string>("Unknown");
-    
-    // const [
-    //     ,
-    //     allRequisitions,
-    //     errorMessage,
-    //     getAllRequisitions,
-    //     updateRequisition,
-    //   ] = useRequisition();
-
     const { t } = useTranslation();
     const [isSearchVisibel, setIsSearchVisible] = useState(true);
-    const [rfqReleaseDateTo, setRfqReleaseDateTo] = useState<Date | undefined>(undefined);
-    const [rfqReleaseDateFrom, setRfqReleaseDateFrom] = useState<Date | undefined>(undefined);
-    const [rfqDueDateFrom, setRfqDueDateFrom] = useState<Date | undefined>(undefined);
-    const [rfqDueDateTo, setRfqDueDateTo] = useState<Date | undefined>(undefined);
+    // const [rfqReleaseDateTo, setRfqReleaseDateTo] = useState<Date | undefined>(undefined);
+    // const [rfqReleaseDateFrom, setRfqReleaseDateFrom] = useState<Date | undefined>(undefined);
+    // const [rfqDueDateFrom, setRfqDueDateFrom] = useState<Date | undefined>(undefined);
+    // const [rfqDueDateTo, setRfqDueDateTo] = useState<Date | undefined>(undefined);
     const [sortedItems, setSortedItems] = useState<Item[]>([]);
     const [isItemSelected, setIsItemSelected] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Item[]>([]);
@@ -96,6 +88,37 @@ const RFQ: React.FC = () => {
         rfqduedatefrom: '',
         rfqduedateto: '',
     });
+    const [userDetails, setUserDetails] = useState({
+        role: "",
+        name: "",
+        sectionCode: "",
+        handlercode: ""
+    });
+    const ctx = React.useContext(AppContext);
+    if (!ctx || !ctx.context) {
+        throw new Error("AppContext is not provided or context is undefined");
+    } else {
+        userEmail = ctx.context._pageContext._user.email;
+        console.log("useremail", userEmail)
+    }
+
+    const selection = React.useRef<Selection>(new Selection({
+        onSelectionChanged: () => {
+            const selected = selection.current.getSelection() as Item[]; // 使用 Item 类型断言
+            setSelectedItems(selected);
+            // const selectedCount = selection.getSelectedCount();
+            setIsItemSelected(selected.length > 0);
+            // console.log("isselected: ", isItemSelected)
+            console.log("Selected item: ", selected);
+
+
+        },
+    }));
+    const navigate = useNavigate();
+
+    const handleViewRFQ = () => {
+        navigate("/quotation", { state: { selectedItems } });
+    };
 
 
 
@@ -105,7 +128,7 @@ const RFQ: React.FC = () => {
         { key: "Price Change", text: "Price Change" },
     ];
     const statusOptions = [
-        
+
         { key: "New", text: "New" },
         { key: "In Progress", text: "In Progress" },
         { key: "Sent to GPS", text: "Sent to GPS" },
@@ -185,96 +208,90 @@ const RFQ: React.FC = () => {
     };
 
 
-    const ctx = React.useContext(AppContext);
-    if (!ctx || !ctx.context) {
-      throw new Error("AppContext is not provided or context is undefined");
-    } else {
-      userEmail = ctx.context._pageContext._user.email;
-      console.log("useremail",userEmail)
-    }
-    const [userDetails, setUserDetails] = useState({
-      role: "",
-      name: "",
-      sectionCode: "",
-      handlercode: ""
-    });
+
     //console.log(userEmail);
     // const [currentUserIDCode, setCurrentUserIDCode] = useState<string>("");
 
     React.useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
         const fetchData = async () => {
-          try {
-            const client = getAADClient(); // 请确保getAADClient()已正确实现
-    
-            // 使用模板字符串构建完整的函数URL
-            const functionUrl = `${CONST.azureFunctionBaseUrl}/api/GetGPSUser/${userEmail}`;
-    
-            const response = await client.get(
-                functionUrl,
-                AadHttpClient.configurations.v1
-            );
-    
-            // 确保解析 response 时不抛出错误
-            const result = await response.json();
-            console.log(result);
-            if (result && result.role && result.name && result.sectionCode && result.handlercode) {
-              // 如果所有字段都有值，更新状态
-              setUserDetails({
-                role: result.role,
-                name: result.name,
-                sectionCode: result.sectionCode,
-                handlercode: result.handlercode,
-              }); 
+            try {
+                const client = getAADClient(); // 请确保getAADClient()已正确实现
 
-    
-            } else {
-              console.warn("Incomplete data received:", result);
+                // 使用模板字符串构建完整的函数URL
+                const functionUrl = `${CONST.azureFunctionBaseUrl}/api/GetGPSUser/${userEmail}`;
+
+                const response = await client.get(
+                    functionUrl,
+                    AadHttpClient.configurations.v1
+                );
+
+                // 确保解析 response 时不抛出错误
+                const result = await response.json();
+                console.log(result);
+                if (result && result.role && result.name && result.sectionCode && result.handlercode) {
+                    // 如果所有字段都有值，更新状态
+                    setUserDetails({
+                        role: result.role,
+                        name: result.name,
+                        sectionCode: result.sectionCode,
+                        handlercode: result.handlercode,
+                    });
+
+
+                } else {
+                    console.warn("Incomplete data received:", result);
+                }
+            } catch (error) {
+                console.error("Error fetching GPS user props:", error);
             }
-          } catch (error) {
-            console.error("Error fetching GPS user props:", error);
-          }
         };
-    
+
         fetchData().then(
             (_) => _,
             (_) => _
         );
-      }, []);
+    }, []);
 
-      React.useEffect(() => {
+    React.useEffect(() => {
         // 确保仅在 userEmail 存在时调用
         if (userEmail) {
             getUserType(userEmail)
                 .then(type => {
                     if (userType !== type) { // 只有当 userType 变化时才更新状态
                         setUserType(type);
-                        console.log("UserType updated to: ", type);
+                        console.log("UserType updated to: ", userType);
                     }
                     if (type === "Guest") {
                         console.log("supplierID", supplierId);
                         setAppliedFilters((prev) => ({
                             ...prev,
                             parma: supplierId.toString() || "",
-                            
+
+                        }));
+                        setSearchConditions((prev) => ({
+                            ...prev,
+                            parma: supplierId.toString() || "",
+
                         }));
                     }
                 })
                 .catch(error => console.error("Error fetching user type:", error));
         }
     }, [userEmail, supplierId]); // 将依赖减少为关键变量
-    
+
     React.useEffect(() => {
         // 如果是 Guest，且 userEmail 存在，则调用 getSupplierId
         if (userType === "Guest" && userEmail) {
             getSupplierId(userEmail);
-           
-            
+            console.log("Usertype: ", userType)
+
+
         }
-        
-    }, [userType, userEmail, getSupplierId]);
-    
-      
+
+    }, [userType, getSupplierId]);
+
+
 
     //   React.useEffect(()=>{
     //     if(userType === "Guest" && userEmail){
@@ -294,7 +311,7 @@ const RFQ: React.FC = () => {
     //         parma: supplierId.toString() || "",
     //       }));}
     //     console.log("UserType: ", type);
-        
+
     // })
 
     // .catch(error => {
@@ -304,31 +321,25 @@ const RFQ: React.FC = () => {
 
     //     void fetchUserType();
     // }, [getUserType]);
-    
+
 
     // 创建 Selection 对象
-    const selection = React.useRef<Selection>(new Selection({
-        onSelectionChanged: () => {
-            const selected = selection.current.getSelection() as Item[]; // 使用 Item 类型断言
-            setSelectedItems(selected);
-            // const selectedCount = selection.getSelectedCount();
-            setIsItemSelected(selected.length > 0);
-            // console.log("isselected: ", isItemSelected)
-            console.log("Selected item: ", selected);
-            
-
-        },
-    }));
 
     React.useEffect(() => {
         if (userDetails.role === "Manager") {
             setAppliedFilters((prev) => ({
-            ...prev,
-            section: userDetails.sectionCode || "",
-          }));
-        } 
-        console.log("UserDetials: ", userDetails)
-      }, [userDetails]);
+                ...prev,
+                section: userDetails.sectionCode || "",
+            }));
+            setSearchConditions((prev) => ({
+                ...prev,
+                section: userDetails.sectionCode || "",
+
+            }));
+        }
+        console.log("UserDetials: ", userDetails);
+
+    }, [userDetails]);
 
     React.useEffect(() => {
         getAllRFQs();
@@ -336,25 +347,37 @@ const RFQ: React.FC = () => {
 
 
 
-    const applyFilters = () :void=> {
+    const applyFilters = (): void => {
 
-        setAppliedFilters({
+        setAppliedFilters((prev) => ({
+            ...prev,
             ...searchConditions,
-            rfqreleasedatefrom: rfqReleaseDateFrom
-                ? rfqReleaseDateFrom.toISOString()
+            parma: userType === "Guest" ? searchConditions.parma : prev.parma, // 保留 Guest 的 parma
+            rfqreleasedateto: searchConditions.rfqreleasedateto
+                ? new Date(new Date(searchConditions.rfqreleasedateto).getTime() + 86400000).toISOString()
                 : "",
-            rfqreleasedateto: rfqReleaseDateTo
-                ? new Date(rfqReleaseDateTo.getTime() + 86400000).toISOString()
+            rfqduedateto: searchConditions.rfqduedateto
+                ? new Date(new Date(searchConditions.rfqduedateto).getTime() + 86400000).toISOString()
                 : "",
-            rfqduedatefrom: rfqDueDateFrom ? rfqDueDateFrom.toISOString() : "",
-            rfqduedateto: rfqDueDateTo ? new Date(rfqDueDateTo.getTime() + 86400000).toISOString() : "",
-        });
+            // rfqreleasedatefrom: rfqReleaseDateFrom
+            //     ? rfqReleaseDateFrom.toISOString()
+            //     : "",
+            // rfqreleasedateto: rfqReleaseDateTo
+            //     ? new Date(rfqReleaseDateTo.getTime() + 86400000).toISOString()
+            //     : "",
+            // rfqduedatefrom: rfqDueDateFrom ? rfqDueDateFrom.toISOString() : "",
+            // rfqduedateto: rfqDueDateTo ? new Date(rfqDueDateTo.getTime() + 86400000).toISOString() : "",
+        }));
+        console.log("appliedFilters", appliedFilters)
     };
-    
+
+
+
+
     const handleMultiSelectChange = <K extends keyof typeof searchConditions>(
         key: K,
         option?: IDropdownOption
-    ) => {
+    ): void => {
         setSearchConditions(prev => {
             const currentSelection = Array.isArray(prev[key]) ? (prev[key] as string[]) : [];
             const updatedSelection = option?.selected
@@ -366,8 +389,9 @@ const RFQ: React.FC = () => {
             };
         });
     };
-    
 
+
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const getFilteredItems = () => {
         return allRFQs.filter(item => {
             const releaseDate = new Date(item.Created || "");
@@ -386,11 +410,12 @@ const RFQ: React.FC = () => {
                 ? new Date(appliedFilters.rfqduedateto)
                 : null;
             // 更新 status 过滤逻辑
-        const statusFilter = appliedFilters.status.length === 0
-        ? true // 如果没有选择任何状态，表示不过滤
-        : appliedFilters.status.includes(item.RFQStatus || ""); // 检查记录的 RFQStatus 是否在选择列表中
-        const parmaMatch = userType === "Guest" ? item.Parma === appliedFilters.parma // 严格匹配
-        : !appliedFilters.parma || item.Parma?.toLowerCase().includes(appliedFilters.parma.toLowerCase());
+            const statusFilter = appliedFilters.status.length === 0
+                ? true // 如果没有选择任何状态，表示不过滤
+                : appliedFilters.status.includes(item.RFQStatus || ""); // 检查记录的 RFQStatus 是否在选择列表中
+            const parmaMatch = userType === "Guest" ? item.Parma === appliedFilters.parma // 严格匹配
+                : !appliedFilters.parma || item.Parma?.toLowerCase().includes(appliedFilters.parma.toLowerCase());
+
 
             return (
                 statusFilter && parmaMatch &&
@@ -398,7 +423,7 @@ const RFQ: React.FC = () => {
                 (!appliedFilters.rfqno || item.RFQNo?.toLowerCase().includes(appliedFilters.rfqno.toLowerCase())) &&
                 (!appliedFilters.buyer || (item.BuyerInfo?.toLowerCase().includes(appliedFilters.buyer.toLowerCase())) || item.HandlerName?.toLowerCase().includes(appliedFilters.buyer.toLowerCase())) &&
                 (!appliedFilters.section || item.SectionInfo?.toLowerCase().includes(appliedFilters.section.toLowerCase())) &&
-                (!appliedFilters.parma || item.Parma?.toLowerCase().includes(appliedFilters.parma.toLowerCase())) &&
+                // (!appliedFilters.parma || item.Parma?.toLowerCase().includes(appliedFilters.parma.toLowerCase())) &&
                 (!releaseFrom ||
                     (releaseDate >= releaseFrom)) &&
                 (!releaseTo ||
@@ -432,7 +457,7 @@ const RFQ: React.FC = () => {
         setCurrentPage(1);
     }, [appliedFilters]);
 
-    const handleSearchChange = (key: string, value: string) => {
+    const handleSearchChange = (key: keyof typeof searchConditions, value: string | string[]) => {
         setSearchConditions(prev => ({
             ...prev,
             [key]: value,
@@ -450,40 +475,40 @@ const RFQ: React.FC = () => {
     //     setCurrentPage(page);
     // };
     const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
-    const goToPage = (page: number) => {
+    const goToPage = (page: number): void => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
         }
     };
 
 
-    
 
-    React.useEffect(() => {
-        if (allRFQs.length > 0) {
-            // 按 RFQReleaseDate 降序排序
-            const sorted = [...allRFQs]
-                .sort(
-                    (a, b) =>
-                        new Date(b.Created || 0).getTime() -
-                        new Date(a.Created || 0).getTime()
-                )
-                .map((rfq) => ({
-                    key: rfq.ID || "",
-                    Parma: rfq.Parma || "",
-                    RFQNo: rfq.RFQNo || "",
-                    BuyerInfo: rfq.BuyerInfo || "",
-                    HandlerName: rfq.HandlerName || "",
-                    RFQType: rfq.RFQType || "",
-                    ReasonOfRFQ: rfq.ReasonOfRFQ || "",
-                    RFQReleaseDate: rfq.Created?.toString() || "",
-                    RFQDueDate: rfq.RFQDueDate?.toString() || "",
-                    RFQStatus: rfq.RFQStatus || "",
-                    EffectiveDateRequest: rfq.EffectiveDateRequest?.toString() || "",
-                }));
-            setSortedItems(sorted);
-        }
-    }, [allRFQs]);
+
+    // React.useEffect(() => {
+    //     if (allRFQs.length > 0) {
+    //         // 按 RFQReleaseDate 降序排序
+    //         const sorted = [...allRFQs]
+    //             .sort(
+    //                 (a, b) =>
+    //                     new Date(b.Created || 0).getTime() -
+    //                     new Date(a.Created || 0).getTime()
+    //             )
+    //             .map((rfq) => ({
+    //                 key: rfq.ID || "",
+    //                 Parma: rfq.Parma || "",
+    //                 RFQNo: rfq.RFQNo || "",
+    //                 BuyerInfo: rfq.BuyerInfo || "",
+    //                 HandlerName: rfq.HandlerName || "",
+    //                 RFQType: rfq.RFQType || "",
+    //                 ReasonOfRFQ: rfq.ReasonOfRFQ || "",
+    //                 RFQReleaseDate: rfq.Created?.toString() || "",
+    //                 RFQDueDate: rfq.RFQDueDate?.toString() || "",
+    //                 RFQStatus: rfq.RFQStatus || "",
+    //                 EffectiveDateRequest: rfq.EffectiveDateRequest?.toString() || "",
+    //             }));
+    //         setSortedItems(sorted);
+    //     }
+    // }, [allRFQs]);
 
     React.useEffect(() => {
         if (currentPage === 1 && sortedItems.length > 0) {
@@ -500,6 +525,7 @@ const RFQ: React.FC = () => {
         label: string,
         tooltip: string,
         field: JSX.Element
+        // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     ) => {
         return (
             <div
@@ -532,7 +558,7 @@ const RFQ: React.FC = () => {
     };
 
     return (
-        <Stack tokens={{ childrenGap: 20 }} styles={{ root: { width: "100%" } }}>
+        <Stack tokens={{ childrenGap: 20, padding: 20 }} styles={{ root: { width: "100%" } }} >
             <h2 className="mainTitle">RFQ & Quote</h2>
 
             {/* 搜索栏标题 */}
@@ -555,14 +581,19 @@ const RFQ: React.FC = () => {
                     styles={{
                         root: {
                             background: "#CCEEFF",
-                            padding: 20,
+                            padding: "0 1.5%",
                             display: "grid",
                             gridTemplateColumns: "repeat(5, 1fr)", // 五等分
                             gridTemplateRows: "auto auto auto", // 固定为 3 行
-                            gap: "10px",
+                            columnGap: "calc((100% - 2 * 1.5%) * 0.055)", // 搜索框间距占剩余空间的5.5%
+                            rowGap: "20px", // 行间距
+                            //gap: "5.5%",
+                            //columnGap: "repeat(5, 1fr)/4", // 控制每列的间距
                         },
                     }}
                 >
+
+
                     {/* 第一行 */}
 
                     <Dropdown
@@ -593,6 +624,7 @@ const RFQ: React.FC = () => {
                         "Search by Section code/Section Description",
                         <TextField
                             value={searchConditions.section}
+
                             onChange={(e, newValue) => handleSearchChange('section', newValue || "")}
                             styles={fieldStyles}
                         />
@@ -601,13 +633,15 @@ const RFQ: React.FC = () => {
                         label="Status"
                         selectedKeys={searchConditions.status}
                         multiSelect
-                        onChange={(e, option) => {if(option)
-                        {console.log("Selected status: ",option)}
-                            handleMultiSelectChange('status', option)}}
+                        onChange={(e, option) => {
+                            if (option) { console.log("Selected status: ", option) }
+                            handleMultiSelectChange('status', option)
+                        }}
                         options={statusOptions}
-                         
+
                         styles={fieldStyles}
                     />
+
 
                     {/* 第二行 */}
 
@@ -619,44 +653,46 @@ const RFQ: React.FC = () => {
                     />)}
                     <DatePicker
                         label="RFQ Release Date From"
-                        value={rfqReleaseDateFrom}
-                        onSelectDate={(date) => setRfqReleaseDateFrom(date || undefined)}
+                        value={searchConditions.rfqreleasedatefrom ? new Date(searchConditions.rfqreleasedatefrom) : undefined}
+                        onSelectDate={(date) => handleSearchChange("rfqreleasedatefrom", date ? date.toISOString() : "")}
                         styles={fieldStyles}
                     />
                     <DatePicker
                         label="RFQ Release Date To"
-                        value={rfqReleaseDateTo}
+                        value={searchConditions.rfqreleasedateto ? new Date(searchConditions.rfqreleasedateto) : undefined}
                         onSelectDate={(date) => {
                             if (date) {
                                 console.log("Selected Date:", date);
                                 console.log("ISO String:", date.toISOString()); // 转为 UTC 时间的字符串
                                 console.log("Locale String:", date.toLocaleString()); // 转为本地时间字符串
                                 console.log("Time Zone Offset (minutes):", date.getTimezoneOffset()); // 获取时区偏移量，单位是分钟
-                            } setRfqReleaseDateTo(date || undefined)
+                                console.log("searchConditions:", searchConditions.section)
+                            } handleSearchChange("rfqreleasedateto", date ? date.toISOString() : "")
                         }}
                         styles={fieldStyles}
                     />
                     <DatePicker
                         label="RFQ Due Date From"
-                        value={rfqDueDateFrom}
-                        onSelectDate={(date) => setRfqDueDateFrom(date || undefined)}
+                        value={searchConditions.rfqduedatefrom ? new Date(searchConditions.rfqduedatefrom) : undefined}
+                        onSelectDate={(date) => handleSearchChange("rfqduedatefrom", date ? date.toISOString() : "")}
                         styles={fieldStyles}
                     />
                     <DatePicker
                         label="RFQ Due Date To"
-                        value={rfqDueDateTo}
-                        onSelectDate={(date) => setRfqDueDateTo(date || undefined)}
+                        value={searchConditions.rfqduedateto ? new Date(searchConditions.rfqduedateto) : undefined}
+                        onSelectDate={(date) => handleSearchChange("rfqduedateto", date ? date.toISOString() : "")}
                         styles={fieldStyles}
                     />
 
                     {/* 搜索按钮 */}
-                    <Stack.Item style={{ gridRow:"3",gridColumn: "5", justifySelf: "end" }}>
+                    <Stack.Item style={{ gridRow: "3", gridColumn: "5", justifySelf: "end" }}>
                         <PrimaryButton
                             text="Search"
                             styles={buttonStyles}
                             onClick={applyFilters}
                         />
                     </Stack.Item>
+
                 </Stack>
             )}
 
@@ -759,6 +795,7 @@ const RFQ: React.FC = () => {
                                 .join(", ")}`
                         );
                         // const selectedItems = selection.getSelection() as Item[];
+                        handleViewRFQ();
                     }}
                 />
             </Stack.Item>

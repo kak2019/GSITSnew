@@ -329,24 +329,4 @@ function stringToDate(dateString: string): Date {
   const day = Number(dateString.substring(4, 6));
   return new Date(year, month, day);
 }
-// function pad(value: number): string {
-//   return value < 10 ? "0" + value : String(value);
-// }
-// function processDate(dateToBeProcess: string): string {
-//   if (!dateToBeProcess) {
-//     return "";
-//   } else {
-//     const dateTime = new Date(dateToBeProcess);
-//     const userTimeZoneOffset = dateTime.getTimezoneOffset() * 60000;
-//     const dateLocalTime = new Date(dateTime.getTime() - userTimeZoneOffset);
-//     const dateDecoded = [];
-//     const year = String(dateLocalTime.getUTCFullYear());
-//     const month = pad(dateLocalTime.getUTCMonth() + 1);
-//     const day = pad(dateLocalTime.getUTCDate());
-//     dateDecoded[0] = day;
-//     dateDecoded[1] = month;
-//     dateDecoded[2] = year;
-//     return dateDecoded.join("-");
-//   }
-// }
 //#endregion

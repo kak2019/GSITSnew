@@ -15,6 +15,7 @@ import UDUser from './UDUser';
 import LanguageToggle from './common/LanguageToggle';
 import CreateRFQ from './CreateRFQ'
 import DemoForm from './UIDemo/DemoForm';
+import QuotationPage from "./QuotationPage";
 
 export default class Gsits extends React.Component<IGsitsProps> {
   public render(): React.ReactElement<IGsitsProps> {
@@ -30,10 +31,14 @@ export default class Gsits extends React.Component<IGsitsProps> {
             <section className={`${styles.gsits} ${hasTeamsContext ? styles.teams : ''}`}>
               <nav className={styles.nav}>
                 <ul>
-                  <li><NavLink to="/requisition" className={({ isActive }) => isActive ? styles.active : ''}>New Part Requisition</NavLink></li>
-                  <li><NavLink to="/pricechange" className={({ isActive }) => isActive ? styles.active : ''}>Price Change Request</NavLink></li>
-                  <li><NavLink to="/rfq" className={({ isActive }) => isActive ? styles.active : ''}>RFQ & QUOTE</NavLink></li>
-                  
+                  <li><NavLink to="/requisition" className={({isActive}) => isActive ? styles.active : ''}>New Part
+                    Requisition</NavLink></li>
+                  <li><NavLink to="/pricechange" className={({isActive}) => isActive ? styles.active : ''}>Price Change
+                    Request</NavLink></li>
+                  <li><NavLink to="/rfq" className={({isActive}) => isActive ? styles.active : ''}>RFQ & QUOTE</NavLink>
+                  </li>
+
+
                 </ul>
                 <div className={styles.toggleContainer}>
                   <LanguageToggle/>
@@ -48,6 +53,7 @@ export default class Gsits extends React.Component<IGsitsProps> {
                   <Route path='/' element={<Navigate to="/rfq" />} />
                   <Route path='/role' element={<UDUser />} />
                   <Route path="/create-rfq" element={<CreateRFQ />} />
+                  <Route path="/quotation" element={<QuotationPage />} />
                   <Route path="/demo" element={<DemoForm/>} />
                 </Routes>
               </React.Suspense>
