@@ -1,4 +1,4 @@
-import { IRequisitionGrid } from "../../model/requisition";
+import { IRequisitionRFQGrid } from "../../model/requisition";
 import { IRFQGrid } from "../../model/rfq";
 
 export enum RFQStatus {
@@ -12,7 +12,7 @@ export interface IRFQState {
   message: string;
   AllRFQs: IRFQGrid[];
   currentRFQ: IRFQGrid;
-  currentRFQRequisitions: IRequisitionGrid[];
+  currentRFQRequisitions: IRequisitionRFQGrid[];
 }
 export const initialState: IRFQState = {
   status: RFQStatus.Idle,

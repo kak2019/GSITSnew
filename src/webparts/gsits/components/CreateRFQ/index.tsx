@@ -16,6 +16,7 @@ import {
     DialogType,
     DialogFooter,
     DefaultButton,
+    TextField
 } from "@fluentui/react";
 import FileUploader from "./upload";
 import SupplierSelection from "./select";
@@ -73,7 +74,7 @@ const Requisition: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const state = location.state;
-    const [, , , , , , createRFQ] = useRFQ();
+    const [, , , , , , , , createRFQ] = useRFQ();
     const [, , , , , , , initialUploadRFQAttachments, ,] = useDocument();
     // 新状态定义
     const [parmaDetails, setParmaDetails] = useState<{
@@ -82,17 +83,23 @@ const Requisition: React.FC = () => {
     }>({name: "", country: ""});
 
     const [columnsPerRow, setColumnsPerRow] = useState(5);
-    const [form, setForm] = useState({parma: ""});
+    const [form, setForm] = useState({parma: "", type: '', comment: ''});
     const [filteredOptions, setFilteredOptions] = useState<IComboBoxOption[]>([]);
     const [selectedValue, setSelectedValue] = useState<string | undefined>();
+    const [err, setErr] = useState({
+        parma: false,
+        type: false,
+        date: false,
+        show: false
+    })
     const dropdownOptions = [
         {
             key: "BLPR Blanket Production Order",
             text: "BLPR Blanket Production Orde",
         },
         {
-            key: "QUP Quantity Production Order",
-            text: "QUP Quantity Production Order",
+            key: "QUPR Quantity Production Order",
+            text: "QUPR Quantity Production Order",
         },
         {
             key: "SAPR Standalone Production Orde",
@@ -112,8 +119,19 @@ const Requisition: React.FC = () => {
     }, []);
 
     const comboBoxStyles: Partial<IComboBoxStyles> = {
-        root: {width: "100%"},
+        root: {
+            width: "100%",
+        },
         optionsContainer: {width: "100%"},
+        container: {
+            selectors: {
+                '.ms-ComboBox': {
+                    '::after': {
+                        borderColor: err.parma ? 'red' : 'rgb(96 94 92)',
+                    }
+                }
+            }
+        }
     };
 
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -140,6 +158,8 @@ const Requisition: React.FC = () => {
     };
     // 获取当前日期
     const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [formattedDate, setFormattedDate] = useState<string>(""); // 存储格式化后日期
 
@@ -147,6 +167,7 @@ const Requisition: React.FC = () => {
     const [isLeavePageDialogVisible, setIsLeavePageDialogVisible] =
         useState(false);
     const [, , , , updateRequisition] = useRequisition()
+    const comboBoxRef = React.useRef<IComboBox>(null);
 
     // Handlers to open dialogs
 
@@ -172,18 +193,35 @@ const Requisition: React.FC = () => {
                 console.log("Fetched data on blur:", data); // 输出返回结果
                 // 更新状态
                 setParmaDetails({name: data.name, country: data.country});
+            } else {
+                setParmaDetails({name: '', country: ''});
             }
         } catch (error) {
+            setParmaDetails({name: '', country: ''});
             console.error("Error fetching data on blur:", error);
         }
     };
-    const handleChange = (
+    const handleChange = async (
         event: React.FormEvent<IComboBox>,
         option?: IComboBoxOption
-    ): void => {
+    ): Promise<void> => {
         if (option) {
             setSelectedValue(option.key as string);
             setForm({...form, parma: option.text});
+            comboBoxRef.current?.focus(true)
+        }
+        try {
+            const data = await fetchData(form.parma);
+            if (data) {
+                console.log("Fetched data on blur:", data); // 输出返回结果
+                // 更新状态
+                setParmaDetails({name: data.name, country: data.country});
+            } else {
+                setParmaDetails({name: '', country: ''});
+            }
+        } catch (error) {
+            setParmaDetails({name: '', country: ''});
+            console.error("Error fetching data on blur:", error);
         }
     };
     const itemWidth = `calc(${100 / columnsPerRow}% - ${
@@ -265,15 +303,24 @@ const Requisition: React.FC = () => {
     >([]);
     const handleSubmit = async (): Promise<void> => {
         try {
+            if(!form.parma || !form.type || !selectedDate) {
+                return setErr({
+                    parma: !form.type,
+                    type: !form.type,
+                    date: !selectedDate,
+                    show: true
+                })
+            }
             // 假设你需要从 selectedItems 中构造 IRFQGrid 格式的数据
             const rfqData = {
                 RFQDueDate: selectedDate || new Date(),
                 Status: "New", // 示例字段
                 SupplierContact: JSON.stringify(selectedContacts),
-                Comment: "test",
+                Comment: form.comment,
                 OrderType: selectedValue,
                 Parma: form.parma,
             };
+            console.log(rfqData)
             const newRFQId = await createRFQ(rfqData);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             state.selectedItems.forEach((item: any) => {
@@ -299,6 +346,8 @@ const Requisition: React.FC = () => {
             alert("Failed to submit RFQ.");
         }
     };
+
+
     console.log(selectedDate, formattedDate);
     return (
         <Stack className="RFQ" tokens={{childrenGap: 20, padding: 20}}>
@@ -327,6 +376,7 @@ const Requisition: React.FC = () => {
                         styles={{root: {flexBasis: "40%", maxWidth: "50%"}}}
                     >
                         <ComboBox
+                            componentRef={comboBoxRef}
                             label={t("Parma")}
                             options={filteredOptions}
                             autoComplete="on"
@@ -334,6 +384,7 @@ const Requisition: React.FC = () => {
                             openOnKeyboardFocus={true}
                             onInputValueChange={handleInputChange}
                             onBlur={handleBlur}
+                            useComboBoxAsMenuWidth={true}
                             // text={form.parma}
                             selectedKey={selectedValue}
                             styles={comboBoxStyles}
@@ -354,7 +405,7 @@ const Requisition: React.FC = () => {
                     >
                         <DatePicker
                             label={t("RFQ Due Date")}
-                            minDate={today}
+                            minDate={tomorrow}
                             value={selectedDate} // 显示的日期值
                             onSelectDate={(date) => {
                                 if (date) {
@@ -363,6 +414,16 @@ const Requisition: React.FC = () => {
                                     setFormattedDate(formatted); // 更新格式化后日期状态
                                 }
                             }}
+                            styles={{
+                                root: {
+                                    selectors: {
+                                        '.ms-TextField-fieldGroup': {
+                                            borderColor: err.date ? 'red' : 'rgb(96 94 92)'
+                                        }
+                                    }
+                                },
+                            }}
+
                         />
                     </Stack.Item>
                     <Stack.Item
@@ -371,7 +432,13 @@ const Requisition: React.FC = () => {
                     >
                         <Dropdown
                             label="Order Type"
-                            placeholder="Please Select"
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            onChange={(e, newValue: any) => {
+                                setForm({
+                                    ...form,
+                                    type: newValue
+                                })
+                            }}
                             options={
                                 state.selectedItems[0].RequisitionType === "PP"
                                     ? [
@@ -383,6 +450,11 @@ const Requisition: React.FC = () => {
                                     : dropdownOptions
                             }
                             style={{width: Number(itemWidth) - 30}}
+                            styles={{
+                                title: {
+                                    borderColor: err.type ? 'red' : 'rgb(96 94 92)'
+                                },
+                            }}
                         />
                     </Stack.Item>
                     <Stack.Item
@@ -396,10 +468,20 @@ const Requisition: React.FC = () => {
                         />
                     </Stack.Item>
                 </Stack>
-                <Stack styles={{root: {width: "50%"}}}>
-                    <SupplierSelection
-                        onContactsChange={(contacts) => setSelectedContacts(contacts)}
-                    />
+                <Stack horizontal wrap tokens={{ childrenGap: 10 }} verticalAlign="start" styles={{ root: { width: '50%' } }}>
+                    {/* 控制每个 Stack.Item 的宽度 */}
+                    <Stack grow styles={{ root: { width: '100%'} }}>
+                        <SupplierSelection
+                            parma={form}
+                            onContactsChange={(contacts) => setSelectedContacts(contacts)}
+                        />
+                    </Stack>
+                    <Stack.Item grow styles={{ root: {  flexBasis: '100%', maxWidth: '100%' } }}>
+                        <TextField label="RFQ Instruction to Supplier" value={form.comment} placeholder="Optional" multiline rows={3} style={{width: '100%'}} onChange={(e, val) => setForm({
+                            ...form,
+                            comment: val || ''
+                        })}/>
+                    </Stack.Item>
                 </Stack>
             </Stack>
             <h3 className="mainTitle noMargin">{t("Selected Parts")}</h3>
@@ -437,7 +519,10 @@ const Requisition: React.FC = () => {
                 }}
             >
                 <DialogFooter>
-                    <PrimaryButton onClick={handleSubmit} text="Yes"/>
+                    <PrimaryButton onClick={() => {
+                        closeRFQDialog()
+                        handleSubmit().then(_ => _, _ => _);
+                    }} text="Yes"/>
                     <DefaultButton onClick={closeRFQDialog} text="No"/>
                 </DialogFooter>
             </Dialog>
@@ -456,6 +541,26 @@ const Requisition: React.FC = () => {
                 <DialogFooter>
                     <PrimaryButton onClick={() => navigate("/requisition")} text="Yes"/>
                     <DefaultButton onClick={closeLeavePageDialog} text="No"/>
+                </DialogFooter>
+            </Dialog>
+
+            <Dialog
+                hidden={!err.show}
+                onDismiss={closeLeavePageDialog}
+                dialogContentProps={{
+                    type: DialogType.normal,
+                    title: "Warning",
+                    subText:
+                        "miss required value",
+                }}
+            >
+                <DialogFooter>
+                    <PrimaryButton onClick={() => {
+                        setErr({
+                            ...err,
+                            show: false
+                        })
+                    }} text="OK"/>
                 </DialogFooter>
             </Dialog>
         </Stack>

@@ -9,13 +9,18 @@ import {
   messageSelector,
   createRFQAction,
   getRFQAction,
+  currentRFQSelector,
+  currentRFQRequisitionsSelector,
 } from "../features/rfqs";
 import { IRFQGrid } from "../model/rfq";
+import { IRequisitionRFQGrid } from "../model/requisition";
 
 type RFQOperators = [
   isFetching: RFQStatus,
   allRFQs: IRFQGrid[],
   errorMessage: string,
+  currentRFQ: IRFQGrid,
+  currentRFQRequisitions: IRequisitionRFQGrid[],
   getAllRFQs: () => void,
   getRFQ: (rfq: string) => void,
   updateRFQ: (rfq: IRFQGrid) => void,
@@ -26,6 +31,8 @@ export const useRFQ = (): Readonly<RFQOperators> => {
   const dispatch = useAppDispatch();
   const isFetching = useAppSelector(isFetchingSelector);
   const errorMessage = useAppSelector(messageSelector);
+  const currentRFQ = useAppSelector(currentRFQSelector);
+  const currentRFQRequisitions = useAppSelector(currentRFQRequisitionsSelector);
   const allRFQs = useAppSelector(allRFQsSelector);
   const getAllRFQs = useCallback(() => {
     return dispatch(getAllRFQsAction());
@@ -57,6 +64,8 @@ export const useRFQ = (): Readonly<RFQOperators> => {
     isFetching,
     allRFQs,
     errorMessage,
+    currentRFQ,
+    currentRFQRequisitions,
     getAllRFQs,
     getRFQ,
     updateRFQ,

@@ -1,6 +1,6 @@
 import {
     DatePicker,
-    DefaultPalette,
+    
     DetailsList,
     Dropdown,
     IColumn,
@@ -28,6 +28,7 @@ import { CONST } from "../../../../config/const";
 import { AadHttpClient } from "@microsoft/sp-http";
 import { useUsers } from "../../../../hooks/useUsers";
 import { useNavigate } from "react-router-dom";
+import theme from "../../../../config/theme";
 
 
 // 定义接口
@@ -50,7 +51,7 @@ interface Item {
 const RFQ: React.FC = () => {
     const [, supplierId, , getSupplierId] = useUsers();
     let userEmail = "";
-    const [isFetchingRFQ, allRFQs, , getAllRFQs, , , ,] = useRFQ();
+    const [isFetchingRFQ, allRFQs, , , , getAllRFQs, , , ,]= useRFQ();
     const { getUserType } = useUser();
     const [userType, setUserType] = useState<string>("Unknown");
     const { t } = useTranslation();
@@ -116,7 +117,7 @@ const RFQ: React.FC = () => {
     }));
     const navigate = useNavigate();
 
-    const handleViewRFQ = () => {
+    const handleViewRFQ = (): void => {
         navigate("/quotation", { state: { selectedItems } });
     };
 
@@ -135,50 +136,57 @@ const RFQ: React.FC = () => {
     ];
 
     const columns: IColumn[] = [
-        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100 },
-        { key: "RFQNo", name: t("RFQNo"), fieldName: "RFQNo", minWidth: 100 },
+        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, maxWidth: 100 },
+        { key: "RFQNo", name: t("RFQNo."), fieldName: "RFQNo.", minWidth: 100,  maxWidth: 150 },
         {
-            key: "BuyerInfo",
-            name: t("BuyerInfo"),
-            fieldName: "BuyerInfo",
+            key: "Buyer",
+            name: t("Buyer"),
+            fieldName: "Buyer",
             minWidth: 100,
+            maxWidth: 150 
         },
         {
             key: "HandlerName",
             name: t("Handler Name"),
             fieldName: "HandlerName",
             minWidth: 100,
+            maxWidth: 150
         },
-        { key: "RFQType", name: t("RFQType"), fieldName: "RFQType", minWidth: 100 },
+        { key: "Type", name: t("Type"), fieldName: "Type", minWidth: 100, maxWidth: 100},
         {
             key: "ReasonOfRFQ",
             name: t("Reason of RFQ"),
-            fieldName: "ReasonOfRFQ",
+            fieldName: "Reason Of RFQ",
             minWidth: 150,
+            maxWidth: 150
         },
         {
-            key: "Created",
-            name: t("Created"),
-            fieldName: "RFQReleaseDate",
-            minWidth: 80,
+            key: "RFQ Release Date",
+            name: t("RFQ Release Date"),
+            fieldName: "RFQ Release Date",
+            minWidth: 120,
+            maxWidth: 150
         },
         {
             key: "RFQDueDate",
             name: t("RFQ Due Date"),
-            fieldName: "RFQDueDate",
+            fieldName: "RFQ Due Date",
             minWidth: 100,
+            maxWidth: 150
         },
         {
-            key: "RFQStatus",
-            name: t("RFQStatus"),
-            fieldName: "RFQStatus",
+            key: "Status",
+            name: t("Status"),
+            fieldName: "Status",
             minWidth: 100,
+            maxWidth: 150
         },
         {
             key: "EffectiveDateRequest",
             name: t("Effective Date Request"),
-            fieldName: "EffectiveDateRequest",
+            fieldName: "Effective Date Request",
             minWidth: 100,
+            maxWidth: 150
         },
     ];
 
@@ -457,7 +465,7 @@ const RFQ: React.FC = () => {
         setCurrentPage(1);
     }, [appliedFilters]);
 
-    const handleSearchChange = (key: keyof typeof searchConditions, value: string | string[]) => {
+    const handleSearchChange = (key: keyof typeof searchConditions, value: string | string[]): void => {
         setSearchConditions(prev => ({
             ...prev,
             [key]: value,
@@ -572,7 +580,7 @@ const RFQ: React.FC = () => {
                     onClick={toggleSearchBar}
                 />
                 <Label styles={{ root: { fontWeight: "bold", fontSize: 16 } }}>
-                    Search
+                    {t("Search")}
                 </Label>
             </Stack>
             {/* 搜索区域 */}
@@ -580,15 +588,7 @@ const RFQ: React.FC = () => {
                 <Stack
                     styles={{
                         root: {
-                            background: "#CCEEFF",
-                            padding: "0 1.5%",
-                            display: "grid",
-                            gridTemplateColumns: "repeat(5, 1fr)", // 五等分
-                            gridTemplateRows: "auto auto auto", // 固定为 3 行
-                            columnGap: "calc((100% - 2 * 1.5%) * 0.055)", // 搜索框间距占剩余空间的5.5%
-                            rowGap: "20px", // 行间距
-                            //gap: "5.5%",
-                            //columnGap: "repeat(5, 1fr)/4", // 控制每列的间距
+                            ...theme.searchbar
                         },
                     }}
                 >
@@ -687,7 +687,7 @@ const RFQ: React.FC = () => {
                     {/* 搜索按钮 */}
                     <Stack.Item style={{ gridRow: "3", gridColumn: "5", justifySelf: "end" }}>
                         <PrimaryButton
-                            text="Search"
+                            text={t("Search")}
                             styles={buttonStyles}
                             onClick={applyFilters}
                         />
@@ -703,15 +703,27 @@ const RFQ: React.FC = () => {
                 <Stack>
                     <DetailsList
                         items={paginatedItems}
-                        columns={columns}
+                        columns={columns.map((col) => ({
+                            ...col,
+                            onColumnClick: undefined, // 禁用点击功能
+                            styles: { root: { textAlign: "center" } }, // 单元格居中
+                        }))}
                         selection={selection.current}
                         selectionMode={SelectionMode.single} // single select
                         styles={{
                             root: {
-                                marginTop: 20,
-                                padding: 10,
-                                borderTop: `1px solid ${DefaultPalette.neutralLight}`,
-                                borderBottom: `1px solid ${DefaultPalette.neutralLight}`,
+                                ...theme.detaillist.header
+                            },
+                            headerWrapper: {
+                                selectors: {
+                                    '.ms-DetailsHeader': {
+                                        ...theme.detaillist.detaillistheader
+                                    },
+
+                                    '.ms-DetailsHeader-cell': {
+                                        ...theme.detaillist.detaillistheaderrow
+                                    },
+                                },
                             },
                         }}
                     />
@@ -735,13 +747,14 @@ const RFQ: React.FC = () => {
                     {/* 分页控件 */}
                     <Stack
                         horizontal
-                        horizontalAlign="end"
+                        horizontalAlign="space-between"
                         verticalAlign="center"
                         tokens={{ childrenGap: 10 }}
                         styles={{
                             root: {
-                                marginTop: 10,
-                                justifyContent: "flex-end",
+                               
+                                ...theme.paginated.paginatedbackground,
+                                
                             },
                         }}
                     >
@@ -751,6 +764,21 @@ const RFQ: React.FC = () => {
                             ariaLabel="First Page"
                             disabled={currentPage === 1}
                             onClick={() => goToPage(1)}
+                            styles={{
+                                root: {
+                                    ...theme.paginated.paginatedicon.root
+                                },
+                                icon: {
+                                    ...theme.paginated.paginatedicon.icon
+                                    
+                                },
+                                rootHovered: {
+                                    ...theme.paginated.paginatedicon.rootHovered
+                                },
+                                rootDisabled: {
+                                    ...theme.paginated.paginatedicon.rootDisabled
+                                },
+                            }}
                         />
                         <IconButton
                             iconProps={{ iconName: "ChevronLeft" }}
@@ -758,6 +786,21 @@ const RFQ: React.FC = () => {
                             ariaLabel="Previous Page"
                             disabled={currentPage === 1}
                             onClick={() => goToPage(currentPage - 1)}
+                            styles={{
+                                root: {
+                                    ...theme.paginated.paginatedicon.root
+                                },
+                                icon: {
+                                    ...theme.paginated.paginatedicon.icon
+                                    
+                                },
+                                rootHovered: {
+                                    ...theme.paginated.paginatedicon.rootHovered
+                                },
+                                rootDisabled: {
+                                    ...theme.paginated.paginatedicon.rootDisabled
+                                },
+                            }}
                         />
                         <Label styles={{ root: { alignSelf: "center" } }}>
                             Page {currentPage} of {totalPages}
@@ -768,6 +811,21 @@ const RFQ: React.FC = () => {
                             ariaLabel="Next Page"
                             disabled={currentPage === totalPages}
                             onClick={() => goToPage(currentPage + 1)}
+                            styles={{
+                                root: {
+                                    ...theme.paginated.paginatedicon.root
+                                },
+                                icon: {
+                                    ...theme.paginated.paginatedicon.icon
+                                    
+                                },
+                                rootHovered: {
+                                    ...theme.paginated.paginatedicon.rootHovered
+                                },
+                                rootDisabled: {
+                                    ...theme.paginated.paginatedicon.rootDisabled
+                                },
+                            }}
                         />
                         <IconButton
                             iconProps={{ iconName: "DoubleChevronRight" }}
@@ -775,6 +833,21 @@ const RFQ: React.FC = () => {
                             ariaLabel="Last Page"
                             disabled={currentPage === totalPages}
                             onClick={() => goToPage(totalPages)}
+                            styles={{
+                                root: {
+                                    ...theme.paginated.paginatedicon.root
+                                },
+                                icon: {
+                                    ...theme.paginated.paginatedicon.icon
+                                    
+                                },
+                                rootHovered: {
+                                    ...theme.paginated.paginatedicon.rootHovered
+                                },
+                                rootDisabled: {
+                                    ...theme.paginated.paginatedicon.rootDisabled
+                                },
+                            }}
                         />
                     </Stack>
                 </Stack>
@@ -785,7 +858,7 @@ const RFQ: React.FC = () => {
                       </Stack.Item> */}
             <Stack.Item style={{ gridColumn: "5", justifySelf: "end" }}>
                 <PrimaryButton
-                    text="View"
+                    text={t("View")}
                     disabled={!isItemSelected}
                     styles={buttonStyles}
                     onClick={() => {

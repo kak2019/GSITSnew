@@ -6,8 +6,9 @@ import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
 import { IRFQGrid, IRFQRequisition } from "../../model/rfq";
-import { IRequisitionGrid } from "../../model/requisition";
+import { IRequisitionRFQGrid } from "../../model/requisition";
 import { AppInsightsService } from "../../config/AppInsightsService";
+import { IComment } from "../../model/comment";
 
 //#region actions
 export const getAllRFQsAction = createAsyncThunk(
@@ -96,32 +97,27 @@ export const getRFQAction = createAsyncThunk(
       let rfqItems: IRFQGrid[] = [];
       let hasNextRFQ = true;
       let pageIndexRFQ = 0;
-      let requisitionItems: IRequisitionGrid[] = [];
+      let requisitionItems: IRequisitionRFQGrid[] = [];
       let hasNextRequisition = true;
       let pageIndexRequisition = 0;
       while (hasNextRequisition) {
         const response = await spCache.web.lists
           .getByTitle(CONST.LIST_NAME_REQUISITION)
           .items.select(
-            "Title",
             "ID",
-            "RequisitionType",
-            "Section",
-            "Status",
             "PartNumber",
             "Qualifier",
-            "MaterialUser",
-            "Pproject",
-            "RFQNumber",
-            "Parma",
             "PartDescription",
+            "MaterialUser",
+            "PriceType",
             "AnnualQty",
             "OrderQty",
-            "RequiredWeek",
-            "CreatedDate",
-            "RequisitionBuyer",
-            "HandlerName",
-            "BuyerFullInfo"
+            "QuotedUnitPrice",
+            "Currency",
+            "UOP",
+            "EffectiveDate",
+            "Status",
+            "CommentHistory"
           )
           .top(5000)
           .skip(pageIndexRequisition * 5000)();
@@ -129,29 +125,20 @@ export const getRFQAction = createAsyncThunk(
           response.map((item) => {
             return {
               ID: item.ID,
-              UniqueIdentifier: item.Title,
-              IsSelected: false,
-              RequisitionType: item.RequisitionType,
-              Section: item.Section,
-              Status: item.Status,
               PartNumber: item.PartNumber,
               Qualifier: item.Qualifier,
-              MaterialUser: item.MaterialUser,
-              Project: item.Pproject,
-              RequiredWeek: item.RequiredWeek,
-              CreateDate:
-                item.CreatedDate === null
-                  ? null
-                  : stringToDate(item.CreatedDate),
-              RfqNo: item.RFQNumber,
-              Parma: item.Parma,
               PartDescription: item.PartDescription,
+              MaterialUser: item.MaterialUser,
+              PriceType: item.PriceType,
               AnnualQty: item.AnnualQty,
               OrderQty: item.OrderQty,
-              ReqBuyer: item.RequisitionBuyer,
-              HandlerName: item.HandlerName,
-              BuyerFullInfo: item.BuyerFullInfo,
-            } as IRequisitionGrid;
+              QuotedUnitPrice: item.QuotedUnitPrice,
+              Currency: item.Currency,
+              UOP: item.UOP,
+              EffectiveDate: item.EffectiveDate,
+              PartStatus: item.Status,
+              LastCommentBy: FetchLastComment(item.CommentHistory),
+            } as IRequisitionRFQGrid;
           })
         );
         hasNextRequisition = response.length === 5000;
@@ -162,25 +149,17 @@ export const getRFQAction = createAsyncThunk(
           .getByTitle(CONST.LIST_NAME_RFQ)
           .items.select(
             "ID",
-            "Title",
-            "Parma",
-            "SupplierContact",
-            "RFQDueDate",
-            "OrderType",
-            "RFQInstructionToSupplier",
-            "RFQStatus",
-            "BuyerInfo",
-            "SectionInfo",
-            "Comment",
-            "CommentHistory",
-            "RequisitionIds",
-            "QuoteReceivedDate",
-            "ReasonofRFQ",
-            "EffectiveDateRequest",
-            "HandlerName",
             "RFQNo_x002e_",
             "Created",
-            "RFQType"
+            "Parma",
+            "RFQDueDate",
+            "OrderType",
+            "SupplierContact",
+            "RFQInstructionToSupplier",
+            "RFQStatus",
+            "LatestQuoteDate",
+            "CommentHistory",
+            "RequisitionIds"
           )
           .top(5000)
           .skip(pageIndexRFQ * 5000)();
@@ -188,32 +167,26 @@ export const getRFQAction = createAsyncThunk(
           response.map((item) => {
             return {
               ID: item.ID,
-              Title: item.Title,
-              Parma: item.Parma,
-              SupplierContact: item.SupplierContact,
-              RFQDueDate: item.RFQDueDate,
-              OrderType: item.OrderType,
-              RFQInstructionToSupplier: item.RFQInstructionToSupplier,
-              RFQStatus: item.RFQStatus,
-              BuyerInfo: item.BuyerInfo,
-              SectionInfo: item.SectionInfo,
-              Comment: item.Comment,
-              CommentHistory: item.CommentHistory,
-              RequisitionIds: item.RequisitionIds,
-              QuoteReceivedDate: item.QuoteReceivedDate,
-              ReasonOfRFQ: item.ReasonofRFQ,
-              EffectiveDateRequest: item.EffectiveDateRequest,
-              HandlerName: item.HandlerName,
               RFQNo: item.RFQNo_x002e_,
               Created: item.Created,
-              RFQType: item.RFQType,
+              Parma: item.Parma,
+              RFQDueDate: item.RFQDueDate,
+              OrderType: item.OrderType,
+              SupplierContact: item.SupplierContact,
+              RFQInstructionToSupplier: item.RFQInstructionToSupplier,
+              RFQStatus: item.RFQStatus,
+              LatestQuoteDate: item.LatestQuoteDate,
+              CommentHistory: item.CommentHistory,
+              RequisitionIds: item.RequisitionIds,
             } as IRFQGrid;
           })
         );
         hasNextRFQ = response.length === 5000;
         pageIndexRFQ += 1;
       }
-      const currentRFQ = rfqItems.filter((item) => item.ID === rfqId)[0];
+      const currentRFQ = rfqItems.filter(
+        (item) => item.ID?.toString() === rfqId
+      )[0];
       const requisitionIds: string[] = JSON.parse(
         JSON.stringify(currentRFQ.RequisitionIds)
       );
@@ -323,10 +296,24 @@ export const createRFQAction = createAsyncThunk(
 );
 //#endregion
 //#region methods
-function stringToDate(dateString: string): Date {
-  const year = Number(`20${dateString.substring(0, 2)}`);
-  const month = Number(dateString.substring(2, 4));
-  const day = Number(dateString.substring(4, 6));
-  return new Date(year, month, day);
+function FetchLastComment(comments: string): string {
+  if (!comments) {
+    return "";
+  }
+  const commentHistory: IComment[] = JSON.parse(comments);
+  commentHistory.sort((a, b) => {
+    return b.CommentDate.getTime() - a.CommentDate.getTime();
+  });
+  const options: Intl.DateTimeFormatOptions = {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    timeZone: "Asia/Tokyo",
+  };
+  const formattedDateString = commentHistory[0].CommentDate.toLocaleString(
+    "ja-JP",
+    options
+  ).replace(/\//g, "/");
+  return `${formattedDateString} ${commentHistory[0].CommentBy}`;
 }
 //#endregion

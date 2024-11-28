@@ -421,8 +421,8 @@ const Requisition: React.FC = () => {
       setFilters((prev) => ({
         ...prev,
         buyer: userDetails.handlercode || "",
-        requiredWeekFrom: curDate,
-        requiredWeekTo: addWeeksToYYYYWW(curDate, 12)
+        requiredWeekFrom: addWeeksToYYYYWW(curDate, -12),
+        // requiredWeekTo: addWeeksToYYYYWW(curDate, 12)
       }));
     }
   }, [userDetails]);
@@ -731,12 +731,12 @@ const Requisition: React.FC = () => {
                   >
                     <TextField
                         label={t("Required Week From")}
-                        defaultValue={getCurrentWeekYYYYWW()}
+                        defaultValue={addWeeksToYYYYWW(getCurrentWeekYYYYWW(),-12)}
                         onChange={(e, newValue) => {
                           if (isValidYYYYWW(newValue)) {
                             setFilters((prev) => ({
                               ...prev,
-                              requiredWeekTo: addWeeksToYYYYWW(newValue, 12) || "",
+                              // requiredWeekTo: addWeeksToYYYYWW(newValue, -12) || "",
                             }));
                             setMsg('')
                           } else {

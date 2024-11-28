@@ -63,9 +63,10 @@ const classes = mergeStyleSets({
   }
 });
 interface SupplierSelectionProps {
+  parma?: {};
   onContactsChange?: (contacts: { name: string; email: string; title?: string; functions?: string }[]) => void;
 }
-const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange}) => {
+const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange},parma) => {
   const [contacts, setContacts] = useState<(null | { name: string; email: string;title?:string;functions?:string })[]>(Array(5).fill(null));
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<string>>(new Set());
@@ -103,18 +104,20 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange})
   }, [ctx, getUserIDCode]);
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = async (form: { parma: string; }) => {
+    console.log(form,"parma")
     if (!currentUserIDCode) return; // Confirm we have user ID code
+    if (form){
     try {
       const client = getAADClient();
-      const response = await client.get(`${CONST.azureFunctionBaseUrl}/api/GetContact/18`, AadHttpClient.configurations.v1);
+      const response = await client.get(`${CONST.azureFunctionBaseUrl}/api/GetContact/${form.parma}`, AadHttpClient.configurations.v1);
       const result = await response.json();
       console.log(result,"re");
       setSupplierData(result); // 使用API返回的数据更新supplierData
       setUn(result); // 更新未选中的供应商列表
     } catch (error) {
       console.error('Error fetching supplier data:', error);
-    }
+    }}
   };
 
   const toggleHideDialog = (): void => {
@@ -202,7 +205,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange})
   ];
 
   const handleAddContacts = (): void => {
-    fetchSuppliers().then(_ => _, _ => _)
+    fetchSuppliers(parma).then(_ => _, _ => _)
     setIsOpen(true);
   };
 
@@ -272,8 +275,12 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange})
             hidden={!isOpen}
             onDismiss={() => setIsOpen(false)}
             dialogContentProps={{
-              type: DialogType.largeHeader,
+              type: DialogType.normal,
               title: 'Supplier Selection',
+            }}
+
+            modalProps={{
+              isBlocking: true,
             }}
             maxWidth={800}
         >
@@ -296,7 +303,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange})
           <span>Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled. Only name and email are needed for a new contact</span>
           <DialogFooter>
             <PrimaryButton onClick={handleSelect} text="Select" />
-            <DefaultButton onClick={() => setIsOpen(false)} text="Cancel" />
+            {/*<DefaultButton onClick={() => setIsOpen(false)} text="Cancel" />*/}
           </DialogFooter>
         </Dialog>
 
@@ -344,7 +351,6 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange})
           <p>Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled.</p>
           <DialogFooter>
             <PrimaryButton onClick={handleAdd} text="Add" />
-            <DefaultButton onClick={closeDialog} text="Cancel" />
           </DialogFooter>
         </Dialog>
 
@@ -358,8 +364,8 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange})
             }}
         >
           <DialogFooter>
-            <PrimaryButton onClick={toggleHideDialog} text="确认" />
-            <DefaultButton onClick={toggleHideDialog} text="取消" />
+            <PrimaryButton onClick={toggleHideDialog} text="OK" />
+            <DefaultButton onClick={toggleHideDialog} text="Cancel" />
           </DialogFooter>
         </Dialog>
       </Stack>

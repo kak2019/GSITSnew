@@ -66,6 +66,10 @@ const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const newFiles = Array.from(event.target.files || []);
     const updatedFiles = [...files, ...newFiles];
+    if (updatedFiles.length>10){
+      alert("You can only upload up to 10 files."); // 提示用户
+      return;
+    }
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     // 调用回调函数，将文件传递给父组件
     if (onFileSelect) {
@@ -95,13 +99,15 @@ const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
               onChange={handleFileUpload}
           />
 
-          <IconButton iconProps={{ iconName: 'AttachIcon' }} style={{ width: '20px', height: '20px' }} />
-          <label htmlFor="file-input" style={{ fontSize: '12px' }}>
+          <label htmlFor="file-input" style={{ fontSize: '12px', width: '100%',height: '100%',display: 'flex',alignItems: 'center', cursor: 'pointer' }}>
+            <IconButton iconProps={{ iconName: 'AttachIcon' }} style={{ width: '20px', height: '20px' }} />
+            <div style={{display: 'inline-block'}}>
           <span role="img" aria-label="paperclip" style={{ fontWeight: 'bold', fontSize: '16px' ,marginRight:10}}>
             {uploadTitle ?? 'Click to Upload'}
           </span>
-            {/* <br /> */}
-            ({subtitle ?? 'File number limit: 10; Single file size limit: 10MB'})
+              {/* <br /> */}
+              ({subtitle ?? 'File number limit: 10; Single file size limit: 10MB'})
+            </div>
           </label>
         </div>
 
