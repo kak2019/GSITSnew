@@ -63,10 +63,10 @@ const classes = mergeStyleSets({
   }
 });
 interface SupplierSelectionProps {
-  parma?: {};
+  parma?: {parma: string};
   onContactsChange?: (contacts: { name: string; email: string; title?: string; functions?: string }[]) => void;
 }
-const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange},parma) => {
+const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, parma}) => {
   const [contacts, setContacts] = useState<(null | { name: string; email: string;title?:string;functions?:string })[]>(Array(5).fill(null));
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<string>>(new Set());
@@ -103,22 +103,52 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange},
     fetchUserInfo().then(_ => _, _ => _);
   }, [ctx, getUserIDCode]);
 
+
+
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-  const fetchSuppliers = async (form: { parma: string; }) => {
+  const fetchSuppliers = async (form?: { parma: string; }) => {
     console.log(form,"parma")
     if (!currentUserIDCode) return; // Confirm we have user ID code
     if (form){
-    try {
-      const client = getAADClient();
-      const response = await client.get(`${CONST.azureFunctionBaseUrl}/api/GetContact/${form.parma}`, AadHttpClient.configurations.v1);
-      const result = await response.json();
-      console.log(result,"re");
-      setSupplierData(result); // 使用API返回的数据更新supplierData
-      setUn(result); // 更新未选中的供应商列表
-    } catch (error) {
-      console.error('Error fetching supplier data:', error);
-    }}
+      try {
+        const client = getAADClient();
+        const response = await client.get(`${CONST.azureFunctionBaseUrl}/api/GetContact/${form.parma}`, AadHttpClient.configurations.v1);
+        const result = await response.json();
+        console.log(result,"re");
+        setSupplierData(result); // 使用API返回的数据更新supplierData
+        setUn(result); // 更新未选中的供应商列表
+      } catch (error) {
+        console.error('Error fetching supplier data:', error);
+      }}
   };
+  useEffect(() => {
+    if (parma?.parma) {
+      fetchSuppliers(parma).then(
+          _ => {
+            // 明确的处理逻辑，例如记录日志或更新状态
+            console.log('Fetch succeeded:', _);
+          },
+          error => {
+            // 处理错误
+            console.error('Fetch failed:', error);
+          }
+      );
+    }
+  }, [parma?.parma]);
+  useEffect(() => {
+    if (parma?.parma) {
+      fetchSuppliers(parma).then(
+          _ => {
+            // 明确的处理逻辑，例如记录日志或更新状态
+            console.log('Fetch succeeded:', _);
+          },
+          error => {
+            // 处理错误
+            console.error('Fetch failed:', error);
+          }
+      );
+    }
+  }, [parma?.parma]);
 
   const toggleHideDialog = (): void => {
     setHideDialog(!hideDialog);
@@ -205,7 +235,6 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange},
   ];
 
   const handleAddContacts = (): void => {
-    fetchSuppliers(parma).then(_ => _, _ => _)
     setIsOpen(true);
   };
 

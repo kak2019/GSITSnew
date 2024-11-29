@@ -137,11 +137,11 @@ const RFQ: React.FC = () => {
 
     const columns: IColumn[] = [
         { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, maxWidth: 100 },
-        { key: "RFQNo", name: t("RFQNo."), fieldName: "RFQNo.", minWidth: 100,  maxWidth: 150 },
+        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 100,  maxWidth: 150 },
         {
-            key: "Buyer",
+            key: "BuyerInfo",
             name: t("Buyer"),
-            fieldName: "Buyer",
+            fieldName: "BuyerInfo",
             minWidth: 100,
             maxWidth: 150 
         },
@@ -152,41 +152,41 @@ const RFQ: React.FC = () => {
             minWidth: 100,
             maxWidth: 150
         },
-        { key: "Type", name: t("Type"), fieldName: "Type", minWidth: 100, maxWidth: 100},
+        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, maxWidth: 100},
         {
             key: "ReasonOfRFQ",
             name: t("Reason of RFQ"),
-            fieldName: "Reason Of RFQ",
+            fieldName: "ReasonOfRFQ",
             minWidth: 150,
             maxWidth: 150
         },
         {
-            key: "RFQ Release Date",
+            key: "RFQReleaseDate",
             name: t("RFQ Release Date"),
-            fieldName: "RFQ Release Date",
+            fieldName: "RFQReleaseDate",
             minWidth: 120,
             maxWidth: 150
         },
         {
             key: "RFQDueDate",
             name: t("RFQ Due Date"),
-            fieldName: "RFQ Due Date",
+            fieldName: "RFQDueDate",
             minWidth: 100,
             maxWidth: 150
         },
         {
-            key: "Status",
+            key: "RFQStatus",
             name: t("Status"),
-            fieldName: "Status",
+            fieldName: "RFQStatus",
             minWidth: 100,
             maxWidth: 150
         },
         {
             key: "EffectiveDateRequest",
             name: t("Effective Date Request"),
-            fieldName: "Effective Date Request",
+            fieldName: "EffectiveDateRequest",
             minWidth: 100,
-            maxWidth: 150
+            maxWidth: 100
         },
     ];
 
@@ -597,7 +597,7 @@ const RFQ: React.FC = () => {
                     {/* 第一行 */}
 
                     <Dropdown
-                        label="Type"
+                        label={t("Type")}
                         placeholder="Optional"
                         selectedKey={searchConditions.rfqtype}
                         onChange={(e, option) => handleSearchChange('rfqtype', option?.key?.toString() as string || '')}
@@ -605,7 +605,7 @@ const RFQ: React.FC = () => {
                         styles={fieldStyles}
                     />
                     <TextField
-                        label="RFQ No."
+                        label={t("RFQ No.")}
                         value={searchConditions.rfqno}
                         onChange={(e, newValue) => handleSearchChange('rfqno', newValue || "")}
                         styles={fieldStyles}
@@ -630,7 +630,7 @@ const RFQ: React.FC = () => {
                         />
                     )}
                     <Dropdown
-                        label="Status"
+                        label={t("Status")}
                         selectedKeys={searchConditions.status}
                         multiSelect
                         onChange={(e, option) => {
@@ -646,19 +646,19 @@ const RFQ: React.FC = () => {
                     {/* 第二行 */}
 
                     {userType === "Member" && (<TextField
-                        label="Parma"
+                        label={t("Parma")}
                         value={searchConditions.parma}
                         onChange={(e, newValue) => handleSearchChange('parma', newValue || "")}
                         styles={fieldStyles}
                     />)}
                     <DatePicker
-                        label="RFQ Release Date From"
+                        label={t("RFQ Released Date From")}
                         value={searchConditions.rfqreleasedatefrom ? new Date(searchConditions.rfqreleasedatefrom) : undefined}
                         onSelectDate={(date) => handleSearchChange("rfqreleasedatefrom", date ? date.toISOString() : "")}
                         styles={fieldStyles}
                     />
                     <DatePicker
-                        label="RFQ Release Date To"
+                        label={t("RFQ Released Date To")}
                         value={searchConditions.rfqreleasedateto ? new Date(searchConditions.rfqreleasedateto) : undefined}
                         onSelectDate={(date) => {
                             if (date) {
@@ -672,13 +672,13 @@ const RFQ: React.FC = () => {
                         styles={fieldStyles}
                     />
                     <DatePicker
-                        label="RFQ Due Date From"
+                        label={t("RFQ Due Date From")}
                         value={searchConditions.rfqduedatefrom ? new Date(searchConditions.rfqduedatefrom) : undefined}
                         onSelectDate={(date) => handleSearchChange("rfqduedatefrom", date ? date.toISOString() : "")}
                         styles={fieldStyles}
                     />
                     <DatePicker
-                        label="RFQ Due Date To"
+                        label={t("RFQ Due Date To")}
                         value={searchConditions.rfqduedateto ? new Date(searchConditions.rfqduedateto) : undefined}
                         onSelectDate={(date) => handleSearchChange("rfqduedateto", date ? date.toISOString() : "")}
                         styles={fieldStyles}

@@ -43,7 +43,7 @@ export const getAllRequisitionsAction = createAsyncThunk(
             "HandlerName",
             "BuyerFullInfo",
             "SectionDescription",
-             "Porg",
+            "Porg"
           )
           .top(5000)
           .skip(pageIndex * 5000)();
@@ -61,10 +61,7 @@ export const getAllRequisitionsAction = createAsyncThunk(
               MaterialUser: item.MaterialUser,
               Project: item.Pproject,
               RequiredWeek: item.RequiredWeek,
-              CreateDate:
-                item.CreateDate === null || item.CreateDate === undefined
-                  ? null
-                  : stringToDate(item.CreateDate),
+              CreateDate: item.CreateDate,
               RfqNo: item.RFQNumber,
               Parma: item.Parma,
               PartDescription: item.PartDescription,
@@ -75,7 +72,7 @@ export const getAllRequisitionsAction = createAsyncThunk(
               HandlerName: item.HandlerName,
               BuyerFullInfo: item.BuyerFullInfo,
               SectionDescription: item.SectionDescription,
-              Porg : item.Porg
+              Porg: item.Porg,
             } as IRequisitionGrid;
           })
         );
@@ -122,11 +119,7 @@ export const updateRequisitionAction = createAsyncThunk(
           AnnualQty: Requisition.AnnualQty,
           OrderQty: Requisition.OrderQty,
           RequiredWeek: Requisition.RequiredWeek,
-          CreateDate:
-            Requisition.CreateDate === null ||
-            Requisition.CreateDate === undefined
-              ? null
-              : dateToString(Requisition.CreateDate!),
+          CreateDate: Requisition.CreateDate,
           RequisitionBuyer: Requisition.ReqBuyer,
           Handler: Requisition.Handler,
           HandlerName: Requisition.HandlerName,
@@ -148,18 +141,4 @@ export const updateRequisitionAction = createAsyncThunk(
 );
 //#endregion
 //#region methods
-function stringToDate(dateString: string): Date {
-  const year = Number(`20${dateString.substring(0, 2)}`);
-  const month = Number(dateString.substring(2, 4));
-  const day = Number(dateString.substring(4, 6));
-  return new Date(year, month, day);
-}
-function dateToString(date: Date): string {
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  return `${year.toString().substring(2, 4)}${month
-    .toString()
-    .padStart(2, "0")}${day.toString().padStart(2, "0")}`;
-}
 //#endregion

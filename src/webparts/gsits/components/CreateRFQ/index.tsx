@@ -70,6 +70,7 @@ const fetchDatadropdown = async (input: string): Promise<[]> => {
 };
 
 const Requisition: React.FC = () => {
+    const comboBoxRef = React.useRef<IComboBox>(null);
     const {t} = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
@@ -142,6 +143,8 @@ const Requisition: React.FC = () => {
                 const response = await fetchDatadropdown(text);
                 console.log(response, "eeee");
                 if (response && Array.isArray(response)) {
+
+                    comboBoxRef.current?.focus(true)
                     setFilteredOptions(
                         response.map((item: string) => ({
                             key: item, // 字符串本身作为选项的 key
@@ -167,7 +170,7 @@ const Requisition: React.FC = () => {
     const [isLeavePageDialogVisible, setIsLeavePageDialogVisible] =
         useState(false);
     const [, , , , updateRequisition] = useRequisition()
-    const comboBoxRef = React.useRef<IComboBox>(null);
+
 
     // Handlers to open dialogs
 
@@ -208,7 +211,6 @@ const Requisition: React.FC = () => {
         if (option) {
             setSelectedValue(option.key as string);
             setForm({...form, parma: option.text});
-            comboBoxRef.current?.focus(true)
         }
         try {
             const data = await fetchData(form.parma);
@@ -280,7 +282,7 @@ const Requisition: React.FC = () => {
         {
             key: "CreateDate",
             name: t("Created Date"),
-            fieldName: "CreatedDate",
+            fieldName: "CreateDate",
             minWidth: 100,
         },
         {key: "RfqNo", name: t("RFQ No."), fieldName: "RfqNo", minWidth: 80},
@@ -303,49 +305,50 @@ const Requisition: React.FC = () => {
     >([]);
     const handleSubmit = async (): Promise<void> => {
         try {
-            if(!form.parma || !form.type || !selectedDate) {
-                return setErr({
-                    parma: !form.type,
-                    type: !form.type,
-                    date: !selectedDate,
-                    show: true
-                })
-            }
-            // 假设你需要从 selectedItems 中构造 IRFQGrid 格式的数据
+            // 提取 selectedItems 中的 ID
+            const requisitionIds = state.selectedItems.map((item: { ID: string }) => item.ID);
+
+            // 构造 RFQ 数据
             const rfqData = {
                 RFQDueDate: selectedDate || new Date(),
                 Status: "New", // 示例字段
-                SupplierContact: JSON.stringify(selectedContacts),
-                Comment: form.comment,
-                OrderType: selectedValue,
-                Parma: form.parma,
+                SupplierContact: JSON.stringify(selectedContacts), // 将联系人转换为 JSON
+                Comment: form.comment, // RFQ 的评论
+                OrderType: selectedValue, // 订单类型
+                Parma: form.parma, // Parma 值
+                RequsistionIds: JSON.stringify(requisitionIds), // 将 ID 数组转换为 JSON 字符串
             };
-            console.log(rfqData)
+
+            console.log("RFQ Data to submit:", rfqData);
+
+            // 提交 RFQ
             const newRFQId = await createRFQ(rfqData);
+
+            // 更新每条记录
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             state.selectedItems.forEach((item: any) => {
                 updateRequisition({
                     ...item,
                     ID: item.ID,
-                    Parma: form.parma
-                })
-            })
-            // 上传文件
-            console.log("Fetched data on blur:", selectedFiles);
+                    Parma: form.parma,
+                });
+            });
+
+            // 上传附件
             if (selectedFiles.length > 0) {
-                // 假设 selectedFiles 是存储文件的状态
-                initialUploadRFQAttachments(selectedFiles, newRFQId);
+                await initialUploadRFQAttachments(selectedFiles, newRFQId);
                 console.log("Files uploaded successfully");
             }
 
-            // alert("RFQ submitted successfully!");
-            closeRFQDialog()
-            navigate("/requisition")
+            // 关闭对话框并跳转
+            closeRFQDialog();
+            navigate("/requisition");
         } catch (error) {
             console.error("Error submitting RFQ:", error);
             alert("Failed to submit RFQ.");
         }
     };
+
 
 
     console.log(selectedDate, formattedDate);
@@ -502,6 +505,14 @@ const Requisition: React.FC = () => {
                 <PrimaryButton
                     text={t("Submit")}
                     onClick={() => {
+                        if(!form.parma || !form.type || !selectedDate) {
+                            return setErr({
+                                parma: !form.type,
+                                type: !form.type,
+                                date: !selectedDate,
+                                show: true
+                            })
+                        }
                         openRFQDialog();
                     }}
                 />
@@ -550,8 +561,8 @@ const Requisition: React.FC = () => {
                 dialogContentProps={{
                     type: DialogType.normal,
                     title: "Warning",
-                    subText:
-                        "miss required value",
+                    subText: parmaDetails.country?.toLowerCase() === 'jpn' ?
+                        "miss required value" : "miss required value,country code is not jpn" ,
                 }}
             >
                 <DialogFooter>

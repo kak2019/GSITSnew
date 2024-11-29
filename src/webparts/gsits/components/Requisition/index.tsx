@@ -41,7 +41,7 @@ interface Item {
   annualQty: string;
   orderQty: string;
   reqWeekFrom: string;
-  createdDate: string;
+  createDate: string;
   rfqNo: string;
   reqBuyer: string;
   handlerName: string;
@@ -97,7 +97,12 @@ const Requisition: React.FC = () => {
       // const arr: Item[] = selection.getSelection()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // 如果 Parma 有值，返回 false，否则返回 true //&& item.handler === userDetails.handlercode;
-      return !item.Parma && String(item?.Handler) === code?.current
+      if (userDetails.role === "BizAdmin") {
+        return !item.Parma
+      }else{
+        return !item.Parma && String(item?.Handler) === code?.current
+      }
+
     },
     onSelectionChanged: () => {
       if(status.current) return
@@ -262,7 +267,7 @@ const Requisition: React.FC = () => {
     {
       key: "CreateDate",
       name: t("Created Date"),
-      fieldName: "CreatedDate",
+      fieldName: "CreateDate",
       minWidth: 100,
     },
     { key: "RfqNo", name: t("RFQ No."), fieldName: "RfqNo", minWidth: 80 },
@@ -297,7 +302,12 @@ const Requisition: React.FC = () => {
     { key: "4", text: "4" },
     { key: "7", text: "7" },
   ];
-
+  const parseYYMMDD = (dateStr: string): Date => {
+    const year = 2000 + parseInt(dateStr.slice(0, 2), 10); // 假设是 21 世纪
+    const month = parseInt(dateStr.slice(2, 4), 10) - 1; // 月份从 0 开始
+    const day = parseInt(dateStr.slice(4, 6), 10);
+    return new Date(year, month, day);
+  };
   const [filters, setFilters] = useState<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     requisitionType: any[];
@@ -369,9 +379,9 @@ const Requisition: React.FC = () => {
           (!requiredWeekFrom || (item.RequiredWeek??"") >= requiredWeekFrom) &&
           (!requiredWeekTo || (item.RequiredWeek??"") <= requiredWeekTo) &&
           (!createdDateFrom ||
-              (item.CreateDate && new Date(item.CreateDate) >= createdDateFrom)) &&
+              (item.CreateDate && new Date(parseYYMMDD(item.CreateDate)) >= createdDateFrom)) &&
           (!createdDateTo ||
-              (item.CreateDate && new Date(item.CreateDate) <= createdDateTo))
+              (item.CreateDate && new Date(parseYYMMDD(item.CreateDate)) <= createdDateTo))
       );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }).sort((a:any, b:any) => {

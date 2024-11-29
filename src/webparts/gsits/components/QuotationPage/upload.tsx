@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from 'react';
-import { IconButton, Stack, mergeStyleSets } from '@fluentui/react';
+// import { IconButton, Stack, mergeStyleSets } from '@fluentui/react';
+import { Stack, mergeStyleSets } from '@fluentui/react';
+import {useEffect} from "react";
 
 interface FileUploadComponentProps {
   title: string;
@@ -23,6 +25,8 @@ const useStyles = mergeStyleSets({
     height: '140px',
     overflow: 'hidden',
     overflowY: 'auto',
+    border: '2 solid #e1dfdd',
+    borderRadius: '4px'
   },
   fileItem: {
     display: 'flex',
@@ -62,48 +66,53 @@ const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
   // 初始化为一个空数组，不包含任何文件
   const [files, setFiles] = React.useState<File[]>([]);
   const classes = useStyles;
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const newFiles = Array.from(event.target.files || []);
-    const updatedFiles = [...files, ...newFiles];
-    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-    // 调用回调函数，将文件传递给父组件
-    if (onFileSelect) {
-      onFileSelect(updatedFiles);
-    }
-  };
+  useEffect(() => {
+    setFiles([]);
+  }, []); // 依赖项为空数组，表示该 effect 只会在组件挂载时运行
 
 
-  const removeFile = (index: number): void => {
-    setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
-    const updatedFiles = files.filter((_, i) => i !== index);
-    // 调用回调函数，将更新后的文件列表传递给父组件
-    if (onFileSelect) {
-      onFileSelect(updatedFiles);
-    }
-  };
+
+  // const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
+  //   const newFiles = Array.from(event.target.files || []);
+  //   const updatedFiles = [...files, ...newFiles];
+  //   setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+  //   // 调用回调函数，将文件传递给父组件
+  //   if (onFileSelect) {
+  //     onFileSelect(updatedFiles);
+  //   }
+  // };
+
+
+  // const removeFile = (index: number): void => {
+  //   setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+  //   const updatedFiles = files.filter((_, i) => i !== index);
+  //   // 调用回调函数，将更新后的文件列表传递给父组件
+  //   if (onFileSelect) {
+  //     onFileSelect(updatedFiles);
+  //   }
+  // };
 
   return (
       <div>
         <span className={classes.title}>{title}</span>
-        <div className={classes.uploadArea}>
-          <input
-              type="file"
-              multiple
-              style={{ display: 'none' }}
-              id="file-input"
-              onChange={handleFileUpload}
-          />
+        {/*<div className={classes.uploadArea}>*/}
+        {/*  <input*/}
+        {/*      type="file"*/}
+        {/*      multiple*/}
+        {/*      style={{ display: 'none' }}*/}
+        {/*      id="file-input"*/}
+        {/*      onChange={handleFileUpload}*/}
+        {/*  />*/}
 
-          <IconButton iconProps={{ iconName: 'AttachIcon' }} style={{ width: '20px', height: '20px' }} />
-          <label htmlFor="file-input" style={{ fontSize: '12px' }}>
-          <span role="img" aria-label="paperclip" style={{ fontWeight: 'bold', fontSize: '16px' ,marginRight:10}}>
-            {uploadTitle ?? 'Click to Upload'}
-          </span>
-            {/* <br /> */}
-            ({subtitle ?? 'File number limit: 10; Single file size limit: 10MB'})
-          </label>
-        </div>
+        {/*  /!*<IconButton iconProps={{ iconName: 'AttachIcon' }} style={{ width: '20px', height: '20px' }} />*!/*/}
+        {/*  /!*<label htmlFor="file-input" style={{ fontSize: '12px' }}>*!/*/}
+        {/*  /!*<span role="img" aria-label="paperclip" style={{ fontWeight: 'bold', fontSize: '16px' ,marginRight:10}}>*!/*/}
+        {/*  /!*  {uploadTitle ?? 'Click to Upload'}*!/*/}
+        {/*  /!*</span>*!/*/}
+        {/*  /!*  /!* <br /> *!/*!/*/}
+        {/*  /!*  ({subtitle ?? 'File number limit: 10; Single file size limit: 10MB'})*!/*/}
+        {/*  /!*</label>*!/*/}
+        {/*</div>*/}
 
         <Stack className={classes.fileList}>
           <div className={classes.placeholder}>
@@ -115,10 +124,10 @@ const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
           {files.map((file, index) => (
               <div key={index} className={`${classes.fileItem} ${classes.front} ${index % 2 === 0 ? classes.evenItem : classes.oddItem}`}>
                 {file.name}
-                <IconButton
-                    iconProps={{ iconName: 'Delete' }}
-                    onClick={() => removeFile(index)}
-                />
+                {/*<IconButton*/}
+                {/*    iconProps={{ iconName: 'Delete' }}*/}
+                {/*    onClick={() => removeFile(index)}*/}
+                {/*/>*/}
               </div>
           ))}
         </Stack>

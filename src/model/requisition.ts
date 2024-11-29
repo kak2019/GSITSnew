@@ -10,7 +10,7 @@ export interface IRequisitionGrid {
   MaterialUser: string; //Column "Material User"
   Project?: string; //Column "Pproject"
   RequiredWeek?: string; //Column "Required Week"
-  CreateDate?: Date; //Column "Create Date"
+  CreateDate?: string; //Column "Create Date"
   RfqNo?: string; //Column "RFQ Number"
   Parma?: string; //Column Parma
   PartDescription: string; //Column "Part Description"
