@@ -179,7 +179,7 @@ const RFQ: React.FC = () => {
             name: t("Status"),
             fieldName: "RFQStatus",
             minWidth: 100,
-            maxWidth: 150
+            maxWidth: 100
         },
         {
             key: "EffectiveDateRequest",
@@ -492,31 +492,31 @@ const RFQ: React.FC = () => {
 
 
 
-    // React.useEffect(() => {
-    //     if (allRFQs.length > 0) {
-    //         // 按 RFQReleaseDate 降序排序
-    //         const sorted = [...allRFQs]
-    //             .sort(
-    //                 (a, b) =>
-    //                     new Date(b.Created || 0).getTime() -
-    //                     new Date(a.Created || 0).getTime()
-    //             )
-    //             .map((rfq) => ({
-    //                 key: rfq.ID || "",
-    //                 Parma: rfq.Parma || "",
-    //                 RFQNo: rfq.RFQNo || "",
-    //                 BuyerInfo: rfq.BuyerInfo || "",
-    //                 HandlerName: rfq.HandlerName || "",
-    //                 RFQType: rfq.RFQType || "",
-    //                 ReasonOfRFQ: rfq.ReasonOfRFQ || "",
-    //                 RFQReleaseDate: rfq.Created?.toString() || "",
-    //                 RFQDueDate: rfq.RFQDueDate?.toString() || "",
-    //                 RFQStatus: rfq.RFQStatus || "",
-    //                 EffectiveDateRequest: rfq.EffectiveDateRequest?.toString() || "",
-    //             }));
-    //         setSortedItems(sorted);
-    //     }
-    // }, [allRFQs]);
+    React.useEffect(() => {
+        if (allRFQs.length > 0 && userDetails.role ==="Buyer") {
+            // 按 RFQReleaseDate 降序排序
+            const sorted = [...allRFQs]
+                .sort(
+                    (a, b) =>
+                        new Date(b.Created || 0).getTime() -
+                        new Date(a.Created || 0).getTime()
+                )
+                .map((rfq) => ({
+                    key: rfq.ID || "",
+                    Parma: rfq.Parma || "",
+                    RFQNo: rfq.RFQNo || "",
+                    BuyerInfo: rfq.BuyerInfo || "",
+                    HandlerName: rfq.HandlerName || "",
+                    RFQType: rfq.RFQType || "",
+                    ReasonOfRFQ: rfq.ReasonOfRFQ || "",
+                    RFQReleaseDate: rfq.Created?.toString() || "",
+                    RFQDueDate: rfq.RFQDueDate?.toString() || "",
+                    RFQStatus: rfq.RFQStatus || "",
+                    EffectiveDateRequest: rfq.EffectiveDateRequest?.toString() || "",
+                }));
+            setSortedItems(sorted);
+        }
+    }, [userDetails]);
 
     React.useEffect(() => {
         if (currentPage === 1 && sortedItems.length > 0) {

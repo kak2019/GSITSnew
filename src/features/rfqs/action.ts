@@ -214,9 +214,9 @@ export const updateRFQAction = createAsyncThunk(
   `${FeatureKey.RFQS}/updateRFQ`,
   async (rfq: IRFQGrid): Promise<void> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
-      await spCache.web.lists
+      await sp.web.lists
         .getByTitle(CONST.LIST_NAME_RFQ)
         .items.getById(+rfq.ID!)
         .update({
@@ -256,9 +256,9 @@ export const createRFQAction = createAsyncThunk(
   `${FeatureKey.RFQS}/createRFQ`,
   async (rfq: IRFQGrid): Promise<string> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
-      const addItemResult = await spCache.web.lists
+      const addItemResult = await sp.web.lists
         .getByTitle(CONST.LIST_NAME_RFQ)
         .items.add({
           ID: rfq.ID,

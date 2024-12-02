@@ -98,9 +98,9 @@ export const updateRequisitionAction = createAsyncThunk(
   `${FeatureKey.REQUISITIONS}/updateRequisition`,
   async (Requisition: IRequisitionGrid): Promise<void> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
-      await spCache.web.lists
+      await sp.web.lists
         .getByTitle(CONST.LIST_NAME_REQUISITION)
         .items.getById(+Requisition.ID!)
         .update({

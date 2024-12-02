@@ -3,6 +3,7 @@ import { documentsReducer } from "./features/documents";
 import { requisitionsReducer } from "./features/requisitions";
 import { rfqsReducer } from "./features/rfqs/reducer";
 import { userRolesReducer } from "./features/userRoles";
+import { quotationsReducer } from "./features/quotations";
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     requisitions: requisitionsReducer,
     rfqs: rfqsReducer,
     userRoles: userRolesReducer,
+    quotations: quotationsReducer,
   },
 });
 
