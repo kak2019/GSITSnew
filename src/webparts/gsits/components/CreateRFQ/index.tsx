@@ -69,7 +69,7 @@ const fetchDatadropdown = async (input: string): Promise<[]> => {
     }
 };
 
-const Requisition: React.FC = () => {
+const CreateRFQ: React.FC = () => {
     const comboBoxRef = React.useRef<IComboBox>(null);
     const {t} = useTranslation();
     const navigate = useNavigate();
@@ -307,16 +307,20 @@ const Requisition: React.FC = () => {
         try {
             // 提取 selectedItems 中的 ID
             const requisitionIds = state.selectedItems.map((item: { ID: string }) => item.ID);
-
+            const userdetails = state.userDetails
+            console.log("userdetails", userdetails)
             // 构造 RFQ 数据
             const rfqData = {
                 RFQDueDate: selectedDate || new Date(),
-                Status: "New", // 示例字段
+                RFQStatus: "New", // 示例字段
                 SupplierContact: JSON.stringify(selectedContacts), // 将联系人转换为 JSON
-                Comment: form.comment, // RFQ 的评论
-                OrderType: selectedValue, // 订单类型
+                RFQInstructionToSupplier: form.comment, // RFQ 的评论
+                OrderType: form.type, // 订单类型
                 Parma: form.parma, // Parma 值
-                RequsistionIds: JSON.stringify(requisitionIds), // 将 ID 数组转换为 JSON 字符串
+                RequisitionIds: JSON.stringify(requisitionIds), // 将 ID 数组转换为 JSON 字符串
+                BuyerInfo:(userdetails?.porg?? " ") + " " + userdetails.handlercode,
+                RFQType:"New Part Price",
+                HandlerName:state.selectedItems[0].HandlerName
             };
 
             console.log("RFQ Data to submit:", rfqData);
@@ -427,6 +431,7 @@ const Requisition: React.FC = () => {
                                 },
                             }}
 
+
                         />
                     </Stack.Item>
                     <Stack.Item
@@ -439,7 +444,7 @@ const Requisition: React.FC = () => {
                             onChange={(e, newValue: any) => {
                                 setForm({
                                     ...form,
-                                    type: newValue
+                                    type: newValue.text
                                 })
                             }}
                             options={
@@ -494,6 +499,26 @@ const Requisition: React.FC = () => {
                 setKey="set"
                 layoutMode={DetailsListLayoutMode.fixedColumns}
                 selectionMode={SelectionMode.none}
+                styles={{
+                    root: {
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                    },
+                    headerWrapper: {
+                        backgroundColor: "#AFAFAF",
+                        selectors: {
+                            ".ms-DetailsHeader": {
+                                backgroundColor: "#BDBDBD",
+                                fontWeight: 600,
+                            },
+                        },
+                    },
+                }}
+                viewport={{
+                    height: 0,
+                    width: 0,
+                }}
             />
             <Stack horizontal tokens={{childrenGap: 10, padding: 10}}>
                 <PrimaryButton
@@ -578,4 +603,4 @@ const Requisition: React.FC = () => {
     );
 };
 
-export default Requisition;
+export default CreateRFQ;

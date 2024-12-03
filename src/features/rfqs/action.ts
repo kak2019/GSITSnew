@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
-import { Caching } from "@pnp/queryable";
+// import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
@@ -15,13 +15,13 @@ export const getAllRFQsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getAllRFQs`,
   async (): Promise<IRFQGrid[]> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IRFQGrid[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_RFQ)
           .items.select(
             "ID",
@@ -92,7 +92,7 @@ export const getRFQAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getRFQ`,
   async (rfqId: string): Promise<IRFQRequisition> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let rfqItems: IRFQGrid[] = [];
       let hasNextRFQ = true;
@@ -101,7 +101,7 @@ export const getRFQAction = createAsyncThunk(
       let hasNextRequisition = true;
       let pageIndexRequisition = 0;
       while (hasNextRequisition) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_REQUISITION)
           .items.select(
             "ID",
@@ -145,7 +145,7 @@ export const getRFQAction = createAsyncThunk(
         pageIndexRequisition += 1;
       }
       while (hasNextRFQ) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_RFQ)
           .items.select(
             "ID",
@@ -302,18 +302,22 @@ function FetchLastComment(comments: string): string {
   }
   const commentHistory: IComment[] = JSON.parse(comments);
   commentHistory.sort((a, b) => {
-    return b.CommentDate.getTime() - a.CommentDate.getTime();
+    return (
+      new Date(b.CommentDate).getTime() - new Date(a.CommentDate).getTime()
+    );
   });
   const options: Intl.DateTimeFormatOptions = {
+    timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    timeZone: "Asia/Tokyo",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   };
-  const formattedDateString = commentHistory[0].CommentDate.toLocaleString(
-    "ja-JP",
-    options
-  ).replace(/\//g, "/");
-  return `${formattedDateString} ${commentHistory[0].CommentBy}`;
+  const formattedDateString = new Intl.DateTimeFormat("js-JP", options).format(
+    new Date(commentHistory[0].CommentDate)
+  );
+  return `${formattedDateString.split(",")[0]} ${commentHistory[0].CommentBy}`;
 }
 //#endregion

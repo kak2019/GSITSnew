@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
-import { Caching } from "@pnp/queryable";
+// import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
@@ -13,13 +13,13 @@ export const getSupplierIdByUserEmailAction = createAsyncThunk(
   `${FeatureKey.USERROLES}/getSupplierIdByUserEmail`,
   async (email: string): Promise<string> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IUserMapping[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_USERMAPPING)
           .items.select("UserEmail", "SupplierId")
           .top(5000)
@@ -53,13 +53,13 @@ export const getUserRoleAction = createAsyncThunk(
   `${FeatureKey.USERROLES}/getUserRole`,
   async (): Promise<IUserRole[]> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IUserRole[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_USERROLE)
           .items.top(5000)
           .skip(pageIndex * 5000)();

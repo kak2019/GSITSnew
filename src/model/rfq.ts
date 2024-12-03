@@ -21,6 +21,7 @@ export interface IRFQGrid {
   EffectiveDateRequest?: Date; //Column "Effective Date Request"
   HandlerName?: string; //Column "Handler Name"
   RFQType?: string; //Column "RFQ Type"
+  LastCommentBy?: string; //The last comment from column "Comment History"
 }
 export interface IRFQRequisition {
   RFQ: IRFQGrid;

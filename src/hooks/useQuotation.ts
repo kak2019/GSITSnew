@@ -3,6 +3,7 @@ import { IQuotationGrid } from "../model/requisition";
 import { useAppDispatch, useAppSelector } from "./useApp";
 import { IRFQGrid } from "../model/rfq";
 import {
+  AcceptOrReturnAction,
   allActionLogsSelector,
   allQuotationsSelector,
   createActionLogAction,
@@ -31,7 +32,8 @@ type QuotationOperators = [
   getQuotation: (QuotationId: string) => void,
   updateQuotaion: (Quotation: IQuotationGrid) => void,
   getAllActionLogs: () => void,
-  createActionLog: (Log: IActionLog) => void
+  createActionLog: (Log: IActionLog) => void,
+  acceptOrReturn: (Action: string, QuotationId: string, Comment: string) => void
 ];
 
 export const useQuotation = (): Readonly<QuotationOperators> => {
@@ -73,6 +75,12 @@ export const useQuotation = (): Readonly<QuotationOperators> => {
     },
     [dispatch]
   );
+  const acceptOrReturn = useCallback(
+    (Action: string, QuotationId: string, Comment: string) => {
+      return dispatch(AcceptOrReturnAction({ Action, QuotationId, Comment }));
+    },
+    [dispatch]
+  );
   return [
     isFetching,
     errorMessage,
@@ -86,5 +94,6 @@ export const useQuotation = (): Readonly<QuotationOperators> => {
     updateQuotation,
     getAllActionLogs,
     createActionLog,
+    acceptOrReturn,
   ] as const;
 };

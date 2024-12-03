@@ -1,6 +1,6 @@
 import {
     DatePicker,
-    
+
     DetailsList,
     Dropdown,
     IColumn,
@@ -51,7 +51,7 @@ interface Item {
 const RFQ: React.FC = () => {
     const [, supplierId, , getSupplierId] = useUsers();
     let userEmail = "";
-    const [isFetchingRFQ, allRFQs, , , , getAllRFQs, , , ,]= useRFQ();
+    const [isFetchingRFQ, allRFQs, , , , getAllRFQs, , , ,] = useRFQ();
     const { getUserType } = useUser();
     const [userType, setUserType] = useState<string>("Unknown");
     const { t } = useTranslation();
@@ -64,7 +64,7 @@ const RFQ: React.FC = () => {
     const [isItemSelected, setIsItemSelected] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Item[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 20;
     const [searchConditions, setSearchConditions] = useState({
         rfqno: '',
         rfqtype: '',
@@ -137,13 +137,13 @@ const RFQ: React.FC = () => {
 
     const columns: IColumn[] = [
         { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, maxWidth: 100 },
-        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 100,  maxWidth: 150 },
+        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 100, maxWidth: 150 },
         {
             key: "BuyerInfo",
             name: t("Buyer"),
             fieldName: "BuyerInfo",
             minWidth: 100,
-            maxWidth: 150 
+            maxWidth: 150
         },
         {
             key: "HandlerName",
@@ -152,7 +152,7 @@ const RFQ: React.FC = () => {
             minWidth: 100,
             maxWidth: 150
         },
-        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, maxWidth: 100},
+        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, maxWidth: 100 },
         {
             key: "ReasonOfRFQ",
             name: t("Reason of RFQ"),
@@ -165,14 +165,28 @@ const RFQ: React.FC = () => {
             name: t("RFQ Release Date"),
             fieldName: "RFQReleaseDate",
             minWidth: 120,
-            maxWidth: 150
+            maxWidth: 150,
+            onRender: (item: Item) => {
+                const utcDate = item.RFQReleaseDate;
+                if (!utcDate) return "";
+                const date = new Date(utcDate);
+                date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
+                return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
+            }
         },
         {
             key: "RFQDueDate",
             name: t("RFQ Due Date"),
             fieldName: "RFQDueDate",
             minWidth: 100,
-            maxWidth: 150
+            maxWidth: 150,
+            onRender: (item: Item) => {
+                const utcDate = item.RFQReleaseDate;
+                if (!utcDate) return "";
+                const date = new Date(utcDate);
+                date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
+                return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
+            }
         },
         {
             key: "RFQStatus",
@@ -186,10 +200,23 @@ const RFQ: React.FC = () => {
             name: t("Effective Date Request"),
             fieldName: "EffectiveDateRequest",
             minWidth: 100,
-            maxWidth: 100
+            maxWidth: 100,
+            onRender: (item: Item) => {
+                const utcDate = item.RFQReleaseDate;
+                if (!utcDate) return "";
+                const date = new Date(utcDate);
+                date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
+                return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
+            }
         },
     ];
 
+    const formatDate = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0"); // 月份需要加 1，且补齐两位
+        const day = String(date.getDate()).padStart(2, "0"); // 补齐两位
+        return `${year}/${month}/${day}`;
+    };
 
     const fieldStyles = { root: { width: "100%" } };
 
@@ -493,7 +520,7 @@ const RFQ: React.FC = () => {
 
 
     React.useEffect(() => {
-        if (allRFQs.length > 0 && userDetails.role ==="Buyer") {
+        if (allRFQs.length > 0 && userDetails.role === "Buyer") {
             // 按 RFQReleaseDate 降序排序
             const sorted = [...allRFQs]
                 .sort(
@@ -654,7 +681,15 @@ const RFQ: React.FC = () => {
                     <DatePicker
                         label={t("RFQ Released Date From")}
                         value={searchConditions.rfqreleasedatefrom ? new Date(searchConditions.rfqreleasedatefrom) : undefined}
-                        onSelectDate={(date) => handleSearchChange("rfqreleasedatefrom", date ? date.toISOString() : "")}
+                        onSelectDate={(date) => {
+                            if (date) {
+                                const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
+                                handleSearchChange("rfqreleasedatefrom", formattedDate); // 保存格式化后的日期
+                            } else {
+                                handleSearchChange("rfqreleasedatefrom", "");
+                            }
+                        }}
+                        formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
                     />
                     <DatePicker
@@ -666,21 +701,42 @@ const RFQ: React.FC = () => {
                                 console.log("ISO String:", date.toISOString()); // 转为 UTC 时间的字符串
                                 console.log("Locale String:", date.toLocaleString()); // 转为本地时间字符串
                                 console.log("Time Zone Offset (minutes):", date.getTimezoneOffset()); // 获取时区偏移量，单位是分钟
-                                console.log("searchConditions:", searchConditions.section)
-                            } handleSearchChange("rfqreleasedateto", date ? date.toISOString() : "")
+                                console.log("searchConditions:", searchConditions.section);
+
+
+                                const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
+                                handleSearchChange("rfqreleasedateto", formattedDate)
+                            } else handleSearchChange("rfqreleasedateto", "")
                         }}
+                        formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
                     />
                     <DatePicker
                         label={t("RFQ Due Date From")}
                         value={searchConditions.rfqduedatefrom ? new Date(searchConditions.rfqduedatefrom) : undefined}
-                        onSelectDate={(date) => handleSearchChange("rfqduedatefrom", date ? date.toISOString() : "")}
+                        onSelectDate={(date) => {
+                            if (date) {
+                                const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
+                                handleSearchChange("rfqduedatefrom", formattedDate); // 保存格式化后的日期
+                            } else {
+                                handleSearchChange("rfqduedatefrom", "");
+                            }
+                        }}
+                        formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
                     />
                     <DatePicker
                         label={t("RFQ Due Date To")}
                         value={searchConditions.rfqduedateto ? new Date(searchConditions.rfqduedateto) : undefined}
-                        onSelectDate={(date) => handleSearchChange("rfqduedateto", date ? date.toISOString() : "")}
+                        onSelectDate={(date) => {
+                            if (date) {
+                                const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
+                                handleSearchChange("rfqduedateto", formattedDate); // 保存格式化后的日期
+                            } else {
+                                handleSearchChange("rfqduedateto", "");
+                            }
+                        }}
+                        formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
                     />
 
@@ -752,9 +808,9 @@ const RFQ: React.FC = () => {
                         tokens={{ childrenGap: 10 }}
                         styles={{
                             root: {
-                               
+
                                 ...theme.paginated.paginatedbackground,
-                                
+
                             },
                         }}
                     >
@@ -770,7 +826,7 @@ const RFQ: React.FC = () => {
                                 },
                                 icon: {
                                     ...theme.paginated.paginatedicon.icon
-                                    
+
                                 },
                                 rootHovered: {
                                     ...theme.paginated.paginatedicon.rootHovered
@@ -792,7 +848,7 @@ const RFQ: React.FC = () => {
                                 },
                                 icon: {
                                     ...theme.paginated.paginatedicon.icon
-                                    
+
                                 },
                                 rootHovered: {
                                     ...theme.paginated.paginatedicon.rootHovered
@@ -817,7 +873,7 @@ const RFQ: React.FC = () => {
                                 },
                                 icon: {
                                     ...theme.paginated.paginatedicon.icon
-                                    
+
                                 },
                                 rootHovered: {
                                     ...theme.paginated.paginatedicon.rootHovered
@@ -839,7 +895,7 @@ const RFQ: React.FC = () => {
                                 },
                                 icon: {
                                     ...theme.paginated.paginatedicon.icon
-                                    
+
                                 },
                                 rootHovered: {
                                     ...theme.paginated.paginatedicon.rootHovered

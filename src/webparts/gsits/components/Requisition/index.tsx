@@ -63,7 +63,8 @@ const Requisition: React.FC = () => {
     role: "",
     name: "",
     sectionCode: "",
-    handlercode: ""
+    handlercode: "",
+    porg:""
   });
   const code = React.useRef(null)
   //console.log(userEmail);
@@ -144,7 +145,7 @@ const Requisition: React.FC = () => {
 
   // 跳转到 Create RFQ 页面，并传递选中的记录
   const handleCreateRFQ = (): void => {
-    navigate("/create-rfq", { state: { selectedItems } });
+    navigate("/create-rfq", { state: { selectedItems,userDetails }});
   };
 
   // 切换搜索区域的显示状态
@@ -175,6 +176,7 @@ const Requisition: React.FC = () => {
             name: result.name,
             sectionCode: result.sectionCode,
             handlercode: result.handlercode,
+            porg: result?.porg
           });
           code.current = result.handlercode
 

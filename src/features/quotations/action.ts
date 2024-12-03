@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { spfi } from "@pnp/sp";
-import { Caching } from "@pnp/queryable";
+// import { Caching } from "@pnp/queryable";
 import { Logger, LogLevel } from "@pnp/logging";
 import { getSP } from "../../pnpjsConfig";
 import { MESSAGE } from "../../config/message";
@@ -15,13 +15,13 @@ export const getAllQuotationsAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getAllQuotations`,
   async (): Promise<IQuotationGrid[]> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IQuotationGrid[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_REQUISITION)
           .items.top(5000)
           .skip(pageIndex * 5000)();
@@ -91,13 +91,13 @@ export const getCurrentQuotationAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getCurrentQuotation`,
   async (QuotationId: string): Promise<IQuotationGrid> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IQuotationGrid[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_REQUISITION)
           .items.top(5000)
           .skip(pageIndex * 5000)();
@@ -166,13 +166,13 @@ export const getCurrentQuotationRFQAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getCurrentQuotationRFQ`,
   async (RFQId: string): Promise<IRFQGrid> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IRFQGrid[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_RFQ)
           .items.select(
             "ID",
@@ -304,16 +304,16 @@ export const updateQuotationAction = createAsyncThunk(
   }
 );
 export const getAllActionLogsAction = createAsyncThunk(
-  `${FeatureKey.QUOTATIONS}/getAllQuotations`,
+  `${FeatureKey.QUOTATIONS}/getAllActionLogs`,
   async (): Promise<IActionLog[]> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IActionLog[] = [];
       let hasNext = true;
       let pageIndex = 0;
       while (hasNext) {
-        const response = await spCache.web.lists
+        const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_ACTIONLOG)
           .items.top(5000)
           .skip(pageIndex * 5000)();
@@ -375,19 +375,30 @@ export const createActionLogAction = createAsyncThunk(
     }
   }
 );
-export const updateRequisitionStatusAction = createAsyncThunk(
-  `${FeatureKey.QUOTATIONS}/updateRequisitionStatus`,
-  async (arg: { Action: string; QuotationId: string }): Promise<void> => {
+export const AcceptOrReturnAction = createAsyncThunk(
+  `${FeatureKey.QUOTATIONS}/acceptOrReturn`,
+  async (arg: {
+    Action: string;
+    QuotationId: string;
+    Comment: string;
+  }): Promise<void> => {
     const sp = spfi(getSP());
     // const spCache = sp.using(Caching({ store: "session" }));
     try {
       await sp.web.lists
         .getByTitle(CONST.LIST_NAME_REQUISITION)
         .items.getById(+arg.QuotationId)
-        .update({});
+        .update({
+          ID: arg.QuotationId,
+          IsReturned: arg.Action === "Returned" ? "True" : "",
+          Status: arg.Action,
+          CommentHistory: arg.Comment,
+        });
     } catch (err) {
       Logger.write(
-        `${CONST.LOG_SOURCE} (_updateQuotaion) - ${JSON.stringify(err)}`,
+        `${CONST.LOG_SOURCE} (_updateRequisitionStatus) - ${JSON.stringify(
+          err
+        )}`,
         LogLevel.Error
       );
       AppInsightsService.aiInstance.trackEvent({

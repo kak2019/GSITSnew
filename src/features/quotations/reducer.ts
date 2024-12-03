@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { FeatureKey } from "../../config/const";
 import { initialState, QuotationStatus } from "./quotationsSlice";
 import {
+  AcceptOrReturnAction,
   createActionLogAction,
   getAllActionLogsAction,
   getAllQuotationsAction,
@@ -85,6 +86,16 @@ const quotationsSlice = createSlice({
         state.status = QuotationStatus.Idle;
       })
       .addCase(createActionLogAction.rejected, (state, action) => {
+        state.status = QuotationStatus.Failed;
+        state.message = action.error?.message || "";
+      })
+      .addCase(AcceptOrReturnAction.pending, (state, action) => {
+        state.status = QuotationStatus.Loading;
+      })
+      .addCase(AcceptOrReturnAction.fulfilled, (state, action) => {
+        state.status = QuotationStatus.Idle;
+      })
+      .addCase(AcceptOrReturnAction.rejected, (state, action) => {
         state.status = QuotationStatus.Failed;
         state.message = action.error?.message || "";
       });

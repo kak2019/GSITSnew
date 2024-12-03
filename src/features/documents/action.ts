@@ -144,16 +144,16 @@ export const initialUploadRFQAttachmentsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/uploadFile`,
   async (arg: { files: File[]; rfqId: string }): Promise<void> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
-      await spCache.web.folders.addUsingPath(
+      await sp.web.folders.addUsingPath(
         `${CONST.LIBRARY_RFQATTACHMENTS_NAME}/${arg.rfqId}`
       );
       arg.files.forEach((file) => {
         const reader = new FileReader();
         reader.onloadend = async () => {
           const arrayBuffer = reader.result as ArrayBuffer;
-          await spCache.web
+          await sp.web
             .getFolderByServerRelativePath(
               `${CONST.LIBRARY_RFQATTACHMENTS_NAME}/${arg.rfqId}`
             )
@@ -176,17 +176,17 @@ export const getRFQAttachmentsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getRFQAttachments`,
   async (rfqId: string): Promise<IRFQAttachment[]> => {
     const sp = spfi(getSP());
-    const spCache = sp.using(Caching({ store: "session" }));
+    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       const siteUrl = window.location.origin;
-      const filesInfo = await spCache.web
+      const filesInfo = await sp.web
         .getFolderByServerRelativePath(
           `${CONST.LIBRARY_RFQATTACHMENTS_NAME}/${rfqId}`
         )
         .files();
       const files = await Promise.all(
         filesInfo.map(async (fileInfo) => {
-          const file = await spCache.web
+          const file = await sp.web
             .getFileByServerRelativePath(fileInfo.ServerRelativeUrl)
             .getBlob();
           return {
