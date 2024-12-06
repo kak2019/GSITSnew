@@ -1,6 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { spfi } from "@pnp/sp";
-// import { Caching } from "@pnp/queryable";
 import { Logger, LogLevel } from "@pnp/logging";
 import { getSP } from "../../pnpjsConfig";
 import { MESSAGE } from "../../config/message";
@@ -15,7 +14,6 @@ export const getAllQuotationsAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getAllQuotations`,
   async (): Promise<IQuotationGrid[]> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IQuotationGrid[] = [];
       let hasNext = true;
@@ -91,7 +89,6 @@ export const getCurrentQuotationAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getCurrentQuotation`,
   async (QuotationId: string): Promise<IQuotationGrid> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IQuotationGrid[] = [];
       let hasNext = true;
@@ -142,6 +139,8 @@ export const getCurrentQuotationAction = createAsyncThunk(
               PaidProvPartsCost: item.PaidProvPartsCost,
               SuppliedMtrCost: item.SuppliedMtrCost,
               CommentHistory: item.CommentHistory,
+              AnnualQty: item.AnnualQty,
+              OrderQty: item.OrderQty,
             } as IQuotationGrid;
           })
         );
@@ -166,7 +165,6 @@ export const getCurrentQuotationRFQAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getCurrentQuotationRFQ`,
   async (RFQId: string): Promise<IRFQGrid> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IRFQGrid[] = [];
       let hasNext = true;
@@ -245,7 +243,6 @@ export const updateQuotationAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/updateQuotation`,
   async (Quotation: IQuotationGrid): Promise<void> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       await sp.web.lists
         .getByTitle(CONST.LIST_NAME_REQUISITION)
@@ -307,7 +304,6 @@ export const getAllActionLogsAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/getAllActionLogs`,
   async (): Promise<IActionLog[]> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IActionLog[] = [];
       let hasNext = true;
@@ -349,7 +345,6 @@ export const createActionLogAction = createAsyncThunk(
   `${FeatureKey.QUOTATIONS}/createActionLog`,
   async (log: IActionLog): Promise<string> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       const addItemResult = await sp.web.lists
         .getByTitle(CONST.LIST_NAME_ACTIONLOG)
@@ -358,11 +353,12 @@ export const createActionLogAction = createAsyncThunk(
           User: log.User,
           Date: log.Date,
           LogType: log.LogType,
-          RFQId: log.RFQId,
-          RequisitionId: log.RequisitionId,
+          RFQId: String(log.RFQId),
+          RequisitionId: String(log.RequisitionId),
         });
       return addItemResult.ID;
     } catch (err) {
+        console.error("Error creating action log:", err);
       Logger.write(
         `${CONST.LOG_SOURCE} (_createActionLog) - ${JSON.stringify(err)}`,
         LogLevel.Error
@@ -383,7 +379,6 @@ export const AcceptOrReturnAction = createAsyncThunk(
     Comment: string;
   }): Promise<void> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       await sp.web.lists
         .getByTitle(CONST.LIST_NAME_REQUISITION)

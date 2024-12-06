@@ -40,36 +40,44 @@ export const boxShadow = {
 };
 
 export const detaillist = {
-  detaillistheader: {
-    margin: 0, // 去除标题栏的外边距
-    padding: 0, // 去除标题栏的内边距
-    backgroundColor: "#D6D7D6", // 设置标题栏为灰色
-    border: `1px solid ${"#AFAFAF"}`, // 增加下边框
-    cursor: "default",
+  root: {
+    //overflowX: 'hidden',
+    width: '100%', // 确保宽度自适应容器
   },
-
-  detaillistheaderrow: {
-    color: DefaultPalette.neutralPrimary, // 字体颜色
-    fontWeight: "bold", // 加粗字体
-    cursor: "default", // 禁用鼠标指针变化
-    backgroundColor: "#D6D7D6", // 标题栏背景色
-    ':hover': {
-      backgroundColor: "#D6D7D6", // 保持悬浮时背景色不变
-    },
-    ':active': {
-      backgroundColor: "#D6D7D6", // 移除按压时的颜色加深效果
-    },
-    ':focus': {
-      outline: "none", // 移除聚焦时的边框
+  contentWrapper: {
+   // overflowX: 'auto', // 允许自动扩展而不是直接显示滚动条
+    minHeight: '300px', // 确保内容区域有最小高度
+  },
+  headerWrapper: {
+    selectors: {
+      '.ms-DetailsHeader': {
+        margin: 0,
+        padding: 0,
+        backgroundColor: '#D6D7D6',
+        border: '1px solid #AFAFAF',
+        cursor: 'default',
+      },
+      '.ms-DetailsHeader-cellName': {
+        color: DefaultPalette.neutralPrimary,
+        whitespace: 'wrap',
+        wordWrap: 'break-word',
+        
+        cursor: 'default',
+        backgroundColor: '#D6D7D6',
+        selectors: {
+          ':hover': {
+            backgroundColor: '#D6D7D6', // 保持悬浮时背景色不变
+          },
+          ':active': {
+            backgroundColor: '#D6D7D6', // 移除按压时的颜色加深效果
+          },
+          ':focus': {
+            outline: 'none', // 移除聚焦时的边框
+          },
+        },
+      },
     },
   },
-  header: {
-    marginTop: 0,
-    padding: 0,
-    borderTop: `1px solid ${DefaultPalette.neutralLight}`,
-    borderBottom: `1px solid ${DefaultPalette.neutralLight}`,
-    borderRadius: "4px", // 圆角边框
-  }
 };
 
 export const paginated = {
@@ -103,6 +111,7 @@ export const paginated = {
 
 export const searchbar = {
   background: "#CCEEFF",
+  paddingTop: 0,
   padding: "10px 1.5%",
   display: "grid",
   gridTemplateColumns: "repeat(5, 1fr)", // 五等分
@@ -114,6 +123,26 @@ export const searchbar = {
   //columnGap: "repeat(5, 1fr)/4", // 控制每列的间距
 }
 
+
+export const searchsection = {
+  root: {
+    backgroundColor: "white",
+    padding: "0px 0px",
+    cursor: "pointer",
+
+    marginTop: "0px",
+    marginBottom: "0px",
+    selectors: {
+      "& > :not(:first-child)": {
+        marginTop: "10px", // 修改 margin-top 为 10px
+      }
+    },
+  },
+
+}
+
+
+
 // Export the theme
 const theme = {
   colors,
@@ -123,7 +152,9 @@ const theme = {
   boxShadow,
   detaillist,
   paginated,
-  searchbar
+  searchbar,
+  searchsection,
+  
 };
 
 export default theme;

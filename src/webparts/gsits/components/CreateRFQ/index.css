@@ -45,7 +45,7 @@
   align-items: center;
 }
 
-.Requisition .ms-DetailsHeader-cellName {
+/* .ms-DetailsHeader-cellName {
   text-overflow: unset;
   overflow: unset;
   width: 100%;
@@ -53,7 +53,7 @@
   line-height: 14px;
   display: flex;
   align-items: center;
-}
+} */
 /* .Requisition .detailList .ms-DetailsHeader {
   background-color: #99CCFF;
 } */

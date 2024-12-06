@@ -144,7 +144,6 @@ export const initialUploadRFQAttachmentsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/uploadFile`,
   async (arg: { files: File[]; rfqId: string }): Promise<void> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       await sp.web.folders.addUsingPath(
         `${CONST.LIBRARY_RFQATTACHMENTS_NAME}/${arg.rfqId}`
@@ -176,7 +175,6 @@ export const getRFQAttachmentsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getRFQAttachments`,
   async (rfqId: string): Promise<IRFQAttachment[]> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       const siteUrl = window.location.origin;
       const filesInfo = await sp.web

@@ -1,7 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
-// import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
@@ -15,7 +14,6 @@ export const getAllRFQsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getAllRFQs`,
   async (): Promise<IRFQGrid[]> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let items: IRFQGrid[] = [];
       let hasNext = true;
@@ -92,7 +90,6 @@ export const getRFQAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getRFQ`,
   async (rfqId: string): Promise<IRFQRequisition> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       let rfqItems: IRFQGrid[] = [];
       let hasNextRFQ = true;
@@ -103,23 +100,7 @@ export const getRFQAction = createAsyncThunk(
       while (hasNextRequisition) {
         const response = await sp.web.lists
           .getByTitle(CONST.LIST_NAME_REQUISITION)
-          .items.select(
-            "ID",
-            "PartNumber",
-            "Qualifier",
-            "PartDescription",
-            "MaterialUser",
-            "PriceType",
-            "AnnualQty",
-            "OrderQty",
-            "QuotedUnitPrice",
-            "Currency",
-            "UOP",
-            "EffectiveDate",
-            "Status",
-            "CommentHistory"
-          )
-          .top(5000)
+          .items.top(5000)
           .skip(pageIndexRequisition * 5000)();
         requisitionItems = requisitionItems.concat(
           response.map((item) => {
@@ -129,7 +110,6 @@ export const getRFQAction = createAsyncThunk(
               Qualifier: item.Qualifier,
               PartDescription: item.PartDescription,
               MaterialUser: item.MaterialUser,
-              PriceType: item.PriceType,
               AnnualQty: item.AnnualQty,
               OrderQty: item.OrderQty,
               QuotedUnitPrice: item.QuotedUnitPrice,
@@ -138,6 +118,28 @@ export const getRFQAction = createAsyncThunk(
               EffectiveDate: item.EffectiveDate,
               PartStatus: item.Status,
               LastCommentBy: FetchLastComment(item.CommentHistory),
+              BuyerName: item.BuyerName,
+              Suffix: item.Suffix,
+              OrderCoverageTime: item.OrderCoverageTime,
+              NamedPlace: item.NamedPlace,
+              NamedPlaceDescription: item.NamedPlaceDescription,
+              FirstLot: item.FirstLot,
+              CountryOfOrigin: item.CountryofOrigin,
+              QuotedBasicUnitPriceTtl: item.QuotedBasicUnitPriceTtl,
+              OrderPriceStatusCode: item.PriceType,
+              MaterialsCostsTtl: item.MaterialsCostsTtl,
+              PurchasedPartsCostsTtl: item.PurchasedPartsCostsTtl,
+              ProcessingCostsTtl: item.ProcessingCostsTtl,
+              ToolingJigDeprCostTtl: item.ToolingJigDeprCostTtl,
+              AdminExpProfit: item.AdminExp_x002f_Profit,
+              PackingAndDistributionCosts: item.PackingandDistributionCosts,
+              Other: item.Other,
+              PaidProvPartsCost: item.PaidProvPartsCost,
+              SuppliedMtrCost: item.SuppliedMtrCost,
+              PartIssue: item.PartIssue,
+              SurfaceTreatmentCode: item.SurfaceTreatmentCode,
+              DrawingNo: item.DrawingNo_x002e_,
+              Porg: item.Porg,
             } as IRequisitionRFQGrid;
           })
         );
@@ -159,7 +161,8 @@ export const getRFQAction = createAsyncThunk(
             "RFQStatus",
             "LatestQuoteDate",
             "CommentHistory",
-            "RequisitionIds"
+            "RequisitionIds",
+            "SupplierName"
           )
           .top(5000)
           .skip(pageIndexRFQ * 5000)();
@@ -178,6 +181,7 @@ export const getRFQAction = createAsyncThunk(
               LatestQuoteDate: item.LatestQuoteDate,
               CommentHistory: item.CommentHistory,
               RequisitionIds: item.RequisitionIds,
+              SupplierName: item.SupplierName,
             } as IRFQGrid;
           })
         );
@@ -191,7 +195,7 @@ export const getRFQAction = createAsyncThunk(
         JSON.stringify(currentRFQ.RequisitionIds)
       );
       const requisitions = requisitionItems.filter(
-        (item) => requisitionIds.indexOf(item.ID) !== -1
+        (item) => requisitionIds && requisitionIds.indexOf(item.ID) !== -1
       );
       return {
         RFQ: currentRFQ,
@@ -214,7 +218,6 @@ export const updateRFQAction = createAsyncThunk(
   `${FeatureKey.RFQS}/updateRFQ`,
   async (rfq: IRFQGrid): Promise<void> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       await sp.web.lists
         .getByTitle(CONST.LIST_NAME_RFQ)
@@ -238,6 +241,7 @@ export const updateRFQAction = createAsyncThunk(
           HandlerName: rfq.HandlerName,
           RFQNo_x002e_: rfq.RFQNo,
           RFQType: rfq.RFQType,
+          LatestQuoteDate: rfq.LatestQuoteDate,
         });
     } catch (err) {
       Logger.write(
@@ -256,7 +260,6 @@ export const createRFQAction = createAsyncThunk(
   `${FeatureKey.RFQS}/createRFQ`,
   async (rfq: IRFQGrid): Promise<string> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
     try {
       const addItemResult = await sp.web.lists
         .getByTitle(CONST.LIST_NAME_RFQ)
@@ -279,6 +282,9 @@ export const createRFQAction = createAsyncThunk(
           HandlerName: rfq.HandlerName,
           RFQNo_x002e_: rfq.RFQNo,
           RFQType: rfq.RFQType,
+          BuyerName: rfq.BuyerName,
+          BuyerEmail: rfq.BuyerEmail,
+          SupplierName: rfq.SupplierName,
         });
       return addItemResult.ID;
     } catch (err) {

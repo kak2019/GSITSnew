@@ -76,7 +76,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
   const [hideDialog, setHideDialog] = useState(true);
   const [dialogProps, setTip] = useState({
     type: DialogType.normal,
-    title: '提示',
+    title: 'Warning',
     subText: 'tip'
   });
 
@@ -171,7 +171,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
     if (num.length === 5) {
       setTip({
         ...dialogProps,
-        subText: 'Up To 5'
+        subText: 'Maximum 5 contact can be selected or added, please re-select'
       });
       setHideDialog(false);
       return true;
@@ -210,6 +210,9 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
     setContacts((prevContacts) => {
       const newContacts = [...prevContacts];
       newContacts[index] = null;
+      if (onContactsChange) {
+        onContactsChange(newContacts as any);
+      }
       return newContacts;
     });
   };
@@ -251,17 +254,27 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
     setContacts((prevContacts) => {
       const newContacts = [...prevContacts];
       for (let i = 0; i < newContacts.length; i++) {
-        if (newContacts[i] === null) {
+        if (newContacts[i]=== null) {
           newContacts[i] = {
             name: createState.name,
             email: createState.email,
-            title: createState.title,
-            functions: createState.functions,
+            title: createState.title||"",
+            functions: createState.functions||"",
           };
           break;
         }
       }
+      if (onContactsChange) {
+        onContactsChange(newContacts as any);
+      }
       return newContacts;
+    });
+    // 清空 createState
+    setState({
+      name: "",
+      email: "",
+      title: "",
+      functions: "",
     });
     closeDialog();
   };
@@ -379,7 +392,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
           </Stack>
           <p>Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled.</p>
           <DialogFooter>
-            <PrimaryButton onClick={handleAdd} text="Add" />
+            <PrimaryButton onClick={handleAdd} disabled={!createState.name || !createState.email} text="Add" />
           </DialogFooter>
         </Dialog>
 
@@ -393,7 +406,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             }}
         >
           <DialogFooter>
-            <PrimaryButton onClick={toggleHideDialog} text="OK" />
+            <PrimaryButton onClick={toggleHideDialog}  text="OK" />
             <DefaultButton onClick={toggleHideDialog} text="Cancel" />
           </DialogFooter>
         </Dialog>

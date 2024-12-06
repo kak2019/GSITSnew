@@ -1,7 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
-// import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
@@ -13,7 +12,7 @@ export const getAllRequisitionsAction = createAsyncThunk(
   `${FeatureKey.REQUISITIONS}/getAllRequisitions`,
   async (): Promise<IRequisitionGrid[]> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
+
     try {
       let items: IRequisitionGrid[] = [];
       let hasNext = true;
@@ -98,7 +97,7 @@ export const updateRequisitionAction = createAsyncThunk(
   `${FeatureKey.REQUISITIONS}/updateRequisition`,
   async (Requisition: IRequisitionGrid): Promise<void> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
+
     try {
       await sp.web.lists
         .getByTitle(CONST.LIST_NAME_REQUISITION)

@@ -31,8 +31,8 @@
   font-weight: 150;
 }
 
-.Requisition .noMargin {
-  margin-top: 0;
+.noMargin {
+  margin-top: 5px !important;
 }
 
 .Requisition .ms-Viewport {

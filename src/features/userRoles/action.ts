@@ -1,7 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
-// import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
@@ -13,7 +12,7 @@ export const getSupplierIdByUserEmailAction = createAsyncThunk(
   `${FeatureKey.USERROLES}/getSupplierIdByUserEmail`,
   async (email: string): Promise<string> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
+
     try {
       let items: IUserMapping[] = [];
       let hasNext = true;
@@ -53,7 +52,7 @@ export const getUserRoleAction = createAsyncThunk(
   `${FeatureKey.USERROLES}/getUserRole`,
   async (): Promise<IUserRole[]> => {
     const sp = spfi(getSP());
-    // const spCache = sp.using(Caching({ store: "session" }));
+
     try {
       let items: IUserRole[] = [];
       let hasNext = true;

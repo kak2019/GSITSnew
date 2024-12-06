@@ -16,20 +16,20 @@ export interface IRequisitionGrid {
   PartDescription: string; //Column "Part Description"
   AnnualQty?: number; //Column "Annual Qty"
   OrderQty?: number; //Column "Order Qty"
-  ReqBuyer: string; //Column "Requisition Buyer"
-  Handler: string; //Column "Handler"
-  HandlerName: string; //Column "Handler Name"
-  BuyerFullInfo: string; //Column "Buyer Full Info" Used for Buyer filter
-  SectionDescription: string; //Column "Section Description" Used for Section filter
-  Porg: string; //Column "Porg"
+  ReqBuyer?: string; //Column "Requisition Buyer"
+  Handler?: string; //Column "Handler"
+  HandlerName?: string; //Column "Handler Name"
+  BuyerFullInfo?: string; //Column "Buyer Full Info" Used for Buyer filter
+  SectionDescription?: string; //Column "Section Description" Used for Section filter
+  Porg?: string; //Column "Porg"
 }
 export interface IRequisitionRFQGrid {
   ID: string;
+  Porg?: string; //Column "Porg"
   PartNumber: string; //Column "Part Number"
   Qualifier: string; //Column "Qualifier"
   PartDescription: string; //Column "Part Description"
   MaterialUser: string; //Column "Material User"
-  PriceType: string; //Column "Price Type"
   AnnualQty?: number; //Column "Annual Qty"
   OrderQty?: number; //Column "Order Qty"
   QuotedUnitPrice?: number; //Column "Quoted Unit Price"
@@ -38,6 +38,27 @@ export interface IRequisitionRFQGrid {
   EffectiveDate?: Date; //Column "Effective Date"
   PartStatus?: string; //Column "Status"
   LastCommentBy?: string; //Get Data From Column "Comment History"
+  BuyerName?: string; //Column "Buyer Name"
+  Suffix?: string; //Column "Suffix"
+  OrderCoverageTime?: string; //Column "Order Coverage Time"
+  NamedPlace?: string; //Column "Named Place"
+  NamedPlaceDescription?: string; //Column "Named Place Description"
+  FirstLot?: string; //Column "First Lot"
+  CountryOfOrigin?: string; //Column "Country of Origin"
+  QuotedBasicUnitPriceTtl?: string; //Column "Quoted Basic Unit PriceTtl"
+  OrderPriceStatusCode?: string; //Column "Price Type"
+  MaterialsCostsTtl?: number; //Column "Materials Costs Ttl"
+  PurchasedPartsCostsTtl?: number; //Column "Purchased Parts Costs Ttl"
+  ProcessingCostsTtl?: number; //Column "Processing Costs Ttl"
+  ToolingJigDeprCostTtl?: number; //Column "Tooling Jig Depr Costs Ttl"
+  AdminExpProfit?: number; //Column "Admin Exp/Profit"
+  PackingAndDistributionCosts?: number; //Column "Packing and Distribution Costs"
+  Other?: number; //Column "Other"
+  PaidProvPartsCost?: number; //Column "Paid Prov Parts Cost"
+  SuppliedMtrCost?: number; //Column "Supplied Mtr Cost"
+  PartIssue?: string; //Column "Part Issue"
+  SurfaceTreatmentCode?: string; //Column "Surface Treatment Code"
+  DrawingNo?: string; //Column "Drawing No."
 }
 
 export interface IQuotationGrid {
@@ -79,4 +100,6 @@ export interface IQuotationGrid {
   PaidProvPartsCost?: number; //Column "Paid Prov Parts Cost"
   SuppliedMtrCost?: number; //Column "Supplied Mtr Cost"
   CommentHistory?: string; //Column "Comment History"
+  AnnualQty?: number; //Column "Annual Qty"
+  OrderQty?: number; //Column "Order Qty"
 }

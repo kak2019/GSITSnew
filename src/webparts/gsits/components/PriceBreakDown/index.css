@@ -1,7 +1,28 @@
 .mainTitle {
-    background: #99CCFF;
-    padding: 5px;
-    margin: 0;
-    font-size: 20px;
-    font-weight: 400;
+  background: #99ccff;
+  padding: 5px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+}
+.labelItem {
+  width: 15vi;
+  height: 40px;
+  padding-bottom: 5px;
+}
+.labelValue {
+  line-height: 30px;
+}
+.label {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+  font-weight: bold;
+}
+.uploadArea {
+  border: "1px dashed #0078d4";
+  padding: "10px";
+  text-align: "center";
+  cursor: "pointer";
+  background-color: "#f3f9fc";
 }

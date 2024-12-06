@@ -28,6 +28,7 @@ import {CONST} from "../../../../config/const";
 import {useRFQ} from "../../../../hooks/useRFQ";
 import {useDocument} from "../../../../hooks";
 import {useRequisition} from "../../../../hooks/useRequisition";
+import "./index.css"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fetchData = async (parmaValue: string): Promise<any> => {
     try {
@@ -91,12 +92,13 @@ const CreateRFQ: React.FC = () => {
         parma: false,
         type: false,
         date: false,
-        show: false
+        show: false,
+        contacts:false
     })
     const dropdownOptions = [
         {
             key: "BLPR Blanket Production Order",
-            text: "BLPR Blanket Production Orde",
+            text: "BLPR Blanket Production Order",
         },
         {
             key: "QUPR Quantity Production Order",
@@ -187,6 +189,12 @@ const CreateRFQ: React.FC = () => {
         const month = String(date.getMonth() + 1).padStart(2, "0"); // 月份从0开始
         const day = String(date.getDate()).padStart(2, "0");
         return `${year}${month}${day}`;
+    };
+    const formatDatewithwhiplash = (date: Date):string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0"); // 月份从0开始
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}/${month}/${day}`;
     };
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     const handleBlur = async () => {
@@ -306,14 +314,14 @@ const CreateRFQ: React.FC = () => {
     const handleSubmit = async (): Promise<void> => {
         try {
             // 提取 selectedItems 中的 ID
-            const requisitionIds = state.selectedItems.map((item: { ID: string }) => item.ID);
+            const requisitionIds = state.selectedItems.map((item: { ID: string }) => item.ID.toString());
             const userdetails = state.userDetails
-            console.log("userdetails", userdetails)
+            console.log(selectedContacts, "con");
             // 构造 RFQ 数据
             const rfqData = {
                 RFQDueDate: selectedDate || new Date(),
                 RFQStatus: "New", // 示例字段
-                SupplierContact: JSON.stringify(selectedContacts), // 将联系人转换为 JSON
+                SupplierContact: JSON.stringify(selectedContacts.filter(Boolean)), // 将联系人转换为 JSON
                 RFQInstructionToSupplier: form.comment, // RFQ 的评论
                 OrderType: form.type, // 订单类型
                 Parma: form.parma, // Parma 值
@@ -331,11 +339,20 @@ const CreateRFQ: React.FC = () => {
             // 更新每条记录
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             state.selectedItems.forEach((item: any) => {
+                if(item.RequisitionType === "RB" && form.type ==="BLPR Blanket Production Order"){
+                    updateRequisition({
+                        ...item,
+                        ID: item.ID,
+                        Parma: form.parma,
+                        AnnualQty: Number(item.OrderQty) ?? null,
+                    });
+                }else{
                 updateRequisition({
                     ...item,
                     ID: item.ID,
                     Parma: form.parma,
                 });
+                }
             });
 
             // 上传附件
@@ -346,7 +363,7 @@ const CreateRFQ: React.FC = () => {
 
             // 关闭对话框并跳转
             closeRFQDialog();
-            navigate("/requisition");
+             navigate("/requisition");
         } catch (error) {
             console.error("Error submitting RFQ:", error);
             alert("Failed to submit RFQ.");
@@ -430,8 +447,8 @@ const CreateRFQ: React.FC = () => {
                                     }
                                 },
                             }}
-
-
+                            formatDate={formatDatewithwhiplash}
+                            allowTextInput
                         />
                     </Stack.Item>
                     <Stack.Item
@@ -494,6 +511,7 @@ const CreateRFQ: React.FC = () => {
             </Stack>
             <h3 className="mainTitle noMargin">{t("Selected Parts")}</h3>
             <DetailsList
+                className="detailList"
                 items={state.selectedItems}
                 columns={columns}
                 setKey="set"
@@ -530,12 +548,15 @@ const CreateRFQ: React.FC = () => {
                 <PrimaryButton
                     text={t("Submit")}
                     onClick={() => {
-                        if(!form.parma || !form.type || !selectedDate) {
+
+                        if(!form.parma || !form.type || !selectedDate || selectedContacts.length===0 || !parmaDetails.country?.includes("JP")) {
+                            console.log("sle",selectedContacts);
                             return setErr({
                                 parma: !form.type,
                                 type: !form.type,
                                 date: !selectedDate,
-                                show: true
+                                show: true,
+                                contacts: !selectedContacts,
                             })
                         }
                         openRFQDialog();
@@ -586,8 +607,10 @@ const CreateRFQ: React.FC = () => {
                 dialogContentProps={{
                     type: DialogType.normal,
                     title: "Warning",
-                    subText: parmaDetails.country?.toLowerCase() === 'jpn' ?
-                        "miss required value" : "miss required value,country code is not jpn" ,
+                    subText: !parmaDetails.country?.includes("JP")
+                        ? "Selected Parma is not a Japanese supplier, please go to the GPS system to proceed for Non-Japan parma. " +
+                        "Please click the cancel button if you want to change to a different supplier."
+                        : "Missing required value(s).",
                 }}
             >
                 <DialogFooter>

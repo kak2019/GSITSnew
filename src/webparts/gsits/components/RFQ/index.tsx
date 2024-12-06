@@ -29,6 +29,7 @@ import { AadHttpClient } from "@microsoft/sp-http";
 import { useUsers } from "../../../../hooks/useUsers";
 import { useNavigate } from "react-router-dom";
 import theme from "../../../../config/theme";
+import "./index.css"
 
 
 // 定义接口
@@ -55,7 +56,7 @@ const RFQ: React.FC = () => {
     const { getUserType } = useUser();
     const [userType, setUserType] = useState<string>("Unknown");
     const { t } = useTranslation();
-    const [isSearchVisibel, setIsSearchVisible] = useState(true);
+    const [isSearchVisible, setIsSearchVisible] = useState(true);
     // const [rfqReleaseDateTo, setRfqReleaseDateTo] = useState<Date | undefined>(undefined);
     // const [rfqReleaseDateFrom, setRfqReleaseDateFrom] = useState<Date | undefined>(undefined);
     // const [rfqDueDateFrom, setRfqDueDateFrom] = useState<Date | undefined>(undefined);
@@ -64,7 +65,7 @@ const RFQ: React.FC = () => {
     const [isItemSelected, setIsItemSelected] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Item[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 20;
+    const itemsPerPage = 5;
     const [searchConditions, setSearchConditions] = useState({
         rfqno: '',
         rfqtype: '',
@@ -136,36 +137,36 @@ const RFQ: React.FC = () => {
     ];
 
     const columns: IColumn[] = [
-        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, maxWidth: 100 },
-        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 100, maxWidth: 150 },
+        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100,  },
+        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 100, },
         {
             key: "BuyerInfo",
             name: t("Buyer"),
             fieldName: "BuyerInfo",
             minWidth: 100,
-            maxWidth: 150
+            // maxWidth: 150
         },
         {
             key: "HandlerName",
             name: t("Handler Name"),
             fieldName: "HandlerName",
             minWidth: 100,
-            maxWidth: 150
+            
         },
-        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, maxWidth: 100 },
+        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100,  },
         {
             key: "ReasonOfRFQ",
             name: t("Reason of RFQ"),
             fieldName: "ReasonOfRFQ",
             minWidth: 150,
-            maxWidth: 150
+            
         },
         {
             key: "RFQReleaseDate",
             name: t("RFQ Release Date"),
             fieldName: "RFQReleaseDate",
             minWidth: 120,
-            maxWidth: 150,
+           
             onRender: (item: Item) => {
                 const utcDate = item.RFQReleaseDate;
                 if (!utcDate) return "";
@@ -179,7 +180,7 @@ const RFQ: React.FC = () => {
             name: t("RFQ Due Date"),
             fieldName: "RFQDueDate",
             minWidth: 100,
-            maxWidth: 150,
+           
             onRender: (item: Item) => {
                 const utcDate = item.RFQReleaseDate;
                 if (!utcDate) return "";
@@ -193,22 +194,24 @@ const RFQ: React.FC = () => {
             name: t("Status"),
             fieldName: "RFQStatus",
             minWidth: 100,
-            maxWidth: 100
+            
         },
         {
             key: "EffectiveDateRequest",
             name: t("Effective Date Request"),
             fieldName: "EffectiveDateRequest",
-            minWidth: 100,
-            maxWidth: 100,
+            minWidth: 150,
+            
             onRender: (item: Item) => {
                 const utcDate = item.RFQReleaseDate;
                 if (!utcDate) return "";
                 const date = new Date(utcDate);
                 date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
                 return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
-            }
+            },
+            
         },
+        
     ];
 
     const formatDate = (date: Date): string => {
@@ -221,7 +224,7 @@ const RFQ: React.FC = () => {
     const fieldStyles = { root: { width: "100%" } };
 
     const toggleSearchBar = (): void => {
-        setIsSearchVisible(!isSearchVisibel);
+        setIsSearchVisible(!isSearchVisible);
     };
 
     const buttonStyles = {
@@ -509,7 +512,7 @@ const RFQ: React.FC = () => {
     // const changePage = (page: number) => {
     //     setCurrentPage(page);
     // };
-    const totalPages = Math.ceil(sortedItems.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(sortedItems.length / itemsPerPage));
     const goToPage = (page: number): void => {
         if (page >= 1 && page <= totalPages) {
             setCurrentPage(page);
@@ -593,26 +596,46 @@ const RFQ: React.FC = () => {
     };
 
     return (
-        <Stack tokens={{ childrenGap: 20, padding: 20 }} styles={{ root: { width: "100%" } }} >
+        <Stack tokens={{ childrenGap: 20 }} styles={{
+            root: {
+                width: "100%",
+                paddingTop: 0, // 去掉顶部空白
+                paddingLeft: 20, // 保留左右空白
+                paddingRight: 20,
+                paddingBottom: 0, // 保留左右空白
+                margin: "0"
+            }
+        }} >
             <h2 className="mainTitle">RFQ & Quote</h2>
 
             {/* 搜索栏标题 */}
-            <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 10 }}>
-                <IconButton
-                    iconProps={{
-                        iconName: isSearchVisibel ? "ChevronDown" : "ChevronRight",
-                    }}
-                    title="Toggle Search Bar"
-                    ariaLabel="Toggle Search Bar"
-                    onClick={toggleSearchBar}
+            <Stack
+                horizontal
+                verticalAlign="center"
+                tokens={{ childrenGap: 10 }}
+                className="noMargin"
+                styles={{
+                    root: {
+                        backgroundColor: "white",
+                        padding: "0",
+                        cursor: "pointer",
+                        //marginBottom: 0,
+                        margin: 0,
+                    },
+
+                }}
+                onClick={toggleSearchBar}
+            >
+                <Icon
+                    iconName={isSearchVisible ? "ChevronDown" : "ChevronRight"}
+                    style={{ fontSize: 16 }}
                 />
-                <Label styles={{ root: { fontWeight: "bold", fontSize: 16 } }}>
-                    {t("Search")}
-                </Label>
+                <Label styles={{ root: { fontWeight: "bold" } }}>{t("Search")}</Label>
             </Stack>
             {/* 搜索区域 */}
-            {isSearchVisibel && (
+            {isSearchVisible && (
                 <Stack
+                    className="noMargin"
                     styles={{
                         root: {
                             ...theme.searchbar
@@ -691,6 +714,7 @@ const RFQ: React.FC = () => {
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
+                        allowTextInput
                     />
                     <DatePicker
                         label={t("RFQ Released Date To")}
@@ -710,6 +734,7 @@ const RFQ: React.FC = () => {
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
+                        allowTextInput
                     />
                     <DatePicker
                         label={t("RFQ Due Date From")}
@@ -724,6 +749,7 @@ const RFQ: React.FC = () => {
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
+                        allowTextInput
                     />
                     <DatePicker
                         label={t("RFQ Due Date To")}
@@ -738,6 +764,7 @@ const RFQ: React.FC = () => {
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
+                        allowTextInput
                     />
 
                     {/* 搜索按钮 */}
@@ -763,25 +790,29 @@ const RFQ: React.FC = () => {
                             ...col,
                             onColumnClick: undefined, // 禁用点击功能
                             styles: { root: { textAlign: "center" } }, // 单元格居中
+
+
                         }))}
                         selection={selection.current}
                         selectionMode={SelectionMode.single} // single select
+                        
                         styles={{
-                            root: {
-                                ...theme.detaillist.header
-                            },
-                            headerWrapper: {
-                                selectors: {
-                                    '.ms-DetailsHeader': {
-                                        ...theme.detaillist.detaillistheader
-                                    },
-
-                                    '.ms-DetailsHeader-cell': {
-                                        ...theme.detaillist.detaillistheaderrow
-                                    },
-                                },
-                            },
+                            root: theme.detaillist.root,
+                            contentWrapper: theme.detaillist.contentWrapper,
+                            headerWrapper: theme.detaillist.headerWrapper,
                         }}
+                        viewport={{
+                            height: 0,
+                            width: 0,
+                          }}
+                          // onRenderDetailsFooter={() => {
+                          //   const el = document.getElementsByClassName("ms-DetailsHeader")[0];
+                          //   const width = (el && el.clientWidth) || "100%";
+                          //   return (
+              
+                          //   );
+                          // }}
+                          
                     />
                     {/* 分页控件
                    <Stack horizontal horizontalAlign="center" tokens={{ childrenGap: 10 }}>
