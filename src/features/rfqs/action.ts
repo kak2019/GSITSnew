@@ -13,6 +13,7 @@ import {
   camlChoiceMultipleText,
   camlContainsText,
   camlEqChoice,
+  camlEqText,
   camlGeqDate,
   camlLtDate,
 } from "../../common/camlHelper";
@@ -149,7 +150,7 @@ export const getRFQAction = createAsyncThunk(
               DrawingNo: item.DrawingNo_x002e_,
               Porg: item.Porg,
               Handler: item.Handler,
-                Parma:item.Parma
+              Parma: item.Parma,
             } as IRequisitionRFQGrid;
           })
         );
@@ -417,8 +418,11 @@ function GetQueryInfo(queryCreteria: IRFQQueryModel): string {
       creterias.push(camlChoiceMultipleText("RFQStatus", queryCreteria.Status));
     }
   }
-  if (queryCreteria.Parma) {
-    creterias.push(camlContainsText(queryCreteria.Parma, "Parma"));
+  if (queryCreteria.ParmaAccurate) {
+    creterias.push(camlEqText(queryCreteria.ParmaAccurate, "Parma"));
+  }
+  if (queryCreteria.ParmaBlur) {
+    creterias.push(camlContainsText(queryCreteria.ParmaBlur, "Parma"));
   }
   if (queryCreteria.RfqReleaseDateFrom) {
     creterias.push(camlGeqDate(queryCreteria.RfqReleaseDateFrom, "Created"));

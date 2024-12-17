@@ -36,7 +36,8 @@ export interface IRFQQueryModel {
   Buyer?: string;
   Section?: string;
   Status?: string[];
-  Parma?: string;
+  ParmaAccurate?: string;
+  ParmaBlur?: string;
   RfqReleaseDateFrom?: string;
   RfqReleaseDateTo?: string;
   RfqDueDateFrom?: string;

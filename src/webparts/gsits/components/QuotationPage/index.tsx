@@ -792,7 +792,7 @@ const QuoteCreation: React.FC = () => {
                         })
 
                     }}
-                                   disabled={selectedItems.length === 0 || !selectedItems.every(item => item.status === 'Accepted')}
+                                   disabled={selectedItems.length === 0 || !selectedItems.every(item => item.PartStatus === 'Quoted') || userType === "Guest"}
                                    styles={buttonStyles}
 
                     />
@@ -806,7 +806,7 @@ const QuoteCreation: React.FC = () => {
                         })
                     }}
 
-                                   disabled={selectedItems.length === 0 || !selectedItems.every(item => item.status === 'Quoted' || item.status === 'Accepted' || item.status === 'Sent to GPS') || userType === "Guest"}
+                                   disabled={selectedItems.length === 0 || (!selectedItems.every(item => item.PartStatus === 'Quoted' || item.PartStatus === 'Accepted' || item.PartStatus === 'Sent to GPS') )|| userType === "Guest"}
                                    styles={buttonStyles}
                     />
                 </Stack>
