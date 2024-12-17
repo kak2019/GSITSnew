@@ -15,9 +15,10 @@ export interface IResponseItem {
   FileLeafRef: string;
   Title: string;
 }
-export interface IRFQAttachment {
+export interface IAttachments {
   File: File;
   Url: string;
+  ID?: string;
 }
 export enum DocumentsStatus {
   Idle,

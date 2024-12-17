@@ -8,7 +8,7 @@ import {
   initialUploadRFQAttachmentsAction,
   getRFQAttachmentsAction,
 } from "./action";
-import { DocumentsStatus, IFile, IRFQAttachment } from "../../model/documents";
+import { DocumentsStatus, IFile, IAttachments } from "../../model/documents";
 
 const documentsSlice = createSlice({
   name: FeatureKey.DOCUMENTS,
@@ -73,7 +73,7 @@ const documentsSlice = createSlice({
       })
       .addCase(getRFQAttachmentsAction.fulfilled, (state, action) => {
         state.status = DocumentsStatus.Idle;
-        state.rfqAttachments = [...action.payload] as IRFQAttachment[];
+        state.rfqAttachments = [...action.payload] as IAttachments[];
       })
       .addCase(getRFQAttachmentsAction.rejected, (state, action) => {
         state.status = DocumentsStatus.Failed;

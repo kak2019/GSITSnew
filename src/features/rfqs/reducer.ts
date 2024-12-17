@@ -5,6 +5,7 @@ import {
   createRFQAction,
   getAllRFQsAction,
   getRFQAction,
+  queryRFQsAction,
   updateRFQAction,
 } from "./action";
 import { IRFQGrid } from "../../model/rfq";
@@ -59,6 +60,17 @@ const rfqsSlice = createSlice({
         state.status = RFQStatus.Idle;
       })
       .addCase(createRFQAction.rejected, (state, action) => {
+        state.status = RFQStatus.Failed;
+        state.message = action.error?.message || "";
+      })
+      .addCase(queryRFQsAction.pending, (state, action) => {
+        state.status = RFQStatus.Loading;
+      })
+      .addCase(queryRFQsAction.fulfilled, (state, action) => {
+        state.status = RFQStatus.Idle;
+        state.AllRFQs = [...(action.payload as readonly IRFQGrid[])];
+      })
+      .addCase(queryRFQsAction.rejected, (state, action) => {
         state.status = RFQStatus.Failed;
         state.message = action.error?.message || "";
       });

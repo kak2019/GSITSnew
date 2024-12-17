@@ -3,7 +3,7 @@ import { CONST, FeatureKey } from "../../config/const";
 import { spfi } from "@pnp/sp";
 import { Caching } from "@pnp/queryable";
 import { getSP } from "../../pnpjsConfig";
-import { IResponseItem, IFile, IRFQAttachment } from "../../model/documents";
+import { IResponseItem, IFile, IAttachments } from "../../model/documents";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
 
@@ -25,7 +25,6 @@ export const readAllFilesSizeAction = createAsyncThunk(
           .expand("File")
           .top(pageSize)
           .skip(skip)();
-
         newItems = newItems.concat(
           response.map((item: IResponseItem) => {
             return {
@@ -173,7 +172,7 @@ export const initialUploadRFQAttachmentsAction = createAsyncThunk(
 );
 export const getRFQAttachmentsAction = createAsyncThunk(
   `${FeatureKey.RFQS}/getRFQAttachments`,
-  async (rfqId: string): Promise<IRFQAttachment[]> => {
+  async (rfqId: string): Promise<IAttachments[]> => {
     const sp = spfi(getSP());
     try {
       const siteUrl = window.location.origin;

@@ -1,0 +1,79 @@
+@import "~@fluentui/react/dist/sass/References.scss";
+
+.header {
+  background-color: #99ccff;
+  padding: 10px;
+}
+.content {
+  border: 1px solid #ccc;
+  padding: 20px;
+}
+.listContent {
+  border: 1px solid #ccc;
+}
+.basicInfoItemWrapper {
+  margin-bottom: 10px;
+  width: 100%;
+}
+.basicInfoItemLabel {
+  margin-bottom: 8px;
+  margin-top: 4px;
+  font-weight: 600;
+}
+.basicInfoItemValue {
+  min-height: 30px;
+  line-height: 30px;
+}
+.basicInfoSupplierNameValue {
+  margin-left: 30px;
+}
+.textEllipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.subHeader {
+  font-size: 18px;
+  font-weight: 600;
+}
+.fieldTitle {
+  font-weight: 600;
+}
+.commentContent,
+.attachmentsContent {
+  padding: 5px;
+}
+.uploadArea {
+  border: 1px dashed #0078d4;
+  padding: 10px;
+  text-align: center;
+  background: #f3f9fc;
+}
+.iconUpload,
+.textUpload {
+  font-weight: bold;
+}
+.fileList {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+  overflow-y: auto;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+}
+.fileItemOdd,
+.fileItemEven {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 10px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+}
+.fileItemOdd {
+  background: #fff;
+}
+.fileItemEven {
+  background: #f6f6f6;
+}

@@ -10,14 +10,14 @@ import {
   rfqAttachmentsSelector,
   updateTitlesAction,
 } from "../features/documents";
-import { DocumentsStatus, IFile, IRFQAttachment } from "../model/documents";
+import { DocumentsStatus, IFile, IAttachments } from "../model/documents";
 import { useAppDispatch, useAppSelector } from "./useApp";
 
 type DocumentOperators = [
   isFetching: DocumentsStatus,
   items: IFile[],
   errorMessage: string,
-  rfqAttachments: IRFQAttachment[],
+  rfqAttachments: IAttachments[],
   readAllFilesSize: () => void,
   updateTitles: (ids: number[]) => void,
   getDocuments: () => void,

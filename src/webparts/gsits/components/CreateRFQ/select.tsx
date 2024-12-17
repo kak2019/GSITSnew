@@ -281,7 +281,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
 
   return (
       <Stack>
-        <span className={classes.title}>Supplier Contact *</span>
+        <span className={classes.title}>Supplier Contact <span style={{color:'#a4262c'}}>*</span></span>
         <div className={classes.areaBox}>
           <div className={classes.uploadArea} onClick={handleAddContacts}>
             <span style={{ fontWeight: 'bold' }}>+ Click to Select</span>

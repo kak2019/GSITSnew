@@ -11,8 +11,9 @@ import {
   getRFQAction,
   currentRFQSelector,
   currentRFQRequisitionsSelector,
+  queryRFQsAction,
 } from "../features/rfqs";
-import { IRFQGrid } from "../model/rfq";
+import { IRFQGrid, IRFQQueryModel } from "../model/rfq";
 import { IRequisitionRFQGrid } from "../model/requisition";
 
 type RFQOperators = [
@@ -24,7 +25,8 @@ type RFQOperators = [
   getAllRFQs: () => void,
   getRFQ: (rfq: string) => void,
   updateRFQ: (rfq: IRFQGrid) => void,
-  createRFQ: (rfq: IRFQGrid) => Promise<string>
+  createRFQ: (rfq: IRFQGrid) => Promise<string>,
+  queryRFQs: (query: IRFQQueryModel) => void
 ];
 
 export const useRFQ = (): Readonly<RFQOperators> => {
@@ -60,6 +62,12 @@ export const useRFQ = (): Readonly<RFQOperators> => {
     },
     [dispatch]
   );
+  const queryRFQs = useCallback(
+    (query: IRFQQueryModel) => {
+      return dispatch(queryRFQsAction(query));
+    },
+    [dispatch]
+  );
   return [
     isFetching,
     allRFQs,
@@ -70,5 +78,6 @@ export const useRFQ = (): Readonly<RFQOperators> => {
     getRFQ,
     updateRFQ,
     createRFQ,
+    queryRFQs,
   ] as const;
 };

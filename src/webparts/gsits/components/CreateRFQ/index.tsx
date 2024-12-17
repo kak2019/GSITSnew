@@ -76,6 +76,7 @@ const CreateRFQ: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const state = location.state;
+    console.log(state, "state");
     const [, , , , , , , , createRFQ] = useRFQ();
     const [, , , , , , , initialUploadRFQAttachments, ,] = useDocument();
     // 新状态定义
@@ -105,8 +106,8 @@ const CreateRFQ: React.FC = () => {
             text: "QUPR Quantity Production Order",
         },
         {
-            key: "SAPR Standalone Production Orde",
-            text: "SAPR Standalone Production Orde",
+            key: "SAPR Standalone Production Order",
+            text: "SAPR Standalone Production Order",
         },
     ];
     useEffect(() => {
@@ -316,7 +317,7 @@ const CreateRFQ: React.FC = () => {
             // 提取 selectedItems 中的 ID
             const requisitionIds = state.selectedItems.map((item: { ID: string }) => item.ID.toString());
             const userdetails = state.userDetails
-            console.log(selectedContacts, "con");
+            console.log(selectedContacts, "con",state.selectedItems);
             // 构造 RFQ 数据
             const rfqData = {
                 RFQDueDate: selectedDate || new Date(),
@@ -328,7 +329,11 @@ const CreateRFQ: React.FC = () => {
                 RequisitionIds: JSON.stringify(requisitionIds), // 将 ID 数组转换为 JSON 字符串
                 BuyerInfo:(userdetails?.porg?? " ") + " " + userdetails.handlercode,
                 RFQType:"New Part Price",
-                HandlerName:state.selectedItems[0].HandlerName
+                HandlerName:state.selectedItems[0].HandlerName,
+                SupplierName:parmaDetails?.name,
+                BuyerName:userdetails.userName,
+                BuyerEmail:userdetails.userEmail,
+                SectionInfo:state.selectedItems[0].SectionInfo + " " + state.selectedItems[0].SectionDescription,
             };
 
             console.log("RFQ Data to submit:", rfqData);
@@ -345,12 +350,14 @@ const CreateRFQ: React.FC = () => {
                         ID: item.ID,
                         Parma: form.parma,
                         AnnualQty: Number(item.OrderQty) ?? null,
+                        Status: "New",
                     });
                 }else{
                 updateRequisition({
                     ...item,
                     ID: item.ID,
                     Parma: form.parma,
+                    Status: "New",
                 });
                 }
             });
@@ -363,7 +370,7 @@ const CreateRFQ: React.FC = () => {
 
             // 关闭对话框并跳转
             closeRFQDialog();
-             navigate("/requisition");
+             navigate("/rfq");
         } catch (error) {
             console.error("Error submitting RFQ:", error);
             alert("Failed to submit RFQ.");
@@ -413,6 +420,7 @@ const CreateRFQ: React.FC = () => {
                             selectedKey={selectedValue}
                             styles={comboBoxStyles}
                             onChange={handleChange}
+                            required={true}
                         />
                     </Stack.Item>
                     <Stack.Item
@@ -427,8 +435,9 @@ const CreateRFQ: React.FC = () => {
                         grow
                         styles={{root: {flexBasis: "40%", maxWidth: "50%"}}}
                     >
+                        <div style={{display:'inline-block',fontSize:'14px',fontWeight:600,marginBottom:'5px',marginTop:'5px'}}>RFQ Due Date <span style={{color: '#a4262c',display:"inline-block"}}>*</span></div>
                         <DatePicker
-                            label={t("RFQ Due Date")}
+                            // label={t("RFQ Due Date")}
                             minDate={tomorrow}
                             value={selectedDate} // 显示的日期值
                             onSelectDate={(date) => {
@@ -449,14 +458,18 @@ const CreateRFQ: React.FC = () => {
                             }}
                             formatDate={formatDatewithwhiplash}
                             allowTextInput
+
+
+
                         />
                     </Stack.Item>
                     <Stack.Item
                         grow
-                        styles={{root: {flexBasis: "40%", maxWidth: "50%"}}}
+                        styles={{root: {flexBasis: "40%", maxWidth: "50%" }}}
                     >
                         <Dropdown
                             label="Order Type"
+                            required={true}
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             onChange={(e, newValue: any) => {
                                 setForm({
@@ -579,6 +592,7 @@ const CreateRFQ: React.FC = () => {
                     <PrimaryButton onClick={() => {
                         closeRFQDialog()
                         handleSubmit().then(_ => _, _ => _);
+
                     }} text="Yes"/>
                     <DefaultButton onClick={closeRFQDialog} text="No"/>
                 </DialogFooter>

@@ -41,44 +41,53 @@ export const boxShadow = {
 
 export const detaillist = {
   root: {
-    //overflowX: 'hidden',
-    width: '100%', // 确保宽度自适应容器
+    width: "100%", // 确保宽度自适应容器
   },
   contentWrapper: {
-   // overflowX: 'auto', // 允许自动扩展而不是直接显示滚动条
-    minHeight: '300px', // 确保内容区域有最小高度
+    minHeight: "300px", // 确保内容区域有最小高度
   },
   headerWrapper: {
     selectors: {
-      '.ms-DetailsHeader': {
+      ".ms-DetailsHeader": {
         margin: 0,
         padding: 0,
-        backgroundColor: '#D6D7D6',
-        border: '1px solid #AFAFAF',
-        cursor: 'default',
+        backgroundColor: "#D6D7D6", // 设置默认背景色
+        border: "1px solid #AFAFAF",
+        cursor: "default",
       },
-      '.ms-DetailsHeader-cellName': {
-        color: DefaultPalette.neutralPrimary,
-        whitespace: 'wrap',
-        wordWrap: 'break-word',
-        
-        cursor: 'default',
-        backgroundColor: '#D6D7D6',
+      ".ms-DetailsHeader-cell": {
+        backgroundColor: "#D6D7D6", // 设置列标题默认背景色
         selectors: {
-          ':hover': {
-            backgroundColor: '#D6D7D6', // 保持悬浮时背景色不变
+          ":hover": {
+            backgroundColor: "#D6D7D6", // 保持悬浮时背景色不变
           },
-          ':active': {
-            backgroundColor: '#D6D7D6', // 移除按压时的颜色加深效果
+          ":active": {
+            backgroundColor: "#D6D7D6", // 保持点击时背景色不变
           },
-          ':focus': {
-            outline: 'none', // 移除聚焦时的边框
+        },
+      },
+      ".ms-DetailsHeader-cellName": {
+        color: DefaultPalette.neutralPrimary,
+        whiteSpace: "wrap",
+        wordWrap: "break-word",
+        cursor: "default",
+        backgroundColor: "#D6D7D6",
+        selectors: {
+          ":hover": {
+            backgroundColor: "#D6D7D6", // 保持悬浮时背景色不变
+          },
+          ":active": {
+            backgroundColor: "#D6D7D6", // 保持按压时背景色不变
+          },
+          ":focus": {
+            outline: "none", // 移除聚焦时的边框
           },
         },
       },
     },
   },
 };
+
 
 export const paginated = {
   paginatedbackground: {

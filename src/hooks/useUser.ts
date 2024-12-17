@@ -2,23 +2,47 @@ import { ISiteUserInfo } from '@pnp/sp/site-users/types';
 import "@pnp/sp/site-users/web";
 import "@pnp/sp/profiles";
 import {
+    getAADClient,
     getGraph,
     getSP
 } from '../pnpjsConfig';
+import { AadHttpClient } from '@microsoft/sp-http';
 import "@pnp/graph/users";
 import { spfi } from '@pnp/sp';
 import { Logger, LogLevel } from '@pnp/logging';
+import { IGPSUser } from '../model/user';
+import { CONST } from '../config/const';
+import { AppContextProps } from '../AppContext';
 
 type UseUser = {
+    getUserEmail:(ctx:AppContextProps | undefined)=>string,
     getUserIDCode: (identifier: string) => Promise<string>,
     getUserType: (identifier: string) => Promise<string>,
     getUserSupplierId: (identifier: string) => Promise<string>,
+    getGPSUser: (email: string) => Promise<IGPSUser | undefined>,
     getUserPicture: (userId: string) => Promise<Readonly<UserOperators>>,
 };
 type UserOperators = [userPicture: string];
 
 export function useUser(): UseUser {
+    function getUserEmail(ctx:AppContextProps | undefined):string {
 
+            let userEmail='';
+            try {
+                
+                if (!ctx || !ctx.context) {
+                    throw new Error("AppContext is not provided or context is undefined");
+                } else {
+                    userEmail = ctx.context._pageContext._user.email;
+                }
+            }
+            catch (error)
+            {
+                Logger.write(`Fetch user email error: ${error}`, LogLevel.Error);
+            }
+            return userEmail;
+
+    }
     //graph functiton logic will go here for UserIDCode :EX133xx
     async function getUserIDCode(identifier: string): Promise<string> {
         try {
@@ -36,11 +60,11 @@ export function useUser(): UseUser {
             return '';
         }
     }
-    async function getUserType(identifier: string):Promise<string> {
-        try {   
-            const graph=getGraph();
+    async function getUserType(identifier: string): Promise<string> {
+        try {
+            const graph = getGraph();
             const filter = identifier.includes('@') ? `mail eq '${identifier}'` : `userPrincipalName eq '${identifier}'`;
-            const response=await graph.users.filter(filter).select('userType')();
+            const response = await graph.users.filter(filter).select('userType')();
             if (response.length > 0) {
                 return response[0].userType || 'Unknown';
             } else {
@@ -57,9 +81,9 @@ export function useUser(): UseUser {
     async function getUserSupplierId(identifier: string): Promise<string> {
         try {
             const graph = getGraph();
-            
+
             const filter = identifier.includes('@') ? `mail eq '${identifier}'` : `userPrincipalName eq '${identifier}'`;
-            
+
             const response = await graph.users.filter(filter).select('id', 'displayName', 'mail', 'userPrincipalName', 'onPremisesExtensionAttributes')();
             console.log(JSON.stringify(response));
             if (response.length > 0) {
@@ -74,7 +98,31 @@ export function useUser(): UseUser {
             return '';
         }
     }
+    async function getGPSUser(userEmail: string): Promise<IGPSUser | undefined> {
+        try {
+            const client = getAADClient();
+            const functionUrl = `${CONST.azureFunctionBaseUrl}/api/GetGPSUser/${userEmail}`;
 
+            const response = await client.get(
+                functionUrl,
+                AadHttpClient.configurations.v1
+            );
+            const result = await response.json();
+            //console.log(result);
+            if (result && result.role && result.name && result.sectionCode && result.handlercode) {
+                return {
+                    role: result.role,
+                    name: result.name,
+                    sectionCode: result.sectionCode,
+                    handlercode: result.handlercode,
+                } as IGPSUser;
+            } 
+            return undefined;
+        } catch (error) {
+            Logger.write(`No GPSUser found ${error}`, LogLevel.Error);
+            return undefined;
+        }
+    }
     async function getUserPicture(userId: string): Promise<Readonly<UserOperators>> {
         let userPicture = '';
         let userInfo: ISiteUserInfo;
@@ -93,9 +141,11 @@ export function useUser(): UseUser {
         return [userPicture] as const;
     }
     return {
+        getUserEmail,
         getUserIDCode,
         getUserType,
         getUserSupplierId,
+        getGPSUser,
         getUserPicture,
     };
 }

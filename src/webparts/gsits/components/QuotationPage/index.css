@@ -32,7 +32,13 @@
   font-weight: 400;
   margin-bottom: 5px;
 }
-
+.button {
+  background: #99CCFF;
+  padding: 5px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 150;
+}
 .RFQ .noMargin {
   margin-top: 0;
 }

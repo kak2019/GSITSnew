@@ -9,33 +9,39 @@ import type { IGsitsProps } from "./IGsitsProps";
 import {
   NavLink,
   HashRouter as Router,
-  Route,
-  Routes,
-  Navigate,
 } from "react-router-dom";
 import { Spinner } from "@fluentui/react";
-import Requisition from "./Requisition";
-import RFQ from "./RFQ";
-import PageNotFound from "./PageNotFound";
-import UDUser from "./UDUser";
+import Routes from "./router";
 import LanguageToggle from "./common/LanguageToggle";
-import CreateRFQ from "./CreateRFQ";
-import DemoForm from "./UIDemo/DemoForm";
-import QuotationPage from "./QuotationPage";
-import PriceBreakDown from "./PriceBreakDown";
+import SplashScreen from "./SplashScreen";
 
-export default class Gsits extends React.Component<IGsitsProps> {
-  public render(): React.ReactElement<IGsitsProps> {
+interface IGsitsStates{
+  hasShownSplash:boolean
+}
+export default class Gsits extends React.Component<IGsitsProps,IGsitsStates> {
+  constructor(props:IGsitsProps){
+    super(props);
+    this.state={
+      hasShownSplash:false
+    }
+  }
+  render(): React.ReactElement<IGsitsProps> {
     const { hasTeamsContext, context } = this.props;
+    
+    const handleSplashEnd = (): void => {
+      this.setState((prevState)=>({hasShownSplash:true}));
+    };
 
+    if (!this.state.hasShownSplash) {
+      return <SplashScreen onEnd={handleSplashEnd} />;
+    }
     return (
       <AppContext.Provider value={{ context }}>
         <Provider store={store}>
           <Router>
             <section
-              className={`${styles.gsits} ${
-                hasTeamsContext ? styles.teams : ""
-              }`}
+              className={`${styles.gsits} ${hasTeamsContext ? styles.teams : ""
+                }`}
             >
               <nav className={styles.nav}>
                 <ul>
@@ -76,21 +82,7 @@ export default class Gsits extends React.Component<IGsitsProps> {
               </nav>
               <div className={styles.contentMain}>
                 <React.Suspense fallback={<Spinner label="Loading..." />}>
-                  <Routes>
-                    <Route path="/requisition" element={<Requisition />} />
-                    <Route path="/rfq" element={<RFQ />} />{" "}
-                    {/* 传递 userType */}
-                    <Route path="*" element={<PageNotFound />} />
-                    <Route path="/" element={<Navigate to="/rfq" />} />
-                    <Route path="/role" element={<UDUser />} />
-                    <Route path="/create-rfq" element={<CreateRFQ />} />
-                    <Route path="/quotation" element={<QuotationPage />} />
-                    <Route path="/demo" element={<DemoForm />} />
-                    <Route
-                      path="/price-breakdown"
-                      element={<PriceBreakDown />}
-                    />
-                  </Routes>
+                  <Routes />
                 </React.Suspense>
               </div>
             </section>

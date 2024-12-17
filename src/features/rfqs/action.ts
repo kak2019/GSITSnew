@@ -4,10 +4,18 @@ import { spfi } from "@pnp/sp";
 import { getSP } from "../../pnpjsConfig";
 import { Logger, LogLevel } from "@pnp/logging";
 import { MESSAGE } from "../../config/message";
-import { IRFQGrid, IRFQRequisition } from "../../model/rfq";
+import { IRFQGrid, IRFQQueryModel, IRFQRequisition } from "../../model/rfq";
 import { IRequisitionRFQGrid } from "../../model/requisition";
 import { AppInsightsService } from "../../config/AppInsightsService";
 import { IComment } from "../../model/comment";
+import {
+  camlAndFinal,
+  camlChoiceMultipleText,
+  camlContainsText,
+  camlEqChoice,
+  camlGeqDate,
+  camlLtDate,
+} from "../../common/camlHelper";
 
 //#region actions
 export const getAllRFQsAction = createAsyncThunk(
@@ -140,6 +148,8 @@ export const getRFQAction = createAsyncThunk(
               SurfaceTreatmentCode: item.SurfaceTreatmentCode,
               DrawingNo: item.DrawingNo_x002e_,
               Porg: item.Porg,
+              Handler: item.Handler,
+                Parma:item.Parma
             } as IRequisitionRFQGrid;
           })
         );
@@ -300,7 +310,62 @@ export const createRFQAction = createAsyncThunk(
     }
   }
 );
-//#endregion
+export const queryRFQsAction = createAsyncThunk(
+  `${FeatureKey.RFQS}/queryRFQs`,
+  async (Query: IRFQQueryModel): Promise<IRFQGrid[]> => {
+    const sp = spfi(getSP());
+    try {
+      const queryXml = GetQueryInfo(Query);
+      const response = await sp.web.lists
+        .getByTitle(CONST.LIST_NAME_RFQ)
+        .renderListDataAsStream({
+          ViewXml: `<View>
+        <RowLimit Paged="TRUE">200</RowLimit>
+        <Query>
+        ${queryXml}
+        <OrderBy>
+          <FieldRef Name="ID" Ascending="FALSE" />
+        </OrderBy>
+        </Query>
+        </View>`,
+        });
+      return response.Row.map((item) => {
+        return {
+          ID: item.ID,
+          Title: item.Title,
+          Parma: item.Parma,
+          SupplierContact: item.SupplierContact,
+          RFQDueDate: item.RFQDueDate,
+          OrderType: item.OrderType,
+          RFQInstructionToSupplier: item.RFQInstructionToSupplier,
+          RFQStatus: item.RFQStatus,
+          BuyerInfo: item.BuyerInfo,
+          SectionInfo: item.SectionInfo,
+          CommentHistory: item.CommentHistory,
+          RequisitionIds: item.RequisitionIds,
+          QuoteReceivedDate: item.QuoteReceivedDate,
+          ReasonOfRFQ: item.ReasonofRFQ,
+          EffectiveDateRequest: item.EffectiveDateRequest,
+          HandlerName: item.HandlerName,
+          RFQNo: item.RFQNo_x002e_,
+          Created: item.Created,
+          RFQType: item.RFQType,
+        } as IRFQGrid;
+      });
+    } catch (err) {
+      Logger.write(
+        `${CONST.LOG_SOURCE} (_queryRFQs) - ${JSON.stringify(err)}`,
+        LogLevel.Error
+      );
+      AppInsightsService.aiInstance.trackEvent({
+        name: MESSAGE.retrieveDataFailed,
+        properties: { error: err },
+      });
+      return Promise.reject(MESSAGE.retrieveDataFailed);
+    }
+  }
+);
+export //#endregion
 //#region methods
 function FetchLastComment(comments: string): string {
   if (!comments) {
@@ -325,5 +390,48 @@ function FetchLastComment(comments: string): string {
     new Date(commentHistory[0].CommentDate)
   );
   return `${formattedDateString.split(",")[0]} ${commentHistory[0].CommentBy}`;
+}
+// function GetPagingInfo(queryCreteria: IRFQQueryModel): string {
+//   return queryCreteria.LastItemId
+//     ? `Paged=TRUE&p_ID=${queryCreteria.LastItemId}&ix_Paged=TRUE&ix_ID=${queryCreteria.LastItemId}&PageFirstRow=3001&View=00000000-0000-0000-0000-000000000000`
+//     : "";
+// }
+function GetQueryInfo(queryCreteria: IRFQQueryModel): string {
+  const creterias: string[] = [];
+  if (queryCreteria.RfqType) {
+    if (queryCreteria.RfqType.length > 0) {
+      creterias.push(camlEqChoice(queryCreteria.RfqType, "RFQType"));
+    }
+  }
+  if (queryCreteria.RfqNo) {
+    creterias.push(camlContainsText(queryCreteria.RfqNo, "RFQNo_x002e_"));
+  }
+  if (queryCreteria.Buyer) {
+    creterias.push(camlContainsText(queryCreteria.Buyer, "BuyerInfo"));
+  }
+  if (queryCreteria.Section) {
+    creterias.push(camlContainsText(queryCreteria.Section, "SectionInfo"));
+  }
+  if (queryCreteria.Status) {
+    if (queryCreteria.Status.length > 0) {
+      creterias.push(camlChoiceMultipleText("RFQStatus", queryCreteria.Status));
+    }
+  }
+  if (queryCreteria.Parma) {
+    creterias.push(camlContainsText(queryCreteria.Parma, "Parma"));
+  }
+  if (queryCreteria.RfqReleaseDateFrom) {
+    creterias.push(camlGeqDate(queryCreteria.RfqReleaseDateFrom, "Created"));
+  }
+  if (queryCreteria.RfqReleaseDateTo) {
+    creterias.push(camlLtDate(queryCreteria.RfqReleaseDateTo, "Created"));
+  }
+  if (queryCreteria.RfqDueDateFrom) {
+    creterias.push(camlGeqDate(queryCreteria.RfqDueDateFrom, "RFQDueDate"));
+  }
+  if (queryCreteria.RfqDueDateTo) {
+    creterias.push(camlLtDate(queryCreteria.RfqDueDateTo, "RFQDueDate"));
+  }
+  return camlAndFinal(creterias);
 }
 //#endregion

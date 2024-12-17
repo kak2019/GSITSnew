@@ -23,6 +23,7 @@ const CONST = {
   LOG_SOURCE: "🔶gsits",
   LIBRARY_NAME: "Documents",
   LIBRARY_RFQATTACHMENTS_NAME: "RFQ Attachments",
+  LIBRARY_QUOTATIONATTACHMENTS_NAME: "Quotation Attachments",
   azureFunctionBaseUrl: HostSettings.AzureHost,
   aadClientId: HostSettings.AadClientId,
   appInsightsKey: HostSettings.AppInsightsKey,

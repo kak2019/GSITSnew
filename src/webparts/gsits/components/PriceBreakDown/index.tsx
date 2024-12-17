@@ -1,21 +1,55 @@
 import React, { useEffect } from "react";
 import {
+  DefaultButton,
+  DetailsList,
+  DetailsListLayoutMode,
+  DetailsRow,
+  Dialog,
+  DialogFooter,
+  DialogType,
+  Dropdown,
+  Icon,
   IconButton,
+  IDetailsListStyles,
+  IDetailsRowProps,
+  IDropdownOption,
   ITextFieldStyles,
+  Link,
   PrimaryButton,
+  SelectionMode,
   Spinner,
   SpinnerSize,
   Stack,
   Text,
   TextField,
+  TooltipHost,
 } from "@fluentui/react";
 import { useTranslation } from "react-i18next";
 import { useQuotation } from "../../../../hooks/useQuotation";
 import { IQuotationGrid } from "../../../../model/requisition";
 import { IRFQGrid } from "../../../../model/rfq";
 import "./index.css";
-import { useRFQ } from "../../../../hooks/useRFQ";
-import { ITextFieldPriceBreakdown } from "./IPriceBreakDown";
+import {
+  AutoSumQuotedBasicUnitPriceTtlFields,
+  AutoSumQuotedUnitPriceTtlFields,
+  basicInfo,
+  decimalRegex,
+  DecimalValidationFieldsTwo,
+  generalInfoEdit,
+  generalInfoView,
+  IActionLogColumn,
+  IDialogListColumn,
+  IDialogValue,
+  MandatoryValidationFieldsOne,
+  MandatoryValidationFieldsTwo,
+  NonDoubleBytesValidationFields,
+  quoteBreakdownInfoEdit,
+  quoteBreakdownInfoView,
+} from "./IPriceBreakDown";
+import { IAttachments } from "../../../../model/documents";
+import { IComment } from "../../../../model/comment";
+import { IActionLog } from "../../../../model/actionLog";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const PriceBreakDown: React.FC = () => {
   //#region properties
@@ -25,289 +59,542 @@ const PriceBreakDown: React.FC = () => {
     ,
     currentQuotation,
     currentQuotationRFQ,
-    ,
+    allActionLogs,
+    quotationAttachments,
     ,
     initialLoadForPriceChange,
     ,
     updateQuotation,
-    ,
+    getAllActionLogs,
+    createActionLog,
+    acceptOrReturn,
+    postComment,
+    uploadQuotationAttachments,
     ,
   ] = useQuotation();
-  const [, , , currentRFQ, , , getRFQ, , ,] = useRFQ();
   const { t } = useTranslation();
+  const location = useLocation();
+  const masterData = location.state;
+  const navigate = useNavigate();
+  const [isDirty, setIsDirty] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isEditable, setIsEditable] = React.useState(false);
+  const [dialogValue, setDialogValue] = React.useState({
+    IsOpen: false,
+    Title: "",
+    Tip: "",
+    Type: "Close",
+  } as IDialogValue);
   const [currentQuotationValue, setCurrentQuotationValue] = React.useState(
     {} as IQuotationGrid
   );
   const [currentQuotationRFQValue, setCurrentQuotationRFQValue] =
     React.useState({} as IRFQGrid);
-  const [roleValue, setRoleValue] = React.useState("");
-  const calculateFields: string[] = ["1", "2"];
+  const [attachmentsValue, setAttachmentsValue] = React.useState(
+    [] as IAttachments[]
+  );
+  const [attachmentsToBeRemovedValue, setAttachmentsToBeRemovedValue] =
+    React.useState([] as string[]);
   const textFieldStyles: Partial<ITextFieldStyles> = {
     fieldGroup: {
       height: "25px",
     },
+    errorMessage: { paddingTop: "0px" },
     field: {
       height: "100%",
       fontSize: "13px",
     },
-    root: { width: "13vi" },
+    root: { width: "15vi" },
+  };
+  const textFieldStylesShort: Partial<ITextFieldStyles> = {
+    fieldGroup: {
+      height: "25px",
+    },
+    errorMessage: { paddingTop: "0px" },
+    field: {
+      height: "100%",
+      fontSize: "13px",
+    },
+    root: { width: "11vi" },
+  };
+  const dropdownStyles = {
+    title: {
+      height: "25px",
+      fontSize: "13px",
+      display: "flex",
+      alignItems: "center",
+    },
+    caretDownWrapper: {
+      height: "25px",
+      display: "flex",
+      alignItems: "center",
+    },
+    errorMessage: { paddingTop: "0px" },
+    root: {
+      width: "15vi",
+    },
+  };
+  const defaultButtonStyle = {
+    root: {
+      height: "30px",
+      borderRadius: "5px",
+      minHeight: "30px",
+    },
+    textContainer: { height: "100%" },
+    label: { lineHeight: "30px" },
+  };
+  const primaryButtonStyle = {
+    root: {
+      height: "30px",
+      width: "120px",
+      borderRadius: "5px",
+      minHeight: "30px",
+      // color: "black",
+      // backgroundColor: "#99CCFF",
+      // borderColor: "#99CCFF",
+    },
+    rootHovered: {
+      // backgroundColor: "#99CCFF",
+      // borderColor: "#99CCFF",
+    },
+    textContainer: { height: "100%" },
+    label: { lineHeight: "30px" },
+  };
+  const listStyles: IDetailsListStyles = {
+    root: {
+      border: "1px solid #ccc",
+      overflow: "visible",
+    },
+    headerWrapper: {},
+    contentWrapper: {},
+    focusZone: {},
+  };
+  const listRowRender = (
+    props: IDetailsRowProps | undefined
+  ): JSX.Element | null => {
+    if (props) {
+      return (
+        <DetailsRow
+          {...props}
+          styles={{
+            root: {
+              background: props.itemIndex % 2 === 0 ? "#f6f6f6" : "#fff",
+              border: "1px solid #ccc",
+            },
+          }}
+        />
+      );
+    }
+    return null;
   };
   //#endregion
   //#region fields
-  const basicInfoRowOne = [
-    { label: "Part Number", value: currentQuotationValue?.PartNumber },
-    { label: "Qualifier", value: currentQuotationValue?.Qualifier },
-    {
-      label: "Part Description",
-      value: currentQuotationValue?.PartDescription,
-    },
-    { label: "Part Issue", value: currentQuotationValue?.PartIssue },
-  ];
-  const basicInfoRowTwo = [
-    { label: "PDrawing No.", value: currentQuotationValue?.DrawingNo },
-    { label: "RFQ No.", value: currentQuotationRFQValue?.RFQNo },
-    { label: "RFQ Due Date", value: currentQuotationRFQValue?.RFQDueDate },
-    { label: "Status", value: currentQuotationValue?.Status },
-  ];
-  const basicInfoRowThree = [
-    { label: "Order Type", value: currentQuotationValue?.OrderType },
-    { label: "Material User", value: currentQuotationValue?.MaterialUser },
-    { label: "Suffix", value: currentQuotationValue?.Suffix },
-    { label: "Porg", value: currentQuotationValue?.Porg },
-  ];
-  const basicInfoRowFour = [
-    { label: "Handler ID", value: currentQuotationValue?.HandlerId },
-    { label: "Buyer Name", value: currentQuotationValue?.BuyerName },
-    { label: "PARMA", value: currentQuotationValue?.PARMA },
-    { label: "Supplier Name", value: currentQuotationRFQValue?.Created },
-  ];
-  const basicInfo = [
-    basicInfoRowOne,
-    basicInfoRowTwo,
-    basicInfoRowThree,
-    basicInfoRowFour,
-  ];
-  const generalInfoViewRowOne = [
-    { label: "Named Place", value: currentQuotationValue?.NamedPlace },
-    {
-      label: "Named Place Description",
-      value: currentQuotationValue?.NamedPlaceDescription,
-    },
-    {
-      label: "Surface Treatment Code",
-      value: currentQuotationValue?.SurfaceTreatmentCode,
-    },
-    { label: "Part Issue", value: currentQuotationValue?.PartIssue },
-  ];
-  const generalInfoViewRowTwo = [
-    {
-      label: "Country of Origin",
-      value: currentQuotationValue?.CountryOfOrigin,
-    },
-    { label: "Order Qty", value: currentQuotationValue?.OrderQty },
-    { label: "Annual Qty", value: currentQuotationValue?.AnnualQty },
-    { label: "Status", value: currentQuotationValue?.Status },
-  ];
-  const generalInfoViewRowThree = [
-    {
-      label: "Order Coverate Time",
-      value: currentQuotationValue?.OrderCoverageTime,
-    },
-    { label: "First Lot", value: currentQuotationValue?.FirstLot },
-    {
-      label: "Supplier Part Number",
-      value: currentQuotationValue?.SupplierPartNumber,
-    },
-    { label: "Porg", value: currentQuotationValue?.Porg },
-  ];
-  const generalInfoView = [
-    generalInfoViewRowOne,
-    generalInfoViewRowTwo,
-    generalInfoViewRowThree,
-  ];
-  const quoteBreakdownInfoViewRowOne = [
-    { label: "Currency", value: currentQuotationValue?.Currency },
-    {
-      label: "Materials Costs Ttl",
-      value: currentQuotationValue?.MaterialsCostsTtl,
-    },
-    {
-      label: "Paid Prov Parts Cost",
-      value: currentQuotationValue?.PaidProvPartsCost,
-    },
-  ];
-  const quoteBreakdownInfoViewRowTwo = [
-    {
-      label: "Quoted Unit Price Ttl",
-      value: currentQuotationValue?.QuotedUnitPriceTtl,
-    },
-    {
-      label: "Purchased Parts Costs Ttl",
-      value: currentQuotationValue?.PurchasedPartsCostsTtl,
-    },
-    {
-      label: "Supplied Mtr Cost",
-      value: currentQuotationValue?.SuppliedMtrCost,
-    },
-  ];
-  const quoteBreakdownInfoViewRowThree = [
-    { label: "Unit of Price", value: currentQuotationValue?.UnitOfPrice },
-    {
-      label: "Processing Costs Total",
-      value: currentQuotationValue?.ProcessingCostsTtl,
-    },
-    { label: "Blank", value: "" },
-  ];
-  const quoteBreakdownInfoViewRowFour = [
-    {
-      label: "Order Price Status Code",
-      value: currentQuotationValue?.OrderPriceStatusCode,
-    },
-    {
-      label: "Tooling Jig Depr Costs Ttl",
-      value: currentQuotationValue?.ToolingJigDeprCostTtl,
-    },
-    { label: "Blank", value: "" },
-  ];
-  const quoteBreakdownInfoViewRowFive = [
-    {
-      label: "Quoted Tooling Price Ttl",
-      value: currentQuotationValue?.QuotedToolingPriceTtl,
-    },
-    { label: "Admin Exp/Profit", value: currentQuotationValue?.AdminExpProfit },
-    { label: "Blank", value: "" },
-  ];
-  const quoteBreakdownInfoViewRowSix = [
-    {
-      label: "Quoted One Time Payment Ttl",
-      value: currentQuotationValue?.QuotedOneTimePaymentTtl,
-    },
-    {
-      label: "Packing and Distribution Costs",
-      value: currentQuotationValue?.PackingAndDistributionCosts,
-    },
-    { label: "Blank", value: "" },
-  ];
-  const quoteBreakdownInfoViewRowSeven = [
-    { label: "Blank", value: "" },
-    { label: "Other", value: currentQuotationValue?.Other },
-    { label: "Blank", value: "" },
-  ];
-  const quoteBreakdownInfoViewRowEight = [
-    { label: "Blank", value: "" },
-    {
-      label: "Quoted Basic Unit Price Ttl",
-      value: currentQuotationValue?.QuotedBasicUnitPriceTtl,
-    },
-    { label: "Blank", value: "" },
-  ];
-  const quoteBreakdownInfoView = [
-    quoteBreakdownInfoViewRowOne,
-    quoteBreakdownInfoViewRowTwo,
-    quoteBreakdownInfoViewRowThree,
-    quoteBreakdownInfoViewRowFour,
-    quoteBreakdownInfoViewRowFive,
-    quoteBreakdownInfoViewRowSix,
-    quoteBreakdownInfoViewRowSeven,
-    quoteBreakdownInfoViewRowEight,
-  ];
-  const generalInfoEditRowOne: ITextFieldPriceBreakdown[] = [
-    { FieldType: "Text", Label: "Named Place", Key: "NamedPlace" },
-    {
-      FieldType: "Text",
-      Label: "Named Place Description",
-      Key: "NamedPlaceDescription",
-      MaxLength: 50,
-    },
-    {
-      FieldType: "Choice",
-      Label: "Surface Treatment Code",
-      Key: "SurfaceTreatmentCode",
-    },
-  ];
-  const generalInfoEditRowTwo: ITextFieldPriceBreakdown[] = [
-    { FieldType: "Choice", Label: "Country of Origin", Key: "CountryOfOrigin" },
-    { FieldType: "Number", Label: "Order QTY", Key: "OrderQty" },
-    { FieldType: "Number", Label: "Annual Qty", Key: "AnnualQty" },
-  ];
-  const generalInfoEditRowThree: ITextFieldPriceBreakdown[] = [
-    {
-      FieldType: "Number",
-      Label: "Order Coverage Time",
-      Key: "OrderCoverageTime",
-    },
-    { FieldType: "Text", Label: "First Lot", Key: "FirstLot" },
-    {
-      FieldType: "Text",
-      Label: "Supplier Part Number",
-      Key: "SupplierPartNumber",
-    },
-  ];
-  const generalInfoEdit = [
-    generalInfoEditRowOne,
-    generalInfoEditRowTwo,
-    generalInfoEditRowThree,
-  ];
+  const [generalInfoEditValue, setGeneralInfoEditValue] =
+    React.useState(generalInfoEdit);
+  const [quoteBreakdownInfoEditValue, setQuoteBreakdownInfoEditValue] =
+    React.useState(quoteBreakdownInfoEdit(masterData));
+  const [commentValue, setCommentValue] = React.useState("");
+  const [dialogCommentValue, setDialogCommentValue] = React.useState("");
+  const [commentHistoryValue, setCommentHistoryValue] = React.useState(
+    [] as IComment[]
+  );
   //#endregion
   //#region events
   useEffect(() => {
-    // HardCode Data
     const dataInitialLoad = async (): Promise<void> => {
-      await initialLoadForPriceChange("84", "168");
-      getRFQ("84");
+      try {
+        setIsLoading(true);
+        getAllActionLogs("ByRFQId", masterData.rfqId, masterData.quotationId);
+        await initialLoadForPriceChange(
+          masterData.rfqId,
+          masterData.quotationId
+        );
+      } catch (error) {
+        console.log(error);
+      }
     };
-    setRoleValue("Buyer");
-
-    setIsLoading(true);
     dataInitialLoad()
       .then(() => {
         setIsLoading(false);
-        setIsEditable(true);
       })
       .catch(() => {
         console.log(errorMessage);
-        console.log(currentQuotationRFQValue);
-        console.log(roleValue);
         // eslint-disable-next-line no-constant-condition
         if (false) {
-          save();
+          validate();
         }
       });
   }, []);
   useEffect(() => {
-    setCurrentQuotationValue(currentQuotation);
+    if (!currentQuotation) {
+      return;
+    }
+    const isEmptyObject =
+      Object.keys(currentQuotation).length === 0 &&
+      currentQuotation.constructor === Object;
+    const initialQuotationValue = deepCopy(currentQuotation);
+    if (!isEmptyObject) {
+      const isEditableValue =
+        masterData.role === "Supplier" && currentQuotation.Status !== "Closed";
+      if (isEditableValue) {
+        initialQuotationValue.NamedPlace = currentQuotation.NamedPlace
+          ? currentQuotation.NamedPlace
+          : masterData.supplierId;
+        initialQuotationValue.SurfaceTreatmentCode =
+          currentQuotation.SurfaceTreatmentCode
+            ? currentQuotation.SurfaceTreatmentCode
+            : "0";
+        initialQuotationValue.CountryOfOrigin = currentQuotation.CountryOfOrigin
+          ? currentQuotation.CountryOfOrigin
+          : masterData.countryCode;
+        initialQuotationValue.OrderCoverageTime =
+          currentQuotation.OrderCoverageTime
+            ? currentQuotation.OrderCoverageTime
+            : 1;
+        initialQuotationValue.FirstLot = currentQuotation.FirstLot
+          ? currentQuotation.FirstLot
+          : currentQuotation.RequiredWeek;
+        setIsEditable(true);
+      }
+      setCurrentQuotationValue(initialQuotationValue);
+      setCommentHistoryValue(
+        initialQuotationValue.CommentHistory
+          ? JSON.parse(initialQuotationValue.CommentHistory).map(
+              (item: IComment) => {
+                return {
+                  ...item,
+                  CommentDate: new Date(item.CommentDate),
+                } as IComment;
+              }
+            )
+          : []
+      );
+    }
   }, [currentQuotation]);
   useEffect(() => {
     setCurrentQuotationRFQValue(currentQuotationRFQ);
   }, [currentQuotationRFQ]);
-  const onFieldUpdate = (
-    field: keyof IQuotationGrid,
-    value: string | number
+  useEffect(() => {
+    setAttachmentsValue(quotationAttachments);
+  }, [quotationAttachments]);
+  const onChangeTextField = (
+    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
+    fieldName: keyof IQuotationGrid,
+    newValue?: string
   ): void => {
-    const currentQuotationValueDup = deepCopy(currentQuotationValue);
-    const currentQuotationValueUpdated = {
-      ...currentQuotationValueDup,
-      [field]: value,
-    };
-    if (calculateFields.indexOf(field) !== -1) {
-      console.log("Update");
-    }
-    setCurrentQuotationValue(currentQuotationValueUpdated);
+    fieldUpdate(fieldName, newValue);
   };
-  const onTestSwitchEditable = (): void => {
-    console.log(currentRFQ);
-    setIsEditable(!deepCopy<boolean>(isEditable));
+  const onChangeDropDown = (
+    event: React.FormEvent<HTMLDivElement>,
+    item: IDropdownOption,
+    fieldName: keyof IQuotationGrid
+  ): void => {
+    fieldUpdate(fieldName, item.key as string);
+    setIsDirty(true);
+  };
+  const onUploadFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const files = event.target.files;
+    if (files) {
+      const newAttachments = Array.from(files).map(
+        (file) => ({ File: file, Url: "", ID: "" } as IAttachments)
+      );
+      const currentAttachments = [...attachmentsValue];
+      newAttachments.forEach((newAttachment) => {
+        currentAttachments.push(newAttachment);
+      });
+      setAttachmentsValue(currentAttachments);
+    }
+    setIsDirty(true);
+  };
+  const onDownLoadFile = (downloadFile: File): void => {
+    const url = URL.createObjectURL(downloadFile);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = downloadFile.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const onRemoveFile = (fileToRemove: IAttachments, index: number): void => {
+    if (!!fileToRemove.ID) {
+      const attachmentsToBeRemovedValueDup = deepCopy(
+        attachmentsToBeRemovedValue
+      );
+      attachmentsToBeRemovedValueDup.push(fileToRemove.ID);
+      setAttachmentsToBeRemovedValue(attachmentsToBeRemovedValueDup);
+    }
+    const attachmentsValueDup = [...attachmentsValue];
+    attachmentsValueDup.splice(index, 1);
+    setAttachmentsValue(attachmentsValueDup);
+  };
+  const onChangeComment = (
+    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
+    newValue?: string
+  ): void => {
+    setCommentValue(newValue ?? "");
+    setIsDirty(true);
+  };
+  const onAddComment = (): void => {
+    if (commentValue) {
+      const commentHistoryValueDup = deepCopy(commentHistoryValue);
+      commentHistoryValueDup.push({
+        CommentDate: new Date(),
+        CommentBy: masterData.userName ?? "",
+        CommentText: commentValue,
+        CommentType: "Common",
+      });
+      setCommentHistoryValue(commentHistoryValueDup);
+      postComment(
+        JSON.stringify(commentHistoryValueDup),
+        masterData.quotationId
+      );
+      setCommentValue("");
+    }
+  };
+  const onClickCancelBtn = (): void => {
+    if (isDirty) {
+      setDialogValue({
+        IsOpen: true,
+        Title: t("Leave without saving?"),
+        Tip: t("You'll lose the changes and all progress you have made"),
+        Type: "Cancel",
+      });
+    }
+    handleReturn();
+  };
+  const onClickSaveBtn = async (): Promise<void> => {
+    await save("Draft");
+  };
+  const onClickSubmitBtn = async (): Promise<void> => {
+    const validateResult = validate();
+    if (validateResult) {
+      await save("Quoted");
+      createActionLog({
+        User: masterData.userEmail,
+        Date: new Date(),
+        LogType: "Submit Quote",
+        RequisitionId: masterData.quotationId,
+        RFQId: masterData.rfqId,
+      } as IActionLog);
+    }
+  };
+  const onClickAcceptBtn = (): void => {
+    setDialogValue({
+      IsOpen: true,
+      Title: t("Accept Parts"),
+      Tip: t(
+        "Reminder: After accepting a part, please click “Proceed to PO creation: to post the order back to GPS"
+      ),
+      Type: "Accepted",
+    });
+  };
+  const onClickReturnBtn = (): void => {
+    setDialogValue({
+      IsOpen: true,
+      Title: t("Return Parts"),
+      Tip: t(
+        "Reminder: The parts will be returned to the supplier to revise and re-submit"
+      ),
+      Type: "Returned",
+    });
+  };
+  const onDialogCommentChange = (
+    event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
+    newValue?: string
+  ): void => {
+    setDialogCommentValue(newValue ?? "");
+  };
+  const onDialogClose = (): void => {
+    setDialogValue({
+      IsOpen: false,
+      Title: "",
+      Tip: "",
+      Type: "Close",
+    });
+    setDialogCommentValue("");
+  };
+  const onDialogConfirm = (): void => {
+    if (dialogValue.Type === "Accepted" || dialogValue.Type === "Returned") {
+      acceptOrReturn(
+        dialogValue.Type,
+        currentQuotationValue.ID,
+        dialogCommentValue
+      );
+      createActionLog({
+        User: masterData.userEmail,
+        Date: new Date(),
+        LogType:
+          dialogValue.Type === "Accepted" ? "Accept Quote" : "Return Quote",
+        RequisitionId: masterData.quotationId,
+        RFQId: masterData.rfqId,
+      } as IActionLog);
+    } else if (dialogValue.Type === "Cancel") {
+      onDialogClose();
+      handleReturn();
+    }
   };
   //#endregion
   //#region methods
-  function save(): void {
-    updateQuotation(deepCopy(currentQuotationValue));
-    onFieldUpdate("BuyerName", "Test");
+  function fieldUpdate(
+    fieldName: keyof IQuotationGrid,
+    newValue?: string
+  ): void {
+    let currentQuotationValueDup = deepCopy(currentQuotationValue);
+    currentQuotationValueDup = {
+      ...currentQuotationValueDup,
+      [fieldName]: newValue,
+    };
+    if (AutoSumQuotedBasicUnitPriceTtlFields.indexOf(fieldName) !== -1) {
+      currentQuotationValueDup.QuotedBasicUnitPriceTtl = (
+        (currentQuotationValueDup.MaterialsCostsTtl
+          ? Number(currentQuotationValueDup.MaterialsCostsTtl)
+          : 0) +
+        (currentQuotationValueDup.PurchasedPartsCostsTtl
+          ? Number(currentQuotationValueDup.PurchasedPartsCostsTtl)
+          : 0) +
+        (currentQuotationValueDup.ProcessingCostsTtl
+          ? Number(currentQuotationValueDup.ProcessingCostsTtl)
+          : 0) +
+        (currentQuotationValueDup.ToolingJigDeprCostTtl
+          ? Number(currentQuotationValueDup.ToolingJigDeprCostTtl)
+          : 0) +
+        (currentQuotationValueDup.AdminExpProfit
+          ? Number(currentQuotationValueDup.AdminExpProfit)
+          : 0) +
+        (currentQuotationValueDup.PackingAndDistributionCosts
+          ? Number(currentQuotationValueDup.PackingAndDistributionCosts)
+          : 0) +
+        (currentQuotationValueDup.Other
+          ? Number(currentQuotationValueDup.Other)
+          : 0)
+      ).toString();
+    }
+    if (AutoSumQuotedUnitPriceTtlFields.indexOf(fieldName) !== -1) {
+      currentQuotationValueDup.QuotedUnitPriceTtl = (
+        (currentQuotationValueDup.PaidProvPartsCost
+          ? Number(currentQuotationValueDup.PaidProvPartsCost)
+          : 0) +
+        (currentQuotationValueDup.SuppliedMtrCost
+          ? Number(currentQuotationValueDup.SuppliedMtrCost)
+          : 0) +
+        (currentQuotationValueDup.MaterialsCostsTtl
+          ? Number(currentQuotationValueDup.MaterialsCostsTtl)
+          : 0) +
+        (currentQuotationValueDup.PurchasedPartsCostsTtl
+          ? Number(currentQuotationValueDup.PurchasedPartsCostsTtl)
+          : 0) +
+        (currentQuotationValueDup.ProcessingCostsTtl
+          ? Number(currentQuotationValueDup.ProcessingCostsTtl)
+          : 0) +
+        (currentQuotationValueDup.ToolingJigDeprCostTtl
+          ? Number(currentQuotationValueDup.ToolingJigDeprCostTtl)
+          : 0) +
+        (currentQuotationValueDup.AdminExpProfit
+          ? Number(currentQuotationValueDup.AdminExpProfit)
+          : 0) +
+        (currentQuotationValueDup.PackingAndDistributionCosts
+          ? Number(currentQuotationValueDup.PackingAndDistributionCosts)
+          : 0) +
+        (currentQuotationValueDup.Other
+          ? Number(currentQuotationValueDup.Other)
+          : 0)
+      ).toString();
+    }
+    setIsDirty(true);
+    setCurrentQuotationValue(currentQuotationValueDup);
+  }
+  async function save(status: string): Promise<void> {
+    const currentQuotationValueDup = deepCopy(currentQuotationValue);
+    currentQuotationValueDup.Status = status;
+    const removeItemIds = deepCopy(attachmentsToBeRemovedValue);
+    if (attachmentsValue.filter((i) => i.Url === "").length > 0) {
+      uploadQuotationAttachments(
+        attachmentsValue.filter((i) => i.Url === "").map((item) => item.File),
+        currentQuotationValueDup.ID,
+        removeItemIds
+      );
+    }
+    await updateQuotation(currentQuotationValueDup, masterData.rfqId);
+  }
+  function validate(): boolean {
+    const currentQuotationValueDup = deepCopy(currentQuotationValue);
+    const generalInfoEditValueDup = deepCopy(generalInfoEditValue);
+    const quoteBreakdownInfoEditValueDup = deepCopy(
+      quoteBreakdownInfoEditValue
+    );
+    let validationResult: boolean = true;
+    // eslint-disable-next-line @rushstack/security/no-unsafe-regexp
+    const regex = new RegExp(decimalRegex);
+    DecimalValidationFieldsTwo.forEach((validationField) => {
+      if (currentQuotationValueDup[validationField.Field]) {
+        const result = regex.test(
+          currentQuotationValueDup[validationField.Field]!.toString()
+        );
+        validationResult = result ? validationResult : false;
+        quoteBreakdownInfoEditValueDup[validationField.RowIndex].Fields[
+          validationField.ColumnIndex
+        ].ErrorMessage = result ? "" : "3 decimals max";
+      }
+    });
+    MandatoryValidationFieldsOne.forEach((validationField) => {
+      const result = !!currentQuotationValueDup[validationField.Field];
+      validationResult = result ? validationResult : false;
+      generalInfoEditValueDup[validationField.RowIndex].Fields[
+        validationField.ColumnIndex
+      ].ErrorMessage = result ? "" : "Value Required";
+    });
+    MandatoryValidationFieldsTwo.forEach((validationField) => {
+      const result = !!currentQuotationValueDup[validationField.Field];
+      validationResult = result ? validationResult : false;
+      quoteBreakdownInfoEditValueDup[validationField.RowIndex].Fields[
+        validationField.ColumnIndex
+      ].ErrorMessage = result ? "" : "Value Required";
+    });
+    NonDoubleBytesValidationFields.forEach((validationField) => {
+      let result = true;
+      const validationString = String(
+        deepCopy(currentQuotationValueDup[validationField.Field])
+      );
+      for (let i = 0; i < validationString.length; i++) {
+        if (isDoubleByte(validationString[i])) {
+          result = false;
+          validationResult = false;
+        }
+      }
+      generalInfoEditValueDup[validationField.RowIndex].Fields[
+        validationField.ColumnIndex
+      ].ErrorMessage = result ? "" : "Double bytes charater detected";
+    });
+    setGeneralInfoEditValue(generalInfoEditValueDup);
+    setQuoteBreakdownInfoEditValue(quoteBreakdownInfoEditValueDup);
+    console.log(currentQuotationValueDup);
+    return validationResult;
   }
   function deepCopy<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
+  }
+  function isDoubleByte(char: string): boolean {
+    const charCode = char.charCodeAt(0);
+    return charCode > 255;
+  }
+  function handleReturn(): void {
+    const selectedItems = [
+      {
+        key: currentQuotationRFQ.ID,
+        Parma: currentQuotationRFQ.Parma,
+        RFQNo: currentQuotationRFQ.RFQNo,
+        BuyerInfo: currentQuotationRFQ.BuyerInfo,
+        HandlerName: currentQuotationRFQ.HandlerName,
+        RFQType: currentQuotationRFQ.RFQType,
+        ReasonOfRFQ: currentQuotationRFQ.ReasonOfRFQ,
+        Created: currentQuotationRFQ.Created,
+        RFQDueDate: currentQuotationRFQ.RFQDueDate,
+        RFQStatus: currentQuotationRFQ.RFQStatus,
+        EffectiveDateRequest: currentQuotationRFQ.EffectiveDateRequest,
+      },
+    ];
+    navigate("/rfq/quotation", { state: { selectedItems } });
   }
   //#endregion
   return (
@@ -320,30 +607,12 @@ const PriceBreakDown: React.FC = () => {
             <label>{errorMessage}</label>
           ) : (
             <>
-              <button onClick={() => onTestSwitchEditable()}>
-                Test Button
-              </button>
               <Stack tokens={{ childrenGap: 10, padding: 10 }}>
-                <Text
-                  variant="large"
-                  style={{
-                    backgroundColor: "#99CCFF",
-                    padding: "5px",
-                    fontWeight: "600",
-                  }}
-                >
+                <Text variant="large" className="header">
                   Part Price Breakdown Details
                 </Text>
-                <Stack
-                  tokens={{ childrenGap: 10 }}
-                  styles={{
-                    root: {
-                      padding: "10px 1.5%",
-                      border: "1px solid #ccc",
-                    },
-                  }}
-                >
-                  <Text variant="medium" style={{ fontWeight: "600" }}>
+                <Stack tokens={{ childrenGap: 10 }} className="stackSubHeader">
+                  <Text variant="medium" className="textBolder">
                     {t("Part Basic info")}
                   </Text>
                   {basicInfo.map((basicInfoRow, rowIndex) => {
@@ -353,23 +622,30 @@ const PriceBreakDown: React.FC = () => {
                         horizontal
                         verticalAlign="center"
                         tokens={{ childrenGap: 10 }}
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
+                        className={
+                          basicInfoRow.IsLastRow
+                            ? "stackHorizontalLastRow"
+                            : "stackHorizontal"
+                        }
                       >
-                        {basicInfoRow.map((item, index) => {
+                        {basicInfoRow.Fields.map((rowItem, index) => {
                           return (
                             <Stack.Item grow key={index} align="start">
                               <Stack tokens={{ childrenGap: 10 }}>
                                 <div className="labelItem">
                                   <Text variant="small" className="label">
-                                    {t(item.label)}
+                                    {t(rowItem.Label!)}
                                   </Text>
                                   <Text variant="small" className="labelValue">
-                                    {item.value ?? ""}
+                                    {rowItem.DataSource === "Quotation"
+                                      ? currentQuotationValue[
+                                          rowItem.Key as keyof IQuotationGrid
+                                        ] ?? ""
+                                      : rowItem.DataSource === "RFQ"
+                                      ? currentQuotationRFQValue[
+                                          rowItem.Key as keyof IRFQGrid
+                                        ] ?? ""
+                                      : ""}
                                   </Text>
                                 </div>
                               </Stack>
@@ -383,428 +659,292 @@ const PriceBreakDown: React.FC = () => {
               </Stack>
               {isEditable && (
                 <>
-                  <Text
-                    variant="medium"
-                    style={{
-                      fontWeight: "600",
-                      padding: "0 2.5%",
-                    }}
-                  >
+                  <Text variant="medium" className="subHeader">
                     {t("General Info")}
                   </Text>
                   <Stack tokens={{ childrenGap: 10, padding: 10 }}>
-                    <Stack
-                      tokens={{ childrenGap: 10 }}
-                      styles={{
-                        root: {
-                          padding: "10px 1.5%",
-                          backgroundColor: "#CCEEFF",
-                        },
-                      }}
-                    >
-                      {generalInfoEdit.forEach(
+                    <Stack tokens={{ childrenGap: 20 }} className="stackInput">
+                      {generalInfoEditValue.map(
                         (generalInfoEditRow, rowIndex) => {
                           return (
                             <Stack
                               key={rowIndex}
                               horizontal
                               verticalAlign="center"
-                              styles={{
-                                root: {
-                                  padding: "0 1.5%",
-                                  columnGap: "calc((100%-2*1.5%)*0.055)",
-                                },
-                              }}
+                              className={
+                                generalInfoEditRow.IsLastRow
+                                  ? "stackHorizontalLastRow"
+                                  : "stackHorizontal"
+                              }
                             >
-                              {generalInfoEditRow.map((item, index) => {
-                                return (
-                                  <Stack.Item grow key={index}>
-                                    <Stack tokens={{ childrenGap: 10 }}>
-                                      <div className="labelItem">
-                                        <Text variant="small">
-                                          {t(item.Label!)}
-                                        </Text>
-                                        <TextField styles={textFieldStyles} />
-                                      </div>
-                                    </Stack>
-                                  </Stack.Item>
-                                );
-                              })}
+                              {generalInfoEditRow.Fields.map(
+                                (rowItem, index) => {
+                                  return (
+                                    <Stack.Item grow key={index}>
+                                      <Stack
+                                        tokens={{ childrenGap: 10 }}
+                                        horizontalAlign={rowItem.Align}
+                                      >
+                                        <div className="labelItem">
+                                          <div style={{ display: "flex" }}>
+                                            <Text variant="small">
+                                              {t(rowItem.Label!)}
+                                            </Text>
+                                            {rowItem.ShowMandatoryIcon && (
+                                              <span className="labelRed">
+                                                {"*"}
+                                              </span>
+                                            )}
+                                            {rowItem.AdditionalIcon && (
+                                              <TooltipHost
+                                                content={rowItem.Label}
+                                                id={rowItem.Key}
+                                              >
+                                                <Icon
+                                                  iconName="Info"
+                                                  styles={{
+                                                    root: {
+                                                      paddingLeft: "5px",
+                                                      fontSize: "10px",
+                                                      paddingTop: "4px",
+                                                      verticalAlign: "Top",
+                                                    },
+                                                  }}
+                                                />
+                                              </TooltipHost>
+                                            )}
+                                          </div>
+                                          {rowItem.Key ===
+                                          "OrderCoverageTime" ? (
+                                            <div className="displayFlex">
+                                              <TextField
+                                                styles={textFieldStylesShort}
+                                                type="number"
+                                                value={currentQuotationValue.OrderCoverageTime?.toString()}
+                                                onWheel={(event) => {
+                                                  event.currentTarget.blur();
+                                                }}
+                                              />
+                                              <span className="labelUnit">
+                                                {t("Weeks")}
+                                              </span>
+                                            </div>
+                                          ) : rowItem.FieldType === "Text" ? (
+                                            <TextField
+                                              styles={textFieldStyles}
+                                              value={currentQuotationValue[
+                                                rowItem.Key! as keyof IQuotationGrid
+                                              ]?.toString()}
+                                              onChange={(event, newValue) =>
+                                                onChangeTextField(
+                                                  event,
+                                                  rowItem.Key! as keyof IQuotationGrid,
+                                                  newValue
+                                                )
+                                              }
+                                              errorMessage={
+                                                rowItem.ErrorMessage ??
+                                                undefined
+                                              }
+                                            />
+                                          ) : rowItem.FieldType === "Number" ? (
+                                            <TextField
+                                              type="number"
+                                              styles={textFieldStyles}
+                                              value={currentQuotationValue[
+                                                rowItem.Key! as keyof IQuotationGrid
+                                              ]?.toString()}
+                                              onChange={(event, newValue) =>
+                                                onChangeTextField(
+                                                  event,
+                                                  rowItem.Key! as keyof IQuotationGrid,
+                                                  newValue ?? ""
+                                                )
+                                              }
+                                              errorMessage={
+                                                rowItem.ErrorMessage ??
+                                                undefined
+                                              }
+                                              onWheel={(event) => {
+                                                event.currentTarget.blur();
+                                              }}
+                                            />
+                                          ) : (
+                                            rowItem.FieldType === "Choice" && (
+                                              <Dropdown
+                                                defaultSelectedKey={
+                                                  currentQuotationValue[
+                                                    rowItem.Key! as keyof IQuotationGrid
+                                                  ]
+                                                }
+                                                options={rowItem.Choice!}
+                                                styles={dropdownStyles}
+                                                onChange={(event, item) =>
+                                                  onChangeDropDown(
+                                                    event,
+                                                    item!,
+                                                    rowItem.Key! as keyof IQuotationGrid
+                                                  )
+                                                }
+                                                errorMessage={
+                                                  rowItem.ErrorMessage ??
+                                                  undefined
+                                                }
+                                              />
+                                            )
+                                          )}
+                                        </div>
+                                      </Stack>
+                                    </Stack.Item>
+                                  );
+                                }
+                              )}
                             </Stack>
                           );
                         }
                       )}
                     </Stack>
                   </Stack>
-                  <Text
-                    variant="medium"
-                    style={{
-                      fontWeight: "600",
-                      padding: "0 2.5%",
-                    }}
-                  >
+                  <Text variant="medium" className="subHeader">
                     {t("Quote Breakdown Info")}
                   </Text>
                   <Stack tokens={{ childrenGap: 10, padding: 10 }}>
-                    <Stack
-                      tokens={{ childrenGap: 10 }}
-                      styles={{
-                        root: {
-                          padding: "10px 1.5%",
-                          backgroundColor: "#CCEEFF",
-                        },
-                      }}
-                    >
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item grow>
-                          <Stack tokens={{ childrenGap: 10 }}>
-                            <div className="labelItem">
-                              <Text variant="small">{t("Currency")}</Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item grow>
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Materials Costs Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item grow>
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="end"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Paid Prov Parts Cost")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item grow>
-                          <Stack tokens={{ childrenGap: 10 }}>
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Quoted Unit Price Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item grow>
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Purchased Parts Costs Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item grow>
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="end"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Supplied Mtr Cost")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack tokens={{ childrenGap: 10 }}>
-                            <div className="labelItem">
-                              <Text variant="small">{t("Unit of Price")}</Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Proccessing Costs Total")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack tokens={{ childrenGap: 10 }}>
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Order Price Status Code")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Tooling Jig Depr Cost Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack tokens={{ childrenGap: 10 }}>
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Quoted Tooling Price Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Admin Exp/Profit")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack tokens={{ childrenGap: 10 }}>
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Quoted One Time Payment Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Packing and Distribution Costs")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">{t("Other")}</Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                      </Stack>
-                      <Stack
-                        horizontal
-                        verticalAlign="center"
-                        styles={{
-                          root: {
-                            padding: "0 1.5%",
-                            columnGap: "calc((100%-2*1.5%)*0.055)",
-                          },
-                        }}
-                      >
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          <Stack
-                            tokens={{ childrenGap: 10 }}
-                            horizontalAlign="center"
-                          >
-                            <div className="labelItem">
-                              <Text variant="small">
-                                {t("Quoted Basic Unit Price Ttl")}
-                              </Text>
-                              <TextField styles={textFieldStyles} />
-                            </div>
-                          </Stack>
-                        </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
-                          {""}
-                        </Stack.Item>
-                      </Stack>
+                    <Stack tokens={{ childrenGap: 20 }} className="stackInput">
+                      {quoteBreakdownInfoEditValue.map(
+                        (quoteBreakdownInfoEditRow, rowIndex) => {
+                          return (
+                            <Stack
+                              key={rowIndex}
+                              horizontal
+                              verticalAlign="center"
+                              className={
+                                quoteBreakdownInfoEditRow.IsLastRow
+                                  ? "stackHorizontalLastRow"
+                                  : "stackHorizontal"
+                              }
+                            >
+                              {quoteBreakdownInfoEditRow.Fields.map(
+                                (rowItem, index) => {
+                                  return (
+                                    <Stack.Item
+                                      grow
+                                      key={index}
+                                      className="flexBasisZero"
+                                    >
+                                      <Stack
+                                        tokens={{ childrenGap: 10 }}
+                                        horizontalAlign={rowItem.Align}
+                                      >
+                                        {rowItem.FieldType === "Blank" ? (
+                                          <></>
+                                        ) : (
+                                          <div className="labelItem">
+                                            <div style={{ display: "flex" }}>
+                                              <Text variant="small">
+                                                {t(rowItem.Label!)}
+                                              </Text>
+                                              {rowItem.ShowMandatoryIcon && (
+                                                <span className="labelRed">
+                                                  {"*"}
+                                                </span>
+                                              )}
+                                              {rowItem.AdditionalIcon && (
+                                                <TooltipHost
+                                                  content={rowItem.Label}
+                                                  id={rowItem.Key}
+                                                >
+                                                  <Icon
+                                                    iconName="Info"
+                                                    styles={{
+                                                      root: {
+                                                        paddingLeft: "5px",
+                                                        fontSize: "10px",
+                                                        paddingTop: "4px",
+                                                        verticalAlign: "Top",
+                                                      },
+                                                    }}
+                                                  />
+                                                </TooltipHost>
+                                              )}
+                                            </div>
+                                            {rowItem.FieldType === "Text" ? (
+                                              <TextField
+                                                styles={textFieldStyles}
+                                                value={currentQuotationValue[
+                                                  rowItem.Key! as keyof IQuotationGrid
+                                                ]?.toString()}
+                                                onChange={(event, newValue) =>
+                                                  onChangeTextField(
+                                                    event,
+                                                    rowItem.Key! as keyof IQuotationGrid,
+                                                    newValue
+                                                  )
+                                                }
+                                                errorMessage={
+                                                  rowItem.ErrorMessage ??
+                                                  undefined
+                                                }
+                                              />
+                                            ) : rowItem.FieldType ===
+                                              "Number" ? (
+                                              <TextField
+                                                type="number"
+                                                value={currentQuotationValue[
+                                                  rowItem.Key! as keyof IQuotationGrid
+                                                ]?.toString()}
+                                                styles={textFieldStyles}
+                                                onChange={(event, newValue) =>
+                                                  onChangeTextField(
+                                                    event,
+                                                    rowItem.Key! as keyof IQuotationGrid,
+                                                    newValue
+                                                  )
+                                                }
+                                                errorMessage={
+                                                  rowItem.ErrorMessage ??
+                                                  undefined
+                                                }
+                                                disabled={rowItem.ReadOnly}
+                                                onWheel={(event) => {
+                                                  event.currentTarget.blur();
+                                                }}
+                                              />
+                                            ) : (
+                                              rowItem.FieldType ===
+                                                "Choice" && (
+                                                <Dropdown
+                                                  options={rowItem.Choice!}
+                                                  defaultSelectedKey={
+                                                    currentQuotationValue[
+                                                      rowItem.Key! as keyof IQuotationGrid
+                                                    ]
+                                                  }
+                                                  styles={dropdownStyles}
+                                                  onChange={(event, item) =>
+                                                    onChangeDropDown(
+                                                      event,
+                                                      item!,
+                                                      rowItem.Key! as keyof IQuotationGrid
+                                                    )
+                                                  }
+                                                  errorMessage={
+                                                    rowItem.ErrorMessage ??
+                                                    undefined
+                                                  }
+                                                />
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+                                      </Stack>
+                                    </Stack.Item>
+                                  );
+                                }
+                              )}
+                            </Stack>
+                          );
+                        }
+                      )}
                     </Stack>
                   </Stack>
                 </>
@@ -813,14 +953,9 @@ const PriceBreakDown: React.FC = () => {
                 <Stack tokens={{ childrenGap: 10, padding: 10 }}>
                   <Stack
                     tokens={{ childrenGap: 10 }}
-                    styles={{
-                      root: {
-                        padding: "10px 1.5%",
-                        border: "1px solid #ccc",
-                      },
-                    }}
+                    className="stackSubHeader"
                   >
-                    <Text variant="medium" style={{ fontWeight: "600" }}>
+                    <Text variant="medium" className="textBolder">
                       {t("General Info")}
                     </Text>
                     {generalInfoView.map((generalInfoViewRow, rowIndex) => {
@@ -830,26 +965,27 @@ const PriceBreakDown: React.FC = () => {
                           horizontal
                           verticalAlign="center"
                           tokens={{ childrenGap: 10 }}
-                          styles={{
-                            root: {
-                              padding: "0 1.5%",
-                              columnGap: "calc((100%-2*1.5%)*0.055)",
-                            },
-                          }}
+                          className={
+                            generalInfoViewRow.IsLastRow
+                              ? "stackHorizontalLastRow"
+                              : "stackHorizontal"
+                          }
                         >
-                          {generalInfoViewRow.map((item, index) => {
+                          {generalInfoViewRow.Fields.map((rowItem, index) => {
                             return (
                               <Stack.Item grow key={index} align="start">
                                 <Stack tokens={{ childrenGap: 10 }}>
                                   <div className="labelItem">
                                     <Text variant="small" className="label">
-                                      {t(item.label)}
+                                      {t(rowItem.Label!)}
                                     </Text>
                                     <Text
                                       variant="small"
                                       className="labelValue"
                                     >
-                                      {item.value}
+                                      {currentQuotationValue[
+                                        rowItem.Key as keyof IQuotationGrid
+                                      ] ?? ""}
                                     </Text>
                                   </div>
                                 </Stack>
@@ -862,14 +998,9 @@ const PriceBreakDown: React.FC = () => {
                   </Stack>
                   <Stack
                     tokens={{ childrenGap: 10 }}
-                    styles={{
-                      root: {
-                        padding: "10px 1.5%",
-                        border: "1px solid #ccc",
-                      },
-                    }}
+                    className="stackSubHeader"
                   >
-                    <Text variant="medium" style={{ fontWeight: "600" }}>
+                    <Text variant="medium" className="textBolder">
                       {t("Quote Breakdown Info")}
                     </Text>
                     {quoteBreakdownInfoView.map(
@@ -880,58 +1011,61 @@ const PriceBreakDown: React.FC = () => {
                             horizontal
                             verticalAlign="center"
                             tokens={{ childrenGap: 10 }}
-                            styles={{
-                              root: {
-                                padding: "0 1.5%",
-                                columnGap: "calc((100%-2*1.5%)*0.055)",
-                              },
-                            }}
+                            className={
+                              quoteBreakdownInfoViewRow.IsLastRow
+                                ? "stackHorizontalLastRow"
+                                : "stackHorizontal"
+                            }
                           >
-                            {quoteBreakdownInfoViewRow.map((item, index) => {
-                              return item.label === "Blank" ? (
-                                <Stack.Item
-                                  key={index}
-                                  grow
-                                  styles={{ root: { flexBasis: 0 } }}
-                                  align="start"
-                                >
-                                  <Stack tokens={{ childrenGap: 10 }}>
-                                    <div className="labelItem">
-                                      <Text variant="small" className="label">
-                                        {""}
-                                      </Text>
-                                      <Text
-                                        variant="small"
-                                        className="labelValue"
-                                      >
-                                        {item.value}
-                                      </Text>
-                                    </div>
-                                  </Stack>
-                                </Stack.Item>
-                              ) : (
-                                <Stack.Item
-                                  grow
-                                  key={index}
-                                  align="start"
-                                  styles={{ root: { flexBasis: 0 } }}
-                                >
-                                  <Stack tokens={{ childrenGap: 10 }}>
-                                    <div className="labelItem">
-                                      <Text variant="small" className="label">
-                                        {t(item.label)}
-                                      </Text>
-                                      <Text
-                                        variant="small"
-                                        className="labelValue"
-                                      >
-                                        {item.value}
-                                      </Text>
-                                    </div>
-                                  </Stack>
-                                </Stack.Item>
-                              );
-                            })}
+                            {quoteBreakdownInfoViewRow.Fields.map(
+                              (rowItem, index) => {
+                                return rowItem.Label === "Blank" ? (
+                                  <Stack.Item
+                                    key={index}
+                                    grow
+                                    className="flexBasisZero"
+                                    align="start"
+                                  >
+                                    <Stack tokens={{ childrenGap: 10 }}>
+                                      <div className="labelItem">
+                                        <Text variant="small" className="label">
+                                          {""}
+                                        </Text>
+                                        <Text
+                                          variant="small"
+                                          className="labelValue"
+                                        >
+                                          {}
+                                        </Text>
+                                      </div>
+                                    </Stack>
+                                  </Stack.Item>
+                                ) : (
+                                  <Stack.Item
+                                    grow
+                                    key={index}
+                                    align="start"
+                                    className="flexBasisZero"
+                                  >
+                                    <Stack tokens={{ childrenGap: 10 }}>
+                                      <div className="labelItem">
+                                        <Text variant="small" className="label">
+                                          {t(rowItem.Label!)}
+                                        </Text>
+                                        <Text
+                                          variant="small"
+                                          className="labelValue"
+                                        >
+                                          {currentQuotationValue[
+                                            rowItem.Key as keyof IQuotationGrid
+                                          ] ?? ""}
+                                        </Text>
+                                      </div>
+                                    </Stack>
+                                  </Stack.Item>
+                                );
+                              }
+                            )}
                           </Stack>
                         );
                       }
@@ -942,103 +1076,103 @@ const PriceBreakDown: React.FC = () => {
               <Stack
                 horizontal
                 verticalAlign="center"
-                styles={{
-                  root: {
-                    padding: "0 1.5%",
-                    columnGap: "calc((100%-2*1.5%)*0.055)",
-                  },
-                }}
+                className="stackHorizontal"
               >
-                <Stack.Item grow={1} align="start">
-                  <Stack styles={{ root: { marginTop: "20px" } }}>
-                    <div
-                      style={{
-                        border: "1px dashed #0078d4",
-                        padding: "10px",
-                        textAlign: "center",
-                        cursor: "pointer",
-                        backgroundColor: "#f3f9fc",
-                      }}
-                    >
-                      <input
-                        type="file"
-                        multiple
-                        style={{ display: "none" }}
-                        id="file-input"
-                      />
-                      <label
-                        htmlFor="file-input"
-                        style={{
-                          fontSize: "10px",
-                          width: "100%",
-                          height: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                        }}
-                      >
-                        <IconButton
-                          iconProps={{ iconName: "Attach" }}
-                          style={{
-                            width: "20px",
-                            height: "20px",
-                            color: "black",
-                            fontWeight: "bold",
-                          }}
-                        />
-                        <div style={{ display: "inline-block" }}>
-                          <span
-                            role="img"
-                            aria-label="paperclip"
-                            style={{
-                              fontWeight: "bold",
-                              fontSize: "12px",
-                              marginRight: 5,
-                            }}
-                          >
-                            {"Click to Upload"}
-                          </span>
-                          {
-                            "(File number limit: 10; Single file size limit: 10MB)"
-                          }
+                <Stack.Item grow={1} align="start" className="flexBasisZero">
+                  <Stack>
+                    {isEditable && (
+                      <>
+                        <div className="displayFlex">
+                          <Text variant="medium">
+                            {"Please download template"}
+                          </Text>
+                          <Link href="" className="textPaddingLeft">
+                            {"here"}
+                          </Link>
                         </div>
-                      </label>
-                    </div>
+                        <div className="uploadArea">
+                          <input
+                            type="file"
+                            multiple
+                            style={{ display: "none" }}
+                            id="file-input"
+                            onChange={onUploadFile}
+                          />
+                          <label htmlFor="file-input" className="labelUpload">
+                            <IconButton
+                              iconProps={{ iconName: "Attach" }}
+                              className="iconUpload"
+                            />
+                            <div style={{ display: "inline-block" }}>
+                              <span
+                                role="img"
+                                aria-label="paperclip"
+                                className="textUpload"
+                              >
+                                {"Click to Upload"}
+                              </span>
+                              <span className="textPaddingLeft">
+                                {
+                                  "(File number limit: 10; Single file size limit: 10MB)"
+                                }
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+                      </>
+                    )}
+                    {!isEditable && (
+                      <Text variant="medium" className="subHeader">
+                        {t("Attachments")}
+                      </Text>
+                    )}
+                    <Stack className="fileList">
+                      {(attachmentsValue.length >= 4
+                        ? attachmentsValue
+                        : attachmentsValue.concat(
+                            new Array(4 - attachmentsValue.length).fill(null)
+                          )
+                      ).map((val, i) => {
+                        return val ? (
+                          <div
+                            className={
+                              i % 2 === 0 ? "fileItemEven" : "fileItemOdd"
+                            }
+                          >
+                            <Link onClick={() => onDownLoadFile(val.File)}>
+                              {val.File.name}
+                            </Link>
+                            <Link onClick={() => onRemoveFile(val, i)}>
+                              Remove
+                            </Link>
+                          </div>
+                        ) : (
+                          <div
+                            className={
+                              i % 2 === 0 ? "fileItemEven" : "fileItemOdd"
+                            }
+                          />
+                        );
+                      })}
+                    </Stack>
                   </Stack>
                 </Stack.Item>
-                <Stack.Item grow={1} align="start">
+                <Stack.Item grow={1} align="start" className="flexBasisZero">
                   <Stack>
-                    <Text
-                      variant="medium"
-                      style={{
-                        fontWeight: "600",
-                      }}
-                    >
+                    <Text variant="medium" className="textBolder">
                       {t("Comment")}
                     </Text>
                     <Stack
                       tokens={{ childrenGap: 10 }}
-                      styles={{
-                        root: {
-                          padding: "10px 5%",
-                        },
-                      }}
+                      className="stackComment"
                     >
-                      <Text
-                        variant="small"
-                        style={{
-                          fontWeight: "600",
-                        }}
-                      >
+                      <Text variant="small" className="textBolder">
                         {t("Input Comments")}
                       </Text>
                       <Stack horizontal tokens={{ childrenGap: 10 }}>
-                        <Stack.Item
-                          grow={4}
-                          styles={{ root: { flexBasis: 0, width: "100%" } }}
-                        >
+                        <Stack.Item grow={4} className="stackCommentInput">
                           <TextField
+                            onChange={onChangeComment}
                             styles={{
                               fieldGroup: {
                                 height: "25px",
@@ -1049,12 +1183,10 @@ const PriceBreakDown: React.FC = () => {
                               },
                               root: { width: "100%" },
                             }}
+                            disabled={currentQuotationValue.Status === "Closed"}
                           />
                         </Stack.Item>
-                        <Stack.Item
-                          grow={1}
-                          styles={{ root: { flexBasis: 0 } }}
-                        >
+                        <Stack.Item grow={1} className="flexBasisZero">
                           <PrimaryButton
                             text="Add"
                             styles={{
@@ -1066,23 +1198,32 @@ const PriceBreakDown: React.FC = () => {
                               textContainer: { height: "100%" },
                               label: { lineHeight: "25px" },
                             }}
+                            onClick={onAddComment}
+                            disabled={currentQuotationValue.Status === "Closed"}
                           />
                         </Stack.Item>
                       </Stack>
-                      <Text
-                        variant="small"
-                        style={{
-                          fontWeight: "600",
-                        }}
-                      >
+                      <Text variant="small" className="textBolder">
                         {t("Comment History")}
                       </Text>
                       <TextField
                         multiline
-                        rows={6}
+                        rows={5}
                         readOnly
+                        value={commentHistoryValue
+                          .map(
+                            (item) =>
+                              `${item.CommentDate.toLocaleString()} ${
+                                item.CommentBy
+                              }: ${item.CommentText}`
+                          )
+                          .join("\n")}
                         styles={{
-                          field: { resize: "vertical", overflow: "auto" },
+                          field: {
+                            resize: "vertical",
+                            overflow: "auto",
+                            fontSize: "12px",
+                          },
                           root: { width: "inherit" },
                         }}
                       />
@@ -1090,6 +1231,151 @@ const PriceBreakDown: React.FC = () => {
                   </Stack>
                 </Stack.Item>
               </Stack>
+              <Stack
+                verticalAlign="center"
+                tokens={{ childrenGap: 10 }}
+                className="stackButton"
+              >
+                <Stack horizontal tokens={{ childrenGap: 10 }}>
+                  <DefaultButton
+                    text={t("Cancel")}
+                    styles={defaultButtonStyle}
+                    onClick={onClickCancelBtn}
+                  />
+                  {masterData.role === "Supplier" && (
+                    <>
+                      <PrimaryButton
+                        text={t("Save")}
+                        styles={primaryButtonStyle}
+                        onClick={onClickSaveBtn}
+                      />
+                      <PrimaryButton
+                        text={t("Submit")}
+                        styles={primaryButtonStyle}
+                        onClick={onClickSubmitBtn}
+                      />
+                    </>
+                  )}
+                  {masterData.role === "Buyer" && (
+                    <>
+                      <PrimaryButton
+                        text={t("Accept")}
+                        styles={primaryButtonStyle}
+                        onClick={onClickAcceptBtn}
+                      />
+                      <PrimaryButton
+                        text={t("Return")}
+                        styles={primaryButtonStyle}
+                        onClick={onClickReturnBtn}
+                      />
+                    </>
+                  )}
+                </Stack>
+              </Stack>
+              <div
+                style={{
+                  paddingTop: "40px",
+                  paddingLeft: "1.5%",
+                  paddingRight: "1.5%",
+                }}
+              >
+                <DetailsList
+                  items={
+                    masterData.role === "Buyer"
+                      ? allActionLogs
+                      : allActionLogs.filter(
+                          (log) => log.LogType !== "Accept Quote"
+                        )
+                  }
+                  columns={IActionLogColumn}
+                  layoutMode={DetailsListLayoutMode.fixedColumns}
+                  selectionMode={SelectionMode.none}
+                  onRenderRow={listRowRender}
+                  styles={listStyles}
+                />
+              </div>
+              <Dialog
+                hidden={!dialogValue.IsOpen}
+                onDismiss={() => onDialogClose()}
+                dialogContentProps={{
+                  type: DialogType.normal,
+                  title: dialogValue.Title,
+                }}
+                modalProps={{
+                  isBlocking: true,
+                }}
+                maxWidth={800}
+              >
+                <span>{dialogValue.Tip}</span>
+                {(dialogValue.Type === "Accepted" ||
+                  dialogValue.Type === "Returned") && (
+                  <DetailsList
+                    items={[currentQuotationValue]}
+                    columns={IDialogListColumn}
+                    layoutMode={DetailsListLayoutMode.fixedColumns}
+                    selectionMode={SelectionMode.none}
+                    styles={{
+                      root: {
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #ddd",
+                        borderRadius: "4px",
+                      },
+                      headerWrapper: {
+                        backgroundColor: "#AFAFAF",
+                        selectors: {
+                          ".ms-DetailsHeader": {
+                            backgroundColor: "#BDBDBD",
+                            fontWeight: 600,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                )}
+                {dialogValue.Type === "Returned" && (
+                  <Stack style={{ marginBottom: 10 }}>
+                    <TextField
+                      label="Input comments"
+                      required
+                      style={{ width: "100%" }}
+                      onChange={(event, newValue) =>
+                        onDialogCommentChange(event, newValue)
+                      }
+                    />
+                  </Stack>
+                )}
+                <DialogFooter>
+                  {(dialogValue.Type === "Accepted" ||
+                    dialogValue.Type === "Returned") && (
+                    <>
+                      <DefaultButton
+                        onClick={() => onDialogClose()}
+                        text="Cancel"
+                      />
+                      <PrimaryButton
+                        onClick={() => onDialogConfirm()}
+                        disabled={
+                          dialogCommentValue.length === 0 &&
+                          dialogValue.Type === "Returned"
+                        }
+                        text="OK"
+                      />
+                    </>
+                  )}
+                  {dialogValue.Type === "Cancel" && (
+                    <>
+                      <PrimaryButton
+                        onClick={() => onDialogConfirm()}
+                        text="Leave"
+                      />
+                      <DefaultButton
+                        onClick={() => onDialogClose()}
+                        text="Continue Editing"
+                      />
+                    </>
+                  )}
+                </DialogFooter>
+              </Dialog>
             </>
           )}
         </div>

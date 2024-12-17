@@ -30,3 +30,16 @@ export interface IRFQRequisition {
   RFQ: IRFQGrid;
   Requisitions: IRequisitionRFQGrid[];
 }
+export interface IRFQQueryModel {
+  RfqType?: string;
+  RfqNo?: string;
+  Buyer?: string;
+  Section?: string;
+  Status?: string[];
+  Parma?: string;
+  RfqReleaseDateFrom?: string;
+  RfqReleaseDateTo?: string;
+  RfqDueDateFrom?: string;
+  RfqDueDateTo?: string;
+  LastItemId?: string;
+}

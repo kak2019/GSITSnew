@@ -2,16 +2,21 @@ import { createSlice } from "@reduxjs/toolkit";
 import { FeatureKey } from "../../config/const";
 import { initialState, QuotationStatus } from "./quotationsSlice";
 import {
-  AcceptOrReturnAction,
+  AcceptOrReturnAction as acceptOrReturnAction,
   createActionLogAction,
-  getAllActionLogsAction,
+  getActionLogsAction,
   getAllQuotationsAction,
   getCurrentQuotationAction,
   getCurrentQuotationRFQAction,
+  getQuotationAttachmentsAction,
+  postCommentAction as postCommentAction,
+  ProceedToPoAction,
   updateQuotationAction,
+  UploadQuotationAttachmentsAction as uploadQuotationAttachmentsAction,
 } from "./action";
 import { IQuotationGrid } from "../../model/requisition";
 import { IActionLog } from "../../model/actionLog";
+import { IAttachments } from "../../model/documents";
 
 const quotationsSlice = createSlice({
   name: FeatureKey.QUOTATIONS,
@@ -68,14 +73,14 @@ const quotationsSlice = createSlice({
         state.status = QuotationStatus.Failed;
         state.message = action.error?.message || "";
       })
-      .addCase(getAllActionLogsAction.pending, (state, action) => {
+      .addCase(getActionLogsAction.pending, (state, action) => {
         state.status = QuotationStatus.Loading;
       })
-      .addCase(getAllActionLogsAction.fulfilled, (state, action) => {
+      .addCase(getActionLogsAction.fulfilled, (state, action) => {
         state.status = QuotationStatus.Idle;
         state.AllActionLogs = [...(action.payload as readonly IActionLog[])];
       })
-      .addCase(getAllActionLogsAction.rejected, (state, action) => {
+      .addCase(getActionLogsAction.rejected, (state, action) => {
         state.status = QuotationStatus.Failed;
         state.message = action.error?.message || "";
       })
@@ -89,13 +94,50 @@ const quotationsSlice = createSlice({
         state.status = QuotationStatus.Failed;
         state.message = action.error?.message || "";
       })
-      .addCase(AcceptOrReturnAction.pending, (state, action) => {
+      .addCase(acceptOrReturnAction.pending, (state, action) => {
         state.status = QuotationStatus.Loading;
       })
-      .addCase(AcceptOrReturnAction.fulfilled, (state, action) => {
+      .addCase(acceptOrReturnAction.fulfilled, (state, action) => {
         state.status = QuotationStatus.Idle;
       })
-      .addCase(AcceptOrReturnAction.rejected, (state, action) => {
+      .addCase(acceptOrReturnAction.rejected, (state, action) => {
+        state.status = QuotationStatus.Failed;
+        state.message = action.error?.message || "";
+      })
+      .addCase(postCommentAction.pending, (state, action) => {})
+      .addCase(postCommentAction.fulfilled, (state, action) => {})
+      .addCase(postCommentAction.rejected, (state, action) => {
+        state.status = QuotationStatus.Failed;
+        state.message = action.error?.message || "";
+      })
+      .addCase(uploadQuotationAttachmentsAction.pending, (state, action) => {
+        state.status = QuotationStatus.Loading;
+      })
+      .addCase(uploadQuotationAttachmentsAction.fulfilled, (state, action) => {
+        state.status = QuotationStatus.Idle;
+      })
+      .addCase(uploadQuotationAttachmentsAction.rejected, (state, action) => {
+        state.status = QuotationStatus.Failed;
+        state.message = action.error?.message || "";
+      })
+      .addCase(getQuotationAttachmentsAction.pending, (state, action) => {
+        state.status = QuotationStatus.Loading;
+      })
+      .addCase(getQuotationAttachmentsAction.fulfilled, (state, action) => {
+        state.status = QuotationStatus.Idle;
+        state.QuotationAttachments = [...(action.payload as IAttachments[])];
+      })
+      .addCase(getQuotationAttachmentsAction.rejected, (state, action) => {
+        state.status = QuotationStatus.Failed;
+        state.message = action.error?.message || "";
+      })
+      .addCase(ProceedToPoAction.pending, (state, action) => {
+        state.status = QuotationStatus.Loading;
+      })
+      .addCase(ProceedToPoAction.fulfilled, (state, action) => {
+        state.status = QuotationStatus.Idle;
+      })
+      .addCase(ProceedToPoAction.rejected, (state, action) => {
         state.status = QuotationStatus.Failed;
         state.message = action.error?.message || "";
       });

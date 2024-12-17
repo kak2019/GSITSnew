@@ -14,3 +14,10 @@ export interface IUserRole {
   OrderFiles: string;
   MasterData: string;
 }
+
+export interface IGPSUser {
+  role: string;
+  name: string;
+  sectionCode: string;
+  handlercode: string;
+}

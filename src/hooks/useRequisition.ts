@@ -4,10 +4,11 @@ import {
   getAllRequisitionsAction,
   isFetchingSelector,
   messageSelector,
+  queryRequisitionsAction,
   RequisitionStatus,
   updateRequisitionAction,
 } from "../features/requisitions";
-import { IRequisitionGrid } from "../model/requisition";
+import { IRequisitionGrid, IRequisitionQueryModel } from "../model/requisition";
 import { useAppDispatch, useAppSelector } from "./useApp";
 
 type RequisitionOperators = [
@@ -15,7 +16,8 @@ type RequisitionOperators = [
   allRequisitions: IRequisitionGrid[],
   errorMessage: string,
   getAllRequisitions: () => void,
-  updateRequisition: (Requisition: IRequisitionGrid) => void
+  updateRequisition: (Requisition: IRequisitionGrid) => void,
+  queryRequisitions: (Query: IRequisitionQueryModel) => void
 ];
 
 export const useRequisition = (): Readonly<RequisitionOperators> => {
@@ -32,11 +34,18 @@ export const useRequisition = (): Readonly<RequisitionOperators> => {
     },
     [dispatch]
   );
+  const queryRequisitions = useCallback(
+    (Query: IRequisitionQueryModel) => {
+      return dispatch(queryRequisitionsAction(Query));
+    },
+    [dispatch]
+  );
   return [
     isFetching,
     allRequisitions,
     errorMessage,
     getAllRequisitions,
     updateRequisition,
+    queryRequisitions,
   ] as const;
 };

@@ -1,12 +1,12 @@
 import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "../../store";
-import { IQuotationState } from "./quotationsSlice";
+import { IQuotationState, QuotationStatus } from "./quotationsSlice";
 
 const featureStateSelector = (state: RootState): object => state.quotations;
 
 export const isFetchingSelector = createSelector(
   featureStateSelector,
-  (state: IQuotationState) => state?.status
+  (state: IQuotationState) => state?.status === QuotationStatus.Loading
 );
 export const messageSelector = createSelector(
   featureStateSelector,
@@ -27,4 +27,8 @@ export const currentQuotationRFQSelector = createSelector(
 export const allActionLogsSelector = createSelector(
   featureStateSelector,
   (state: IQuotationState) => state?.AllActionLogs
+);
+export const quotationAttachmentsSelector = createSelector(
+  featureStateSelector,
+  (state: IQuotationState) => state?.QuotationAttachments
 );

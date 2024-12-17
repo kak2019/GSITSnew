@@ -1,10 +1,10 @@
-import * as XLSX from "xlsx";
 import { spfi } from "@pnp/sp";
 import { getSP } from "../../../../pnpjsConfig";
 import "@pnp/sp/webs";
 import "@pnp/sp/folders";
 import {IRFQGrid} from "../../../../model/rfq"
 import {IRequisitionRFQGrid} from "../../../../model/requisition";
+import * as Excel from 'exceljs';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
 const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, currentRFQ: IRFQGrid, currentRFQRequisition: IRequisitionRFQGrid[]) => {
     // 检查是否有选中的记录
@@ -17,10 +17,10 @@ const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, 
     try {
         // 从 SharePoint 获取 Excel 模板
         const file = await sp.web.getFileByServerRelativePath(Site_Relative_Links + `/GSITSTemplate/DownloadCSVTemplate.xlsx`).getBuffer();
-        const workbook = XLSX.read(file, { type: "buffer" });
+        const workbookTemplate = new Excel.Workbook();
+        await workbookTemplate.xlsx.load(file); // 加载Excel文件
+        const worksheet = workbookTemplate.getWorksheet(1);
 
-        // 获取模板中的第一个工作表
-        const worksheet = workbook.Sheets.Sheet1;
         if (!worksheet) {
             throw new Error("Sheet1 not found in the template");
         }
@@ -29,52 +29,62 @@ const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, 
         selectedItems.forEach((item, index) => {
             const key = item.ID; // 从 selectedItems 获取 key
             const matchedRecord = currentRFQRequisition.find((req) => req.ID === key); // 匹配记录
-
             if (matchedRecord) {
                 const rowIndex = index + 2; // 从第二行开始填充数据
 
                 // 按照需求写入特定的单元格
-                worksheet[`A${rowIndex}`] = { v: matchedRecord.PartNumber  || "8888" };
-                worksheet[`B${rowIndex}`] = { v: matchedRecord.Qualifier || "" };
-                worksheet[`C${rowIndex}`] = { v: matchedRecord.MaterialUser || "" };
-                worksheet[`D${rowIndex}`] = { v: matchedRecord.Porg || "" };
-                worksheet[`E${rowIndex}`] = { v: currentRFQ.HandlerName || "" }; //Handle 存疑
-                worksheet[`F${rowIndex}`] = { v: currentRFQ.BuyerName || "" };
-                worksheet[`G${rowIndex}`] = { v: matchedRecord.Suffix || "" };
-                worksheet[`H${rowIndex}`] = { v: currentRFQ.Parma || "" };
-                worksheet[`I${rowIndex}`] = { v: matchedRecord.OrderCoverageTime || "" };
-                worksheet[`J${rowIndex}`] = { v: matchedRecord.NamedPlace || "" };
-                worksheet[`K${rowIndex}`] = { v: matchedRecord.NamedPlace || "" };
-                worksheet[`L${rowIndex}`] = { v: matchedRecord.FirstLot || "" };
-                worksheet[`M${rowIndex}`] = { v: matchedRecord.CountryOfOrigin || "" };
-                worksheet[`N${rowIndex}`] = { v: matchedRecord.QuotedBasicUnitPriceTtl || "" };
-                worksheet[`O${rowIndex}`] = { v: matchedRecord.Currency || "" };
-                worksheet[`P${rowIndex}`] = { v: matchedRecord.QuotedUnitPrice || "" }; //存疑
-                worksheet[`Q${rowIndex}`] = { v: matchedRecord.OrderPriceStatusCode || "" };
-                worksheet[`R${rowIndex}`] = { v: matchedRecord.MaterialsCostsTtl || "" };
-                worksheet[`S${rowIndex}`] = { v: matchedRecord.PurchasedPartsCostsTtl || "" };
-                worksheet[`T${rowIndex}`] = { v: matchedRecord.ProcessingCostsTtl || "" };
-                worksheet[`U${rowIndex}`] = { v: matchedRecord.ToolingJigDeprCostTtl || "" };
-                worksheet[`V${rowIndex}`] = { v: matchedRecord.AdminExpProfit || "" };
-                worksheet[`W${rowIndex}`] = { v: matchedRecord.PackingAndDistributionCosts || "" };
-                worksheet[`X${rowIndex}`] = { v: matchedRecord.Other || "" };
-                worksheet[`Y${rowIndex}`] = { v: matchedRecord.PaidProvPartsCost || "" };
-                worksheet[`Z${rowIndex}`] = { v: matchedRecord.SuppliedMtrCost || "" };
-                worksheet[`AA${rowIndex}`] = { v: matchedRecord.PartIssue || "" };
-                worksheet[`AB${rowIndex}`] = { v: matchedRecord.AnnualQty || "" };
-                worksheet[`AC${rowIndex}`] = { v: currentRFQ.OrderType || "" };
-                worksheet[`AD${rowIndex}`] = { v: matchedRecord.SurfaceTreatmentCode || "" };
-                worksheet[`AE${rowIndex}`] = { v: matchedRecord.DrawingNo || "" };
+                worksheet.getCell('A' + rowIndex).value = matchedRecord.PartNumber || "";
+                worksheet.getCell('B' + rowIndex).value = matchedRecord.Qualifier || "";
+                worksheet.getCell('C' + rowIndex).value = matchedRecord.MaterialUser || "";
+                worksheet.getCell('D' + rowIndex).value = matchedRecord.Porg || "";
+                worksheet.getCell('E' + rowIndex).value = currentRFQ.HandlerName || ""; // Handle 存疑
+                worksheet.getCell('F' + rowIndex).value = currentRFQ.BuyerName || "";
+                worksheet.getCell('G' + rowIndex).value = matchedRecord.Suffix || "";
+                worksheet.getCell('H' + rowIndex).value = currentRFQ.Parma || "";
+                worksheet.getCell('I' + rowIndex).value = matchedRecord.OrderCoverageTime || "";
+                worksheet.getCell('J' + rowIndex).value = matchedRecord.NamedPlace || "";
+                worksheet.getCell('K' + rowIndex).value = matchedRecord.NamedPlace || "";
+                worksheet.getCell('L' + rowIndex).value = matchedRecord.FirstLot || "";
+                worksheet.getCell('M' + rowIndex).value = matchedRecord.CountryOfOrigin || "";
+                worksheet.getCell('N' + rowIndex).value = matchedRecord.QuotedBasicUnitPriceTtl || "";
+                worksheet.getCell('O' + rowIndex).value = matchedRecord.Currency || "";
+                worksheet.getCell('P' + rowIndex).value = matchedRecord.QuotedUnitPrice || ""; // 存疑
+                worksheet.getCell('Q' + rowIndex).value = matchedRecord.OrderPriceStatusCode || "";
+                worksheet.getCell('R' + rowIndex).value = matchedRecord.MaterialsCostsTtl || "";
+                worksheet.getCell('S' + rowIndex).value = matchedRecord.PurchasedPartsCostsTtl || "";
+                worksheet.getCell('T' + rowIndex).value = matchedRecord.ProcessingCostsTtl || "";
+                worksheet.getCell('U' + rowIndex).value = matchedRecord.ToolingJigDeprCostTtl || "";
+                worksheet.getCell('V' + rowIndex).value = matchedRecord.AdminExpProfit || "";
+                worksheet.getCell('W' + rowIndex).value = matchedRecord.PackingAndDistributionCosts || "";
+                worksheet.getCell('X' + rowIndex).value = matchedRecord.Other || "";
+                worksheet.getCell('Y' + rowIndex).value = matchedRecord.PaidProvPartsCost || "";
+                worksheet.getCell('Z' + rowIndex).value = matchedRecord.SuppliedMtrCost || "";
+                worksheet.getCell('AA' + rowIndex).value = matchedRecord.PartIssue || "";
+                worksheet.getCell('AB' + rowIndex).value = matchedRecord.AnnualQty || "";
+                worksheet.getCell('AC' + rowIndex).value = currentRFQ.OrderType || "";
+                worksheet.getCell('AD' + rowIndex).value = matchedRecord.SurfaceTreatmentCode || "";
+                worksheet.getCell('AE' + rowIndex).value = matchedRecord.DrawingNo || "";
 
             }
         });
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-        console.log("Worksheet data after writing:", jsonData);
-        // 下载更新后的 Excel 文件
-        XLSX.writeFile(workbook, "exportFile.xlsx");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        workbookTemplate.xlsx.writeBuffer().then(buffer => {
+            download(buffer, 'exportFile.xlsx');
+        }).catch(e => console.error(e));
     } catch (err) {
         console.error("Error reading or writing Excel file", err);
     }
 };
 
 export default exportToExcel;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
+function download(buffer: any, filename: string) {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(href);
+}

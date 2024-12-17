@@ -42,8 +42,8 @@ interface Item {
     HandlerName: string;
     RFQType: string;
     ReasonOfRFQ: string;
-    RFQReleaseDate: string;
-    RFQDueDate: string;
+    Created: Date;
+    RFQDueDate: Date;
     RFQStatus: string;
     EffectiveDateRequest: string;
 
@@ -52,49 +52,55 @@ interface Item {
 const RFQ: React.FC = () => {
     const [, supplierId, , getSupplierId] = useUsers();
     let userEmail = "";
-    const [isFetchingRFQ, allRFQs, , , , getAllRFQs, , , ,] = useRFQ();
+    const [isFetchingRFQ,
+        allRFQs,
+        ,
+        ,
+        ,
+        ,
+        ,
+        ,
+        ,
+        queryRFQs,] = useRFQ();
     const { getUserType } = useUser();
     const [userType, setUserType] = useState<string>("Unknown");
     const { t } = useTranslation();
     const [isSearchVisible, setIsSearchVisible] = useState(true);
-    // const [rfqReleaseDateTo, setRfqReleaseDateTo] = useState<Date | undefined>(undefined);
-    // const [rfqReleaseDateFrom, setRfqReleaseDateFrom] = useState<Date | undefined>(undefined);
-    // const [rfqDueDateFrom, setRfqDueDateFrom] = useState<Date | undefined>(undefined);
-    // const [rfqDueDateTo, setRfqDueDateTo] = useState<Date | undefined>(undefined);
-    const [sortedItems, setSortedItems] = useState<Item[]>([]);
+
+
     const [isItemSelected, setIsItemSelected] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Item[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 20;
+    const paginatedItems = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return allRFQs.slice(startIndex, startIndex + itemsPerPage);
+    }, [currentPage, allRFQs]);
+    const totalPages = Math.max(1, Math.ceil(allRFQs.length / itemsPerPage));
+    const goToPage = (page: number): void => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
     const [searchConditions, setSearchConditions] = useState({
-        rfqno: '',
-        rfqtype: '',
-        buyer: '',
-        section: '',
-        status: [],
-        parma: '',
-        rfqreleasedatefrom: '',
-        rfqreleasedateto: '',
-        rfqduedatefrom: '',
-        rfqduedateto: '',
+        RfqNo: '',
+        RfqType: '',
+        Buyer: '',
+        Section: '',
+        Status: [],
+        Parma: '',
+        RfqReleaseDateFrom: undefined,
+        RfqReleaseDateTo: undefined,
+        RfqDueDateFrom: undefined,
+        RfqDueDateTo: undefined,
     });
-    const [appliedFilters, setAppliedFilters] = useState({
-        rfqno: '',
-        rfqtype: '',
-        buyer: '',
-        section: '',
-        status: [] as string[],
-        parma: '',
-        rfqreleasedatefrom: '',
-        rfqreleasedateto: '',
-        rfqduedatefrom: '',
-        rfqduedateto: '',
-    });
+
     const [userDetails, setUserDetails] = useState({
         role: "",
         name: "",
         sectionCode: "",
-        handlercode: ""
+        handlercode: "",
+        porg: ""
     });
     const ctx = React.useContext(AppContext);
     if (!ctx || !ctx.context) {
@@ -119,7 +125,7 @@ const RFQ: React.FC = () => {
     const navigate = useNavigate();
 
     const handleViewRFQ = (): void => {
-        navigate("/quotation", { state: { selectedItems } });
+        navigate("/rfq/quotation", { state: { selectedItems } });
     };
 
 
@@ -137,8 +143,8 @@ const RFQ: React.FC = () => {
     ];
 
     const columns: IColumn[] = [
-        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100,  },
-        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 100, },
+        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, },
+        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 140, },
         {
             key: "BuyerInfo",
             name: t("Buyer"),
@@ -151,38 +157,39 @@ const RFQ: React.FC = () => {
             name: t("Handler Name"),
             fieldName: "HandlerName",
             minWidth: 100,
-            
+
         },
-        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100,  },
+        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, },
         {
             key: "ReasonOfRFQ",
             name: t("Reason of RFQ"),
             fieldName: "ReasonOfRFQ",
             minWidth: 150,
-            
+
         },
         {
-            key: "RFQReleaseDate",
+            key: "Created",
             name: t("RFQ Release Date"),
-            fieldName: "RFQReleaseDate",
+            fieldName: "Created",
             minWidth: 120,
-           
+
             onRender: (item: Item) => {
-                const utcDate = item.RFQReleaseDate;
+                const utcDate = item.Created;
                 if (!utcDate) return "";
                 const date = new Date(utcDate);
-                date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
+                // date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
                 return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
             }
         },
+
         {
             key: "RFQDueDate",
             name: t("RFQ Due Date"),
             fieldName: "RFQDueDate",
             minWidth: 100,
-           
+
             onRender: (item: Item) => {
-                const utcDate = item.RFQReleaseDate;
+                const utcDate = item.RFQDueDate;
                 if (!utcDate) return "";
                 const date = new Date(utcDate);
                 date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
@@ -194,24 +201,24 @@ const RFQ: React.FC = () => {
             name: t("Status"),
             fieldName: "RFQStatus",
             minWidth: 100,
-            
+
         },
         {
             key: "EffectiveDateRequest",
             name: t("Effective Date Request"),
             fieldName: "EffectiveDateRequest",
             minWidth: 150,
-            
+
             onRender: (item: Item) => {
-                const utcDate = item.RFQReleaseDate;
+                const utcDate = item.EffectiveDateRequest;
                 if (!utcDate) return "";
                 const date = new Date(utcDate);
                 date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
                 return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
             },
-            
+
         },
-        
+
     ];
 
     const formatDate = (date: Date): string => {
@@ -274,6 +281,7 @@ const RFQ: React.FC = () => {
                         name: result.name,
                         sectionCode: result.sectionCode,
                         handlercode: result.handlercode,
+                        porg: result?.porg,
                     });
 
 
@@ -302,14 +310,10 @@ const RFQ: React.FC = () => {
                     }
                     if (type === "Guest") {
                         console.log("supplierID", supplierId);
-                        setAppliedFilters((prev) => ({
-                            ...prev,
-                            parma: supplierId.toString() || "",
 
-                        }));
                         setSearchConditions((prev) => ({
                             ...prev,
-                            parma: supplierId.toString() || "",
+                            Parma: supplierId.toString() || "",
 
                         }));
                     }
@@ -323,92 +327,53 @@ const RFQ: React.FC = () => {
         if (userType === "Guest" && userEmail) {
             getSupplierId(userEmail);
             console.log("Usertype: ", userType)
-
-
         }
 
+
     }, [userType, getSupplierId]);
-
-
-
-    //   React.useEffect(()=>{
-    //     if(userType === "Guest" && userEmail){
-    //     getSupplierId(userEmail)}
-    //   },[getSupplierId,userEmail]);
-
-    //   // 获取用户类型
-    //   React.useEffect(() => {
-    //     const fetchUserType = async () => {
-    //         const identifier = userEmail; // 替换为实际的用户标识符
-    //         getUserType(identifier)
-    // .then(type => {
-    //     setUserType(type);
-    //     if(type === "Member")
-    //         {setAppliedFilters((prev) => ({
-    //         ...prev,
-    //         parma: supplierId.toString() || "",
-    //       }));}
-    //     console.log("UserType: ", type);
-
-    // })
-
-    // .catch(error => {
-    //     console.error("Error fetching user type:", error);
-    // });
-    //     };
-
-    //     void fetchUserType();
-    // }, [getUserType]);
 
 
     // 创建 Selection 对象
 
     React.useEffect(() => {
         if (userDetails.role === "Manager") {
-            setAppliedFilters((prev) => ({
-                ...prev,
-                section: userDetails.sectionCode || "",
-            }));
+
             setSearchConditions((prev) => ({
                 ...prev,
-                section: userDetails.sectionCode || "",
+                Section: userDetails.sectionCode || "",
 
+            }));
+        }
+        else if (userDetails.role === "Buyer") {
+            setSearchConditions((prev) => ({
+                ...prev,
+                Buyer: userDetails.handlercode || "",
+                //[userDetails.porg, userDetails.handlercode, userDetails.name]
+                // .filter(Boolean) // 过滤掉 `null`、`undefined` 或空字符串的值
+                // .join(" "), // 用空格拼接,
             }));
         }
         console.log("UserDetials: ", userDetails);
 
     }, [userDetails]);
-
-    React.useEffect(() => {
-        getAllRFQs();
-    }, [getAllRFQs]);
-
-
-
     const applyFilters = (): void => {
-
-        setAppliedFilters((prev) => ({
-            ...prev,
+        const filters = {
             ...searchConditions,
-            parma: userType === "Guest" ? searchConditions.parma : prev.parma, // 保留 Guest 的 parma
-            rfqreleasedateto: searchConditions.rfqreleasedateto
-                ? new Date(new Date(searchConditions.rfqreleasedateto).getTime() + 86400000).toISOString()
-                : "",
-            rfqduedateto: searchConditions.rfqduedateto
-                ? new Date(new Date(searchConditions.rfqduedateto).getTime() + 86400000).toISOString()
-                : "",
-            // rfqreleasedatefrom: rfqReleaseDateFrom
-            //     ? rfqReleaseDateFrom.toISOString()
-            //     : "",
-            // rfqreleasedateto: rfqReleaseDateTo
-            //     ? new Date(rfqReleaseDateTo.getTime() + 86400000).toISOString()
-            //     : "",
-            // rfqduedatefrom: rfqDueDateFrom ? rfqDueDateFrom.toISOString() : "",
-            // rfqduedateto: rfqDueDateTo ? new Date(rfqDueDateTo.getTime() + 86400000).toISOString() : "",
-        }));
-        console.log("appliedFilters", appliedFilters)
+            rfqreleasedateto: searchConditions.RfqReleaseDateTo
+                ? new Date(new Date(searchConditions.RfqReleaseDateTo).getTime())
+                : '',
+            rfqduedateto: searchConditions.RfqDueDateTo
+                ? new Date(new Date(searchConditions.RfqDueDateTo).getTime())
+                : '',
+        };
+        setCurrentPage(1);
+
+        queryRFQs(filters); // 调用 queryRFQs 方法传递过滤参数
     };
 
+    React.useEffect (() => {
+        queryRFQs({})
+    },[])
 
 
 
@@ -427,137 +392,12 @@ const RFQ: React.FC = () => {
             };
         });
     };
-
-
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    const getFilteredItems = () => {
-        return allRFQs.filter(item => {
-            const releaseDate = new Date(item.Created || "");
-            const dueDate = new Date(item.RFQDueDate || "");
-
-            const releaseFrom = appliedFilters.rfqreleasedatefrom
-                ? new Date(appliedFilters.rfqreleasedatefrom) // 转回 Date 对象
-                : null;
-            const releaseTo = appliedFilters.rfqreleasedateto
-                ? new Date(appliedFilters.rfqreleasedateto)
-                : null;
-            const dueFrom = appliedFilters.rfqduedatefrom
-                ? new Date(appliedFilters.rfqduedatefrom)
-                : null;
-            const dueTo = appliedFilters.rfqduedateto
-                ? new Date(appliedFilters.rfqduedateto)
-                : null;
-            // 更新 status 过滤逻辑
-            const statusFilter = appliedFilters.status.length === 0
-                ? true // 如果没有选择任何状态，表示不过滤
-                : appliedFilters.status.includes(item.RFQStatus || ""); // 检查记录的 RFQStatus 是否在选择列表中
-            const parmaMatch = userType === "Guest" ? item.Parma === appliedFilters.parma // 严格匹配
-                : !appliedFilters.parma || item.Parma?.toLowerCase().includes(appliedFilters.parma.toLowerCase());
-
-
-            return (
-                statusFilter && parmaMatch &&
-                (!appliedFilters.rfqtype || item.RFQType?.toLowerCase() === appliedFilters.rfqtype.toLowerCase()) &&
-                (!appliedFilters.rfqno || item.RFQNo?.toLowerCase().includes(appliedFilters.rfqno.toLowerCase())) &&
-                (!appliedFilters.buyer || (item.BuyerInfo?.toLowerCase().includes(appliedFilters.buyer.toLowerCase())) || item.HandlerName?.toLowerCase().includes(appliedFilters.buyer.toLowerCase())) &&
-                (!appliedFilters.section || item.SectionInfo?.toLowerCase().includes(appliedFilters.section.toLowerCase())) &&
-                // (!appliedFilters.parma || item.Parma?.toLowerCase().includes(appliedFilters.parma.toLowerCase())) &&
-                (!releaseFrom ||
-                    (releaseDate >= releaseFrom)) &&
-                (!releaseTo ||
-                    releaseDate <= releaseTo) &&
-                (!dueFrom ||
-                    dueDate >= dueFrom) &&
-                (!dueTo ||
-                    dueDate <= dueTo)
-            );
-        }).map(item => ({
-            key: item.ID || '', // 使用 ID 或其他唯一标识符
-            Parma: item.Parma || '',
-            RFQNo: item.RFQNo || '',
-            BuyerInfo: item.BuyerInfo || '',
-            HandlerName: item.HandlerName || '',
-            RFQType: item.RFQType || '',
-            ReasonOfRFQ: item.ReasonOfRFQ || '',
-            RFQReleaseDate: item.Created?.toString() || '',
-            RFQDueDate: item.RFQDueDate?.toString() || '',
-            RFQStatus: item.RFQStatus || '',
-            EffectiveDateRequest: item.EffectiveDateRequest?.toString() || '',
-        })
-        ).sort((a, b) =>
-            new Date(b.RFQReleaseDate || 0).getTime() -
-            new Date(a.RFQReleaseDate || 0).getTime());
-
-    };
-    React.useEffect(() => {
-        const filtered = getFilteredItems();
-        setSortedItems(filtered);
-        setCurrentPage(1);
-    }, [appliedFilters]);
-
-    const handleSearchChange = (key: keyof typeof searchConditions, value: string | string[]): void => {
+    const handleSearchChange = (key: keyof typeof searchConditions, value: string | string[] | Date): void => {
         setSearchConditions(prev => ({
             ...prev,
             [key]: value,
         }));
     };
-
-
-    const paginatedItems = React.useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        return sortedItems.slice(startIndex, startIndex + itemsPerPage);
-    }, [currentPage, sortedItems]);
-
-    // 切换页码
-    // const changePage = (page: number) => {
-    //     setCurrentPage(page);
-    // };
-    const totalPages = Math.max(1, Math.ceil(sortedItems.length / itemsPerPage));
-    const goToPage = (page: number): void => {
-        if (page >= 1 && page <= totalPages) {
-            setCurrentPage(page);
-        }
-    };
-
-
-
-
-    React.useEffect(() => {
-        if (allRFQs.length > 0 && userDetails.role === "Buyer") {
-            // 按 RFQReleaseDate 降序排序
-            const sorted = [...allRFQs]
-                .sort(
-                    (a, b) =>
-                        new Date(b.Created || 0).getTime() -
-                        new Date(a.Created || 0).getTime()
-                )
-                .map((rfq) => ({
-                    key: rfq.ID || "",
-                    Parma: rfq.Parma || "",
-                    RFQNo: rfq.RFQNo || "",
-                    BuyerInfo: rfq.BuyerInfo || "",
-                    HandlerName: rfq.HandlerName || "",
-                    RFQType: rfq.RFQType || "",
-                    ReasonOfRFQ: rfq.ReasonOfRFQ || "",
-                    RFQReleaseDate: rfq.Created?.toString() || "",
-                    RFQDueDate: rfq.RFQDueDate?.toString() || "",
-                    RFQStatus: rfq.RFQStatus || "",
-                    EffectiveDateRequest: rfq.EffectiveDateRequest?.toString() || "",
-                }));
-            setSortedItems(sorted);
-        }
-    }, [userDetails]);
-
-    React.useEffect(() => {
-        if (currentPage === 1 && sortedItems.length > 0) {
-            selection.current.setItems(sortedItems);
-        }
-    }, [currentPage, sortedItems]);
-
-
-
-
-
 
     const fieldWithTooltip = (
         label: string,
@@ -649,23 +489,23 @@ const RFQ: React.FC = () => {
                     <Dropdown
                         label={t("Type")}
                         placeholder="Optional"
-                        selectedKey={searchConditions.rfqtype}
-                        onChange={(e, option) => handleSearchChange('rfqtype', option?.key?.toString() as string || '')}
+                        selectedKey={searchConditions.RfqType}
+                        onChange={(e, option) => handleSearchChange('RfqType', option?.key?.toString() as string || '')}
                         options={typeOptions}
                         styles={fieldStyles}
                     />
                     <TextField
                         label={t("RFQ No.")}
-                        value={searchConditions.rfqno}
-                        onChange={(e, newValue) => handleSearchChange('rfqno', newValue || "")}
+                        value={searchConditions.RfqNo}
+                        onChange={(e, newValue) => handleSearchChange('RfqNo', newValue || "")}
                         styles={fieldStyles}
                     />
                     {fieldWithTooltip(
                         t("Buyer"),
                         "Search by Org/Handler Code/Name",
                         <TextField
-                            value={searchConditions.buyer}
-                            onChange={(e, newValue) => handleSearchChange('buyer', newValue || "")}
+                            value={searchConditions.Buyer}
+                            onChange={(e, newValue) => handleSearchChange('Buyer', newValue || "")}
                             styles={fieldStyles}
                         />
                     )}
@@ -673,19 +513,19 @@ const RFQ: React.FC = () => {
                         t("Section"),
                         "Search by Section code/Section Description",
                         <TextField
-                            value={searchConditions.section}
+                            value={searchConditions.Section}
 
-                            onChange={(e, newValue) => handleSearchChange('section', newValue || "")}
+                            onChange={(e, newValue) => handleSearchChange('Section', newValue || "")}
                             styles={fieldStyles}
                         />
                     )}
                     <Dropdown
                         label={t("Status")}
-                        selectedKeys={searchConditions.status}
+                        selectedKeys={searchConditions.Status}
                         multiSelect
                         onChange={(e, option) => {
                             if (option) { console.log("Selected status: ", option) }
-                            handleMultiSelectChange('status', option)
+                            handleMultiSelectChange('Status', option)
                         }}
                         options={statusOptions}
 
@@ -697,19 +537,19 @@ const RFQ: React.FC = () => {
 
                     {userType === "Member" && (<TextField
                         label={t("Parma")}
-                        value={searchConditions.parma}
-                        onChange={(e, newValue) => handleSearchChange('parma', newValue || "")}
+                        value={searchConditions.Parma}
+                        onChange={(e, newValue) => handleSearchChange('Parma', newValue || "")}
                         styles={fieldStyles}
                     />)}
                     <DatePicker
                         label={t("RFQ Released Date From")}
-                        value={searchConditions.rfqreleasedatefrom ? new Date(searchConditions.rfqreleasedatefrom) : undefined}
+                        value={searchConditions.RfqReleaseDateFrom ? new Date(searchConditions.RfqReleaseDateFrom) : undefined}
                         onSelectDate={(date) => {
                             if (date) {
                                 const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
-                                handleSearchChange("rfqreleasedatefrom", formattedDate); // 保存格式化后的日期
+                                handleSearchChange("RfqReleaseDateFrom", formattedDate); // 保存格式化后的日期
                             } else {
-                                handleSearchChange("rfqreleasedatefrom", "");
+                                handleSearchChange("RfqReleaseDateFrom", "");
                             }
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
@@ -718,19 +558,19 @@ const RFQ: React.FC = () => {
                     />
                     <DatePicker
                         label={t("RFQ Released Date To")}
-                        value={searchConditions.rfqreleasedateto ? new Date(searchConditions.rfqreleasedateto) : undefined}
+                        value={searchConditions.RfqReleaseDateTo ? new Date(searchConditions.RfqReleaseDateTo) : undefined}
                         onSelectDate={(date) => {
                             if (date) {
                                 console.log("Selected Date:", date);
                                 console.log("ISO String:", date.toISOString()); // 转为 UTC 时间的字符串
                                 console.log("Locale String:", date.toLocaleString()); // 转为本地时间字符串
                                 console.log("Time Zone Offset (minutes):", date.getTimezoneOffset()); // 获取时区偏移量，单位是分钟
-                                console.log("searchConditions:", searchConditions.section);
+                                console.log("searchConditions:", searchConditions.Section);
 
 
                                 const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
-                                handleSearchChange("rfqreleasedateto", formattedDate)
-                            } else handleSearchChange("rfqreleasedateto", "")
+                                handleSearchChange("RfqReleaseDateTo", formattedDate); // 保存格式化后的日期
+                            } else handleSearchChange("RfqReleaseDateTo", "")
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
                         styles={fieldStyles}
@@ -738,13 +578,13 @@ const RFQ: React.FC = () => {
                     />
                     <DatePicker
                         label={t("RFQ Due Date From")}
-                        value={searchConditions.rfqduedatefrom ? new Date(searchConditions.rfqduedatefrom) : undefined}
+                        value={searchConditions.RfqDueDateFrom ? new Date(searchConditions.RfqDueDateFrom) : undefined}
                         onSelectDate={(date) => {
                             if (date) {
                                 const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
-                                handleSearchChange("rfqduedatefrom", formattedDate); // 保存格式化后的日期
+                                handleSearchChange("RfqDueDateFrom", formattedDate); // 保存格式化后的日期
                             } else {
-                                handleSearchChange("rfqduedatefrom", "");
+                                handleSearchChange("RfqDueDateFrom", "");
                             }
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
@@ -753,13 +593,13 @@ const RFQ: React.FC = () => {
                     />
                     <DatePicker
                         label={t("RFQ Due Date To")}
-                        value={searchConditions.rfqduedateto ? new Date(searchConditions.rfqduedateto) : undefined}
+                        value={searchConditions.RfqDueDateTo ? new Date(searchConditions.RfqDueDateTo) : undefined}
                         onSelectDate={(date) => {
                             if (date) {
                                 const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
-                                handleSearchChange("rfqduedateto", formattedDate); // 保存格式化后的日期
+                                handleSearchChange("RfqDueDateTo", formattedDate); // 保存格式化后的日期
                             } else {
-                                handleSearchChange("rfqduedateto", "");
+                                handleSearchChange("RfqDueDateTo", "");
                             }
                         }}
                         formatDate={formatDate} // 控制显示的日期格式
@@ -795,7 +635,7 @@ const RFQ: React.FC = () => {
                         }))}
                         selection={selection.current}
                         selectionMode={SelectionMode.single} // single select
-                        
+
                         styles={{
                             root: theme.detaillist.root,
                             contentWrapper: theme.detaillist.contentWrapper,
@@ -804,33 +644,11 @@ const RFQ: React.FC = () => {
                         viewport={{
                             height: 0,
                             width: 0,
-                          }}
-                          // onRenderDetailsFooter={() => {
-                          //   const el = document.getElementsByClassName("ms-DetailsHeader")[0];
-                          //   const width = (el && el.clientWidth) || "100%";
-                          //   return (
-              
-                          //   );
-                          // }}
-                          
+                        }}
+
+
                     />
-                    {/* 分页控件
-                   <Stack horizontal horizontalAlign="center" tokens={{ childrenGap: 10 }}>
-                   {[...Array(totalPages)].map((_, index) => (
-                       <PrimaryButton
-                           key={index + 1}
-                           text={(index + 1).toString()}
-                           onClick={() => changePage(index + 1)}
-                           styles={{
-                               root: {
-                                   backgroundColor: currentPage === index + 1 ? '#0078D4' : '#EDEDED',
-                                   color: currentPage === index + 1 ? 'white' : 'black',
-                               },
-                           }}
-                       />
-                   ))}
-               </Stack>
-               </> */}
+
                     {/* 分页控件 */}
                     <Stack
                         horizontal
@@ -949,11 +767,11 @@ const RFQ: React.FC = () => {
                     disabled={!isItemSelected}
                     styles={buttonStyles}
                     onClick={() => {
-                        alert(
-                            `Selected items: ${selectedItems
-                                .map((item) => item.Parma)
-                                .join(", ")}`
-                        );
+                        // alert(
+                        //     `Selected items: ${selectedItems
+                        //         .map((item) => item.Parma)
+                        //         .join(", ")}`
+                        // );
                         // const selectedItems = selection.getSelection() as Item[];
                         handleViewRFQ();
                     }}

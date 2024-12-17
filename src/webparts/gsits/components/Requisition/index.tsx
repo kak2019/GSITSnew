@@ -22,7 +22,8 @@ import "./index.css";
 import { useTranslation } from "react-i18next";
 import { useRequisition } from "../../../../hooks/useRequisition";
 import { Spinner, SpinnerSize } from "@fluentui/react";
-import { IRequisitionGrid } from "../../../../model/requisition";
+// import {IRequisitionGrid, IRequisitionQueryModel} from "../../../../model/requisition";
+import {IRequisitionGrid} from "../../../../model/requisition";
 // import { useUser } from "../../../../hooks";
 // import { Logger, LogLevel } from "@pnp/logging";
 import AppContext from "../../../../AppContext";
@@ -51,6 +52,7 @@ interface Item {
 const PAGE_SIZE = 20;
 const Requisition: React.FC = () => {
   let userEmail = "";
+  let userName = "";
   const { t } = useTranslation(); // 使用 i18next 进行翻译
   const navigate = useNavigate();
   // const { getUserIDCode } = useUser(); // 引入 useUser 钩子
@@ -59,24 +61,26 @@ const Requisition: React.FC = () => {
     throw new Error("AppContext is not provided or context is undefined");
   } else {
     userEmail = ctx.context._pageContext._user.email;
+    userName = ctx.context._pageContext._user?.displayName;
   }
   const [userDetails, setUserDetails] = useState({
     role: "",
     name: "",
     sectionCode: "",
     handlercode: "",
-    porg: ""
+    porg: "",
+    userName:"",
+    userEmail:""
   });
   const code = React.useRef(null)
-  //console.log(userEmail);
   // const [currentUserIDCode, setCurrentUserIDCode] = useState<string>("");
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const [columnsPerRow, setColumnsPerRow] = useState<number>(5);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sets, setSets] = useState<any>({})
-  const [isFetching, allRequisitions, , getAllRequisitions, ,] =
-    useRequisition();
+  const [isFetching, allRequisitions, , getAllRequisitions, ,] = useRequisition();
+  //const [isFetching, allRequisitions, , , ,queryRequisition] = useRequisition();
   const [currentPage, setCurrentPage] = useState(1);
   const [filteredItems, setFilteredItems] =
     useState<IRequisitionGrid[]>(allRequisitions);
@@ -146,7 +150,7 @@ const Requisition: React.FC = () => {
 
   // 跳转到 Create RFQ 页面，并传递选中的记录
   const handleCreateRFQ = (): void => {
-    navigate("/create-rfq", { state: { selectedItems, userDetails } });
+    navigate("/requisition/create-rfq", { state: { selectedItems, userDetails } });
   };
 
   // 切换搜索区域的显示状态
@@ -177,7 +181,9 @@ const Requisition: React.FC = () => {
             name: result.name,
             sectionCode: result.sectionCode,
             handlercode: result.handlercode,
-            porg: result?.porg
+            porg: result?.porg,
+            userName: userName,
+            userEmail : userEmail
           });
           code.current = result.handlercode
 
@@ -272,7 +278,7 @@ const Requisition: React.FC = () => {
       fieldName: "CreateDate",
       minWidth: 100,
     },
-    { key: "RfqNo", name: t("RFQ No."), fieldName: "RfqNo", minWidth: 80 },
+    { key: "RfqNo", name: t("RFQ No."), fieldName: "RfqNo", minWidth: 150 },
     {
       key: "ReqBuyer",
       name: t("Req. Buyer"),
@@ -296,7 +302,7 @@ const Requisition: React.FC = () => {
   const StatesType = [
 
     { key: "New", text: "New" },
-    { key: "", text: "Empty" },
+    { key: "", text: "Blank" },
     { key: "In Progress", text: "In Progress" },
     { key: "Quoted", text: "Quoted" },
     { key: "Returned", text: "Returned" },
@@ -371,7 +377,7 @@ const Requisition: React.FC = () => {
 
       return (
           (requisitionType.length === 0 || requisitionType.includes(item.RequisitionType)) &&
-          (!buyer || (item.ReqBuyer && item.ReqBuyer.toLowerCase().includes(buyer.toLowerCase()) || (item.HandlerName && item.HandlerName.toLowerCase().includes(buyer.toLowerCase())))) &&
+          (!buyer || (item.ReqBuyer && item.ReqBuyer.toLowerCase().includes(buyer.toLowerCase()) || (item.HandlerName && item.HandlerName.toLowerCase().includes(buyer.toLowerCase())) || (item.Porg && item.Porg.toLowerCase().includes(buyer.toLowerCase())))) &&
           (!parma || item.Parma?.toLowerCase().includes(parma.toLowerCase())) &&
           (!section ||
               (item.Section?.toLowerCase().includes(section.toLowerCase())) || (item.SectionDescription && item.SectionDescription.toLowerCase().includes(section.toLowerCase()))) &&
@@ -452,9 +458,7 @@ const Requisition: React.FC = () => {
       }));
     }
   }, [userDetails]);
-  useEffect(() => {
-    getAllRequisitions();
-  }, [getAllRequisitions]);
+
 
 
   useEffect(() => {
@@ -462,6 +466,37 @@ const Requisition: React.FC = () => {
     setFilteredItems(result)
   }, [allRequisitions])
   console.log(allRequisitions);
+
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  //const searchByCondition = () =>{
+    // const queryModel: IRequisitionQueryModel = {
+    //   RequisitionType: filters.requisitionType.length > 0 ? filters.requisitionType : undefined,
+    //   Buyer: filters.buyer || undefined,
+    //   Parma: filters.parma || undefined,
+    //   Section: filters.section || undefined,
+    //   Status: filters.status.length > 0 ? filters.status : undefined,
+    //   PartNumber: filters.partNumber || undefined,
+    //   Qualifier: filters.qualifier || undefined,
+    //   Project: filters.project || undefined,
+    //   MaterialUser: filters.materialUser ? Number(filters.materialUser) : undefined,
+    //   RFQNumber: filters.rfqNumber || undefined,
+    //   RequiredWeekFrom: filters.requiredWeekFrom || undefined,
+    //   RequiredWeekTo: filters.requiredWeekTo || undefined,
+    //   CreatedDateFrom: filters.createdDateFrom
+    //       ? formatDate(filters.createdDateFrom)
+    //       : undefined,
+    //   CreatedDateTo: filters.createdDateTo
+    //       ? formatDate(filters.createdDateTo)
+    //       : undefined,
+    // };
+
+    //queryRequisition({})
+  //}
+  useEffect(() => {
+    getAllRequisitions();
+    //searchByCondition()
+  }, []);
+  //}, [getAllRequisitions]);
 
   const fieldWithTooltip = (
     label: string,
@@ -510,7 +545,6 @@ const Requisition: React.FC = () => {
       }
     }}>
       <h2 className="mainTitle">{t("Requisition for New Part Price")}</h2>
-
       {/* 搜索区域标题和切换图标 */}
       <Stack
         horizontal
@@ -581,32 +615,7 @@ const Requisition: React.FC = () => {
             }
             }
           />
-          {/* </Stack.Item> */}
-          {/* <Stack.Item grow styles={{ root: { flexBasis: itemWidth, maxWidth: itemWidth } }}>
-                                <TextField label={t("Buyer")} placeholder="Entered text" style={{width: Number(itemWidth) - 30}}
-                                defaultValue={currentUserIDCode}
-                                onChange={(e, newValue) => setFilters(prev => ({ ...prev, buyer: newValue || '' }))}
-                                />
-                            </Stack.Item> */}
-          {/* <Stack.Item
-                      grow
-                      styles={{ root: { flexBasis: itemWidth, maxWidth: itemWidth } }}
-                  >
-                    <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          marginBottom: "4px",
-                          marginTop: "4px",
-                        }}
-                    >
-                  <span
-                      style={{
-                        marginRight: "8px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                      }}
-                  > */}
+
           {fieldWithTooltip(t("Buyer"),
             t("Search by Org/Handler Code/Name"),
             <TextField
@@ -617,44 +626,7 @@ const Requisition: React.FC = () => {
               }
             />
           )}
-          {/* {t("Buyer")}
-                  </span>
-                      <TooltipHost
-                          content={t("Search by Org/Handler Code/Name")}
-                          calloutProps={{ gapSpace: 0 }}
-                      >
-                        <Icon
-                            iconName="Info"
-                            styles={{
-                              root: {
-                                fontSize: "16px", // 增大字体大小
-                                cursor: "pointer",
-                                color: "#0078D4", // 使用更显眼的颜色（蓝色）
-                              },
-                            }}
-                        /> */}
-          {/* </TooltipHost>
-                    </div> */}
-          {/* <TextField
-                        style={{ width: Number(itemWidth) - 30 }}
-                        value={filters.buyer}
-                        onChange={(e, newValue) =>
-                            setFilters((prev) => ({ ...prev, buyer: newValue || "" }))
-                        }
-                    /> */}
-          {/* </Stack.Item> */}
-          {/* <Stack.Item
-                      grow
-                      styles={{ root: { flexBasis: itemWidth, maxWidth: itemWidth } }}
-                  >
-                    <TextField
-                        label={t("Parma")}
-                        style={{ width: Number(itemWidth) - 30 }}
-                        onChange={(e, newValue) =>
-                            setFilters((prev) => ({ ...prev, parma: newValue || "" }))
-                        }
-                    />
-                  </Stack.Item> */}
+
           <TextField
             label={t("Parma")}
             style={{ width: Number(itemWidth) - 30 }}
