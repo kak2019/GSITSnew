@@ -1,0 +1,97 @@
+/* 让 SharePoint 页面和本地工作台都全宽显示 */
+#workbenchPageContent,
+.CanvasComponent.LCS.CanvasZone {
+  max-width: 100% !important;
+}
+
+/* 针对 localWorkbench 的附加样式覆盖 */
+#workbenchContainer {
+  max-width: 100% !important;
+  padding: 0 !important;
+}
+
+/* 覆盖 localWorkbench 内容区域宽度限制 */
+.SPPageChrome,
+.Canvas {
+  max-width: 100% !important;
+}
+
+.mainTitle {
+  background: #99CCFF;
+  padding: 5px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+}
+.button {
+  background: #99CCFF;
+  padding: 5px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 150;
+}
+
+.noMargin {
+  margin-top: 5px !important;
+}
+
+.Requisition .ms-Viewport {
+  margin-top: 0;
+}
+
+/* .Requisition .detailList .ms-DetailsHeader {
+  background-color: #99CCFF;
+} */
+
+.dialog-container {
+  width: 800px; /* 调整弹出框的宽度 */
+  max-width: 100%;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 每行两列 */
+  gap: 20px; /* 列之间的间距 */
+  margin-bottom: 16px;
+}
+.dialog-section {
+  margin-bottom: 16px;
+}
+
+.file-upload {
+  border: 1px dashed #999;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  color: #0078d4;
+  background-color: #f3f2f1;
+}
+
+.file-upload:hover {
+  background-color: #e1dfdd;
+}
+
+.file-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.primary-button {
+  background-color: #0078d4 !important;
+  color: #fff !important;
+}
+
+.primary-button:hover {
+  background-color: #005a9e !important;
+}
+
+.customDatePicker {
+  .ms-Label {
+    font-size: 10px;
+    font-weight: normal;
+  }
+}
+
