@@ -158,14 +158,14 @@ export function useUser(): UseUser {
     ): Promise<ISupplierHostBuyerMapping | undefined> {
         const sp = spfi(getSP());
         const response = await sp.web.lists
-        .getByTitle(CONST.LIST_NAME_SUPPLIERREQUESTS)
+        .getByTitle(CONST.LIST_NAME_SUPPLIERHOSTBUYERMAPPING)
         .renderListDataAsStream({
             ViewXml: `<View>
                         <Query>
                                 <Where>
                                 <Eq>
                                     <FieldRef Name="PARMANbr"/>
-                                    <Value Type="Number">${parmaId}</Value>
+                                    <Value Type="Text">${parmaId}</Value>
                                 </Eq>
                             </Where>
                             <OrderBy>

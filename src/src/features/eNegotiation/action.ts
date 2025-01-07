@@ -194,6 +194,34 @@ export const updateENegotiationRequestAction = createAsyncThunk(
     }
   }
 );
+export const deleteENegotiationRequestsAction = createAsyncThunk(
+  `${FeatureKey.ENEGOTIATIONREQUESTS}/deleteENegotiationRequest`,
+  async (ids: string[]): Promise<void> => {
+    const sp = spfi(getSP());
+    const [batchedSP, execute] = sp.batched();
+    const list = batchedSP.web.lists.getByTitle(
+      CONST.LIST_NAME_ENEGOTIATIONREQUESTS
+    );
+    try {
+      ids.forEach(async (id) => {
+        await list.items.getById(+id).delete();
+      });
+      await execute();
+    } catch (err) {
+      Logger.write(
+        `${CONST.LOG_SOURCE} (_deleteENegotiationRequest) - ${JSON.stringify(
+          err
+        )}`,
+        LogLevel.Error
+      );
+      AppInsightsService.aiInstance.trackEvent({
+        name: MESSAGE.deleteDataFailed,
+        properties: { error: err },
+      });
+      return Promise.reject(MESSAGE.deleteDataFailed);
+    }
+  }
+);
 
 function GetQueryInfo(
   queryCreteria: IENegotiationRequestCreteriaModel

@@ -1,0 +1,179 @@
+.displayFlex,
+.fileItemOdd,
+.fileItemEven,
+.label,
+.labelUpload {
+  display: flex;
+}
+.displayFlex,
+.fileItemOdd,
+.fileItemEven,
+.label,
+.labelUpload {
+  align-items: center;
+}
+.iconLabel,
+.labelUnit {
+  padding-left: 5px;
+}
+.iconLabel,
+.labelUpload {
+  font-size: 10px;
+}
+.iconUpload,
+.label,
+.textUpload {
+  font-weight: bold;
+}
+.fileList,
+.stackButton {
+  margin-top: 10px;
+}
+.fileItemOdd,
+.fileItemEven {
+  justify-content: space-between;
+  padding: 5px 10px;
+  height: 30px;
+  box-sizing: border-box;
+  font-size: 12px;
+}
+.fileItemOdd,
+.fileItemEven,
+.stackSubHeader {
+  border: 1px solid #ccc;
+}
+.labelUpload,
+.labelUnit {
+  height: 100%;
+}
+.labelUpload,
+.uploadArea {
+  cursor: pointer;
+}
+.textBolder,
+.header,
+.subHeader {
+  font-weight: 600;
+}
+.stackSubHeader,
+.stackInput {
+  padding: 10px 1.5%;
+}
+.stackButton,
+.stackHorizontal,
+.stackHorizontalLastRow {
+  padding: 0 1.5%;
+}
+.stackHorizontalLastRow {
+  padding-bottom: 20px;
+}
+.labelUpload,
+.stackCommentInput {
+  width: 100%;
+}
+.iconLabel {
+  align-content: center;
+  height: 10px;
+  width: 10px;
+}
+.iconUpload {
+  width: 20px;
+  height: 20px;
+  color: black;
+}
+.fileList {
+  position: relative;
+  height: 130px;
+  overflow: hidden;
+  overflow-y: auto;
+}
+.fileItemOdd {
+  background: #fff;
+}
+.fileItemEven {
+  background: #f6f6f6;
+}
+.label {
+  margin-top: 4px;
+}
+.labelItem {
+  width: 15vi;
+  height: 40px;
+}
+.labelValue {
+  line-height: 30px;
+}
+.labelUpload {
+  justify-content: center;
+}
+.labelRed {
+  padding-left: 2px;
+  color: red;
+}
+.inputArea {
+  padding-bottom: 20px;
+}
+.labelUnit,
+.textUpload {
+  font-size: 13px;
+}
+.textUpload {
+  margin-right: 5;
+}
+.textPaddingLeft {
+  padding-left: 4px;
+}
+.header {
+  background: #99ccff;
+  padding: 5px;
+}
+.subHeader {
+  padding: 0 2.5%;
+}
+.stackComment {
+  padding: 10px 5%;
+}
+.stackCommentInput,
+.flexBasisZero {
+  flex-basis: 0;
+}
+.stackInput {
+  background: #cceeff;
+}
+.uploadArea {
+  border: 1px dashed #0078d4;
+  padding: 10px;
+  text-align: center;
+  background: #f3f9fc;
+}
+.listWrapper {
+  padding-top: 40px;
+  padding-left: 1.5%;
+  padding-right: 1.5%;
+}
+.ms-List-cell,
+.ms-DetailsHeader,
+.ms-DetailsHeader-cell,
+.ms-DetailsHeader-cellName,
+.ms-DetailsRow,
+.ms-DetailsRow-cell {
+  min-height: 30px !important;
+  height: 30px;
+  line-height: 30px;
+}
+.ms-DetailsHeader {
+  padding-top: 0;
+}
+.ms-DetailsHeader-cell {
+  padding-left: 0;
+  padding-right: 0;
+}
+.ms-DetailsHeader-cellName {
+  font-size: 12px;
+}
+.ms-DetailsRow-cell {
+  display: flex;
+  padding-top: 0;
+  padding-bottom: 0;
+  align-items: center;
+}

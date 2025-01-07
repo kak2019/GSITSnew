@@ -48,6 +48,8 @@ import {
   ISupplierRequestSubItemFormModel,
 } from "../../../../model/priceChange";
 import { useUDGSAttachment } from "../../../../hooks-v2/use-udgs-attachment";
+import { useENegotiation } from "../../../../hooks/useENegotiation";
+import { IENegotiationRequestFormModel } from "../../../../model/eNegotiation";
 
 const PriceChangeRequestDetail: React.FC = () => {
   const navigate = useNavigate();
@@ -100,6 +102,8 @@ const PriceChangeRequestDetail: React.FC = () => {
     IUDGSAttachmentGridModel[]
   >([]);
 
+  const [, , , , createENegotiationRequest, , deleteENegotiationRequests] =
+    useENegotiation();
   const [selectedItems, setSelectedItems] = useState<ISupplierRequestSubItem[]>(
     []
   );
@@ -108,7 +112,7 @@ const PriceChangeRequestDetail: React.FC = () => {
   const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
   const [forwardDialogVisible, setForwardDialogVisible] = useState(false);
 
-  const { getUserType, getGPSUser } = useUser();
+  const { getUserType, getGPSUser, getSupplierHostBuyerMapping } = useUser();
   const [userType, setUserType] = useState<string>("Unknown");
   const [supplierinfo, setSupplierinfo] = useState<ISupplierInfoResponse>({
     supplierName: "",
@@ -125,18 +129,28 @@ const PriceChangeRequestDetail: React.FC = () => {
   });
 
   const requestGPSUserData = async () => {
-    const result = await getGPSUser(userEmail);
-    if (result && result instanceof Object) {
-      // 如果所有字段都有值，更新状态
-      setUserDetails({
-        role: result.role,
-        name: result.name,
-        sectionCode: result.sectionCode,
-        handlercode: result.handlercode,
-        porg: result.porg,
-        // 需要通过parma和buyer的mapping判断是否是hostbuyer
-        isHostBuyer: false,
-      });
+    // 获取parma和hostbuyer的mapping
+    if (!currentPriceChangeRequest?.Parma) return;
+    const res = await getSupplierHostBuyerMapping(
+      currentPriceChangeRequest?.Parma
+    );
+    if (res && res instanceof Object) {
+      // 获取user detail
+      const result = await getGPSUser(userEmail);
+      if (result && result instanceof Object) {
+        // 如果所有字段都有值，更新状态
+        setUserDetails({
+          role: result.role,
+          name: result.name,
+          sectionCode: result.sectionCode,
+          handlercode: result.handlercode,
+          porg: result.porg,
+          // 需要通过parma和buyer的mapping判断是否是hostbuyer
+          isHostBuyer:
+            res.SupplierHostPorg === result.porg &&
+            res.SupplierHostCd === result.handlercode,
+        });
+      }
     }
   };
 
@@ -395,9 +409,10 @@ const PriceChangeRequestDetail: React.FC = () => {
   const responsibleBuyerActionButtonEnable = useMemo(() => {
     const condition =
       !userDetails.isHostBuyer &&
-      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.INPROGRESS;
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.INPROGRESS &&
+      selectedItems.length === 1;
     return condition;
-  }, [currentPriceChangeRequest, userDetails]);
+  }, [currentPriceChangeRequest, userDetails, selectedItems]);
 
   const validateFields = (): boolean => {
     if (!currentPriceChangeRequest) return false;
@@ -770,8 +785,21 @@ const PriceChangeRequestDetail: React.FC = () => {
             onClick={() => {
               // 如果没有selected items，弹出提示
               // 如果selected items，判断选择的buyers有没有创建negotiation，没有创建则可以删除，否则弹出提示
+              // status是in progress，则表示这个responsible buyer已创建eNegotiation
               if (selectedItems.length) {
-                // 去negotiation表查？
+                if (
+                  selectedItems.some(
+                    (item) =>
+                      item.SupplierRequestSubitemStatus === STATUS.INPROGRESS
+                  )
+                ) {
+                  alert(
+                    "e-Negotiation already created, not able to remove responsible buyer."
+                  );
+                } else {
+                  const ids = selectedItems.map((item) => item.ID);
+                  deleteENegotiationRequests(ids);
+                }
               } else {
                 alert("Please select responsible buyer and then remove.");
               }
@@ -938,8 +966,18 @@ const PriceChangeRequestDetail: React.FC = () => {
             onClick={() => {
               // 校验items有没有被选择，没有的话弹出提示；若选择了，需要判断选择的items是否match userinfo，不满足弹出提示
               // 若选择是user自己的items，校验items status；如果是new则正常流程弹出responsible buyer action弹框，如果不是new，弹出提示
-              if (selectedItems.length) {
-                setFeedbackDialogVisible(true);
+              if (
+                selectedItems.length &&
+                selectedItems[0].Porg === userDetails.porg &&
+                String(selectedItems[0].Handler) === userDetails.handlercode
+              ) {
+                if (
+                  selectedItems[0].SupplierRequestSubitemStatus === STATUS.NEW
+                ) {
+                  setFeedbackDialogVisible(true);
+                } else {
+                  alert("Request has been handled, cannot change feedback.");
+                }
               } else {
                 alert(
                   "please select your responsible buyer record before taking any further action."
@@ -959,6 +997,7 @@ const PriceChangeRequestDetail: React.FC = () => {
       />
       <FeedbackDialog
         detailInfo={currentPriceChangeRequest}
+        supplierinfo={supplierinfo}
         visible={feedbackDialogVisible}
         onCancel={() => setFeedbackDialogVisible(false)}
         onOk={async (type, formData) => {
@@ -974,6 +1013,24 @@ const PriceChangeRequestDetail: React.FC = () => {
             await getSupplierRequestSubitemList(id);
           } else if (type === FeedbackType.ProceedToENegotiationCreate) {
             // 生成e-negotiation
+            const form: IENegotiationRequestFormModel = {
+              RequestID: "", // TODO 生成规则在8.3, 应该通过flow生成
+              Parma: formData.Parma,
+              SupplierContact: currentPriceChangeRequest.SupplierContact,
+              Porg: selectedItems[0].Porg,
+              Handler: String(selectedItems[0].Handler),
+              ExpectedEffectiveDateFrom: formData.ExpectedEffectiveDateFrom,
+              ReasonCode: formData.reasonCodeKey,
+            };
+            await createENegotiationRequest(form);
+            // update subitems
+            const forms = selectedItems.map((item) => ({
+              ...item,
+              SupplierRequestSubitemStatus: STATUS.INPROGRESS,
+            }));
+            await updateSupplierRequestSubitems(forms);
+            setFeedbackDialogVisible(false);
+            await getSupplierRequestSubitemList(id);
           } else if (type === FeedbackType.ReturnRequest) {
             const tempCommentHistoryValueStr = getLatestCommentHistory(
               formData.newComment

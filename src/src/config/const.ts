@@ -25,6 +25,7 @@ const CONST = {
   LIST_NAME_SUPPLIERREQUESTS: "Supplier Requests",
   LIST_NAME_SUPPLIERREQUESTSUBITEMS: "Supplier Request SubItems",
   LIST_NAME_ENEGOTIATIONREQUESTS: "e-Negotiation Requests",
+  LIST_NAME_SUPPLIERHOSTBUYERMAPPING: "SupplierHostBuyerMapping",
   CONFIGLIB_Name: "SiteAssets",
   SPLITTER: "; ",
   LOG_SOURCE: "🔶gsits",

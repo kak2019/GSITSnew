@@ -230,7 +230,10 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                         });
                       }
                     } else {
-                      onOk(FeedbackType.ProceedToENegotiationCreate, formData);
+                      onOk(FeedbackType.ProceedToENegotiationCreate, {
+                        ...formData,
+                        reasonCodeKey,
+                      });
                     }
                     // 如果不是sme，时间早于当前时间减90天，那么显示warning并重置时间到当前时间减90天，如果不早于当前时间减90天，则可以生成e-negotiation
                   } else {
@@ -246,7 +249,10 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                         });
                       }
                     } else {
-                      onOk(FeedbackType.ProceedToENegotiationCreate, formData);
+                      onOk(FeedbackType.ProceedToENegotiationCreate, {
+                        ...formData,
+                        reasonCodeKey,
+                      });
                     }
                   }
                 }
@@ -262,6 +268,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                 onOk(FeedbackType.ReturnRequest, {
                   ...formData,
                   newComment: comment,
+                  reasonCodeKey,
                 });
               }
             } else if (selectedFeedbackOptionKey === 2) {
@@ -270,6 +277,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                 onOk(FeedbackType.FeedbackToHostbuyer, {
                   ...formData,
                   newComment: comment,
+                  reasonCodeKey,
                 });
               }
             }

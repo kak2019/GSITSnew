@@ -7,6 +7,7 @@ import {
   getENegotiationRequestListAction,
   createENegotiationRequestAction,
   updateENegotiationRequestAction,
+  deleteENegotiationRequestsAction,
 } from "../features/eNegotiation";
 import {
   IENegotiationRequestFormModel,
@@ -26,7 +27,8 @@ type ENegotiationOperators = [
   ) => Promise<string>,
   updateENegotiationRequest: (
     form: IENegotiationRequestFormModel
-  ) => Promise<void>
+  ) => Promise<void>,
+  deleteENegotiationRequests: (ids: string[]) => Promise<void>
 ];
 
 export const useENegotiation = (): Readonly<ENegotiationOperators> => {
@@ -67,6 +69,12 @@ export const useENegotiation = (): Readonly<ENegotiationOperators> => {
     },
     [dispatch]
   );
+  const deleteENegotiationRequests = useCallback(
+    async (ids: string[]): Promise<void> => {
+      await dispatch(deleteENegotiationRequestsAction(ids));
+    },
+    [dispatch]
+  );
 
   return [
     isFetching,
@@ -75,5 +83,6 @@ export const useENegotiation = (): Readonly<ENegotiationOperators> => {
     getENegotiationRequestList,
     createENegotiationRequest,
     updateENegotiationRequest,
+    deleteENegotiationRequests,
   ] as const;
 };

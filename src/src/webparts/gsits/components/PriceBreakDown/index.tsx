@@ -94,26 +94,25 @@ const PriceBreakDown: React.FC = () => {
     postQuotation,
     putQuotation,
   ] = useUDGSQuotation();
-  const [, errorMessageRFQ, , currentRFQ, , getRFQByID, , putRFQ] =
-    useUDGSRFQ();
+  const [, errorMessageRFQ, , , , getRFQByID, , putRFQ] = useUDGSRFQ();
   //#endregion
   //#region properties
   const { t } = useTranslation();
   const ctx = useContext(AppContext);
   const location = useLocation();
-  const masterData: IMasterData = location.state;
-  // console.log(location.state);
-  // const masterData: IMasterData = {
-  //   role: "Supplier",
-  //   rfqID: 2,
-  //   partID: 3,
-  //   quotationID: 17,
-  //   supplierId: "111",
-  //   userName: "Rodger Ruan",
-  //   userEmail: "rodger.ruan@udtrucks.com",
-  //   isSME: true,
-  //   countryCode: "CN",
-  // };
+  //const masterData: IMasterData = location.state;
+  console.log(location.state);
+  const masterData: IMasterData = {
+    role: "Supplier",
+    rfqID: 2,
+    partID: 3,
+    quotationID: 17,
+    supplierId: "111",
+    userName: "Rodger Ruan",
+    userEmail: "rodger.ruan@udtrucks.com",
+    isSME: true,
+    countryCode: "CN",
+  };
   const navigate = useNavigate();
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
   const orderQtyEditableType = [
@@ -220,7 +219,7 @@ const PriceBreakDown: React.FC = () => {
           currentQuotation.constructor === Object;
         if (!isEmptyObject && isEditableValue) {
           if (
-            currentRFQ.OrderType === "BLPR Blanket Production Order" &&
+            initialRFQValue.OrderType === "BLPR Blanket Production Order" &&
             !initialPartValue.AnnualQty
           ) {
             initialPartValue.OrderQty = Number.NaN;
@@ -231,7 +230,7 @@ const PriceBreakDown: React.FC = () => {
           }
           setGeneralInfoEditValue(
             generalInfoEdit(
-              orderQtyEditableType.indexOf(currentRFQ.OrderType) === -1
+              orderQtyEditableType.indexOf(initialRFQValue.OrderType) === -1
             )
           );
           initialQuotationValue.UOP = currentQuotation.UOP
@@ -1041,17 +1040,17 @@ const PriceBreakDown: React.FC = () => {
   function handleReturn(): void {
     const selectedItems = [
       {
-        ID: currentRFQ.ID,
-        Parma: currentRFQ.Parma,
-        RFQNo: currentRFQ.RFQNo,
-        BuyerInfo: currentRFQ.BuyerInfo,
-        HandlerName: currentRFQ.HandlerName,
-        RFQType: currentRFQ.RFQType,
-        ReasonOfRFQ: currentRFQ.ReasonOfRFQ,
-        Created: currentRFQ.Created,
-        RFQDueDate: currentRFQ.RFQDueDate,
-        RFQStatus: currentRFQ.RFQStatus,
-        EffectiveDateRequest: currentRFQ.EffectiveDateSupplier,
+        ID: rfqValue.ID,
+        Parma: rfqValue.Parma,
+        RFQNo: rfqValue.RFQNo,
+        BuyerInfo: rfqValue.BuyerInfo,
+        HandlerName: rfqValue.HandlerName,
+        RFQType: rfqValue.RFQType,
+        ReasonOfRFQ: rfqValue.ReasonOfRFQ,
+        Created: rfqValue.Created,
+        RFQDueDate: rfqValue.RFQDueDate,
+        RFQStatus: rfqValue.RFQStatus,
+        EffectiveDateRequest: rfqValue.EffectiveDateSupplier,
       },
     ];
     navigate("/rfq/quotation", { state: { selectedItems } });
@@ -1234,7 +1233,11 @@ const PriceBreakDown: React.FC = () => {
                         <Link onClick={() => onDownLoadFile(val.FileItem!)}>
                           {val.Name}
                         </Link>
-                        <Link onClick={() => onRemoveFile(val, i)}>Remove</Link>
+                        {isEditable && (
+                          <Link onClick={() => onRemoveFile(val, i)}>
+                            Remove
+                          </Link>
+                        )}
                       </div>
                     ) : (
                       <div
