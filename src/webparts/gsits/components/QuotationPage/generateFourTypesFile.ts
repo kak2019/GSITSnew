@@ -3,8 +3,10 @@ import { getSP } from "../../../../pnpjsConfig";
 import "@pnp/sp/webs";
 import "@pnp/sp/folders";
 import * as Excel from "exceljs";
-import { IRFQGrid } from "../../../../model/rfq";
-import { IRequisitionRFQGrid } from "../../../../model/requisition";
+// import { IRFQGrid } from "../../../../model/rfq";
+// import { IRequisitionRFQGrid } from "../../../../model/requisition";
+import {IUDGSRFQGridModel} from "../../../../model-v2/udgs-rfq-model";
+import {IUDGSNewPartQuotationGridModel} from "../../../../model-v2/udgs-part-model";
 
 
 
@@ -15,14 +17,36 @@ const TEMPLATE_PATHS = {
     "SAPR Standalone Production Order": "/GSITSTemplate/StandaloneOrderFileTemplate.xlsx",
     'SAPP Standalone Prototype Order': "/GSITSTemplate/PrototypeOrderFileTemplate.xlsx",
 };
-
+// 根据模板类型动态生成 libraryUrl
+const getLibraryUrl = (orderType: string,siteLink:string): string => {
+    const prefix = orderType.slice(0, 4); // 获取模板类型的前四个字母
+    return `${siteLink}/OUTCOME/${'Order '+prefix}`; // 拼接路径
+};
+// 上传文件到 SharePoint 的函数
+const uploadFileToSharePoint = async (
+    libraryUrl: string,
+    fileName: string,
+    buffer: ArrayBuffer | Blob,
+    overwrite: boolean = true
+): Promise<void> => {
+    const sp = spfi(getSP());
+    try {
+        const folder = sp.web.getFolderByServerRelativePath(libraryUrl);
+        await folder.files.addUsingPath(fileName, buffer, { Overwrite: overwrite });
+        console.log(`File uploaded successfully! File URL: ${libraryUrl}/${fileName}`);
+    } catch (err) {
+        console.error("Error uploading file to SharePoint:", err);
+        throw new Error("File upload failed. Please try again.");
+    }
+};
 const getTemplatePath = (orderType: keyof typeof TEMPLATE_PATHS, siteRelativeLinks: string): string => {
     return siteRelativeLinks + (TEMPLATE_PATHS[orderType] );
 };
 
 const generateFileName = (orderType: string, rfqNo: string): string => {
     const now = new Date();
-    const YYMMDDhhmmss = `${now.getFullYear().toString().slice(2)}${(now.getMonth() + 1)
+    ////
+    const YYMMDDhhmm = `${now.getFullYear().toString().slice(2)}${(now.getMonth() + 1)
         .toString()
         .padStart(2, "0")}${now.getDate().toString().padStart(2, "0")}${now
         .getHours()
@@ -30,12 +54,12 @@ const generateFileName = (orderType: string, rfqNo: string): string => {
         .padStart(2, "0")}${now.getMinutes().toString().padStart(2, "0")}${now
         .getSeconds()
         .toString()
-        .padStart(2, "0")}${now.getMilliseconds().toString().padStart(2, "0")}`;
+        .padStart(2, "0")}`;
 
-    return `${orderType}_${rfqNo}_${YYMMDDhhmmss}.xlsx`;
+    return `${orderType.slice(0,4)}_${rfqNo}_${YYMMDDhhmm}.xlsx`;
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
-const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Links: string, currentRFQ: IRFQGrid, currentRFQRequisition: IRequisitionRFQGrid[]) => {
+const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Links: string, currentRFQ: IUDGSRFQGridModel, currentRFQRequisition: IUDGSNewPartQuotationGridModel[]) => {
     if (!selectedItems || selectedItems.length === 0) {
         alert("No records selected for export!");
         return;
@@ -72,7 +96,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
             const matchedRecord = currentRFQRequisition.find((req) => req.ID === key);
             if (matchedRecord) {
                 const rowIndex = index + 2; // 数据从第二行开始写入
-
+                console.log(matchedRecord,"match");
                 columns.forEach((columnName, colIndex) => {
                     const excelColIndex = colIndex + 1; // 确保列索引从 1 开始
                     // 根据列名填充数据
@@ -101,7 +125,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = currentRFQ.Parma || "";
                             break;
                         case "Order Price":
-                            cellValue = matchedRecord.QuotedBasicUnitPriceTtl || "";
+                            cellValue = matchedRecord.QuotedUnitPriceTtl || "";
                             break;
                         case "Currency Code":
                             cellValue = matchedRecord.Currency || "";
@@ -125,10 +149,11 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = matchedRecord.NamedPlaceDescription || "";
                             break;
                         case "Order number":
-                            cellValue = matchedRecord.OrderNumber || "";
+                            //cellValue = matchedRecord.OrderNumber || "";
+                            cellValue = item.OrderNumber || "";
                             break;
                         case "suffix":
-                            cellValue = matchedRecord.Suffix || "";
+                            cellValue = matchedRecord.UDGSSuffix || "";
                             break;
                         case "Consignee":
                             cellValue = "";
@@ -140,7 +165,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = matchedRecord.FirstLot || "";
                             break;
                         case "Country of Origin":
-                            cellValue = matchedRecord.CountryOfOrigin || "";
+                            cellValue = matchedRecord.CountryofOrigin || "";
                             break;
                         case "Packaging Code":
                             cellValue =  "";
@@ -191,16 +216,20 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "y";
                             break;
                         case "Standard Text Per order 1":
-                            cellValue =matchedRecord.StandardOrderText1|| "";
+                            //cellValue =matchedRecord.StandardOrderText1|| "";
+                            cellValue =item.StandardOrderText1|| "";
                             break;
                         case "Standard Text Per order 2":
-                            cellValue =matchedRecord.StandardOrderText2|| "";
+                            //cellValue =matchedRecord.StandardOrderText2|| "";
+                            cellValue =item.StandardOrderText2|| "";
                             break;
                         case "Standard Text Per order 3":
-                            cellValue =matchedRecord.StandardOrderText3|| "";
+                            //cellValue =matchedRecord.StandardOrderText3|| "";
+                            cellValue =item.StandardOrderText3|| "";
                             break;
                         case "Free text Per Part":
-                            cellValue =matchedRecord.FreePartText|| "";
+                            //cellValue =matchedRecord.FreePartText|| "";
+                            cellValue =item.FreePartText|| "";
                             break;
                         case "Amount 1":
                             cellValue =matchedRecord.MaterialsCostsTtl|| "";
@@ -248,7 +277,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 6":
-                            cellValue = matchedRecord.PackingAndDistributionCosts||"";
+                            cellValue = matchedRecord.PackingandDistributionCosts||"";
                             break;
                         case "Price Breakdown 6":
                             cellValue = "PACK";
@@ -322,30 +351,41 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
         });
         // 生成文件名
         const fileName = generateFileName(orderType, String(currentRFQ?.RFQNo));
-
+        // 将文件内容转换为 buffer
+        const buffer = await workbookTemplate.xlsx.writeBuffer();
+        // 根据模板类型动态生成 libraryUrl
+        const libraryUrl = getLibraryUrl(orderType,Site_Relative_Links);
+        // 上传文件到 SharePoint
+        await uploadFileToSharePoint(libraryUrl, fileName, buffer);
         // 下载生成的文件
-        workbookTemplate.xlsx
-            .writeBuffer()
-            .then((buffer) => {
-                download(buffer, fileName);
-            })
-            .catch((e) => console.error(e));
+    //     workbookTemplate.xlsx
+    //         .writeBuffer()
+    //         .then((buffer) => {
+    //             download(buffer, fileName);
+    //         })
+    //         .catch((e) => console.error(e));
+    // } catch (err) {
+    //     console.error("Error reading or writing Excel file", err);
+    // }
+        return true
     } catch (err) {
-        console.error("Error reading or writing Excel file", err);
+        console.error("Error generating or uploading file:", err);
+        return false;
+        //alert("Error generating or uploading file. Please try again.");
     }
 };
 
 export default exportToExcelWithTemplate;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
-function download(buffer: any, filename: string) {
-    const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const href = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = href;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(href);
-}
+// function download(buffer: any, filename: string) {
+//     const blob = new Blob([buffer], {
+//         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+//     });
+//     const href = URL.createObjectURL(blob);
+//     const link = document.createElement("a");
+//     link.href = href;
+//     link.download = filename;
+//     link.click();
+//     URL.revokeObjectURL(href);
+// }

@@ -116,7 +116,6 @@ export const getCurrentQuotationAction = createAsyncThunk(
         .getByTitle(CONST.LIST_NAME_REQUISITION)
         .renderListDataAsStream({
           ViewXml: `<View>
-        <RowLimit Paged="TRUE">200</RowLimit>
         <Query>
           <Where>
             ${camlEqNumber(Number(QuotationId), "ID")}
@@ -141,6 +140,7 @@ export const getCurrentQuotationAction = createAsyncThunk(
           Suffix: item.Suffix,
           Porg: item.Porg,
           HandlerId: item.Handler,
+          HandlerName: item.HandlerName,
           BuyerName: item.BuyerName,
           PARMA: item.Parma,
           NamedPlace: item.NamedPlace,
@@ -151,7 +151,8 @@ export const getCurrentQuotationAction = createAsyncThunk(
           FirstLot: item.FirstLot,
           SupplierPartNumber: item.SupplierPartNumber,
           Currency: item.Currency,
-          UnitOfPrice: item.UOM,
+          UnitOfPrice: item.UOP,
+          UOM: item.UOM,
           QuotedUnitPriceTtl: item.QuotedUnitPrice
             ? Number(item.QuotedUnitPrice).toFixed(3)
             : "",
@@ -193,6 +194,8 @@ export const getCurrentQuotationAction = createAsyncThunk(
           CommentHistory: item.CommentHistory,
           AnnualQty: item.AnnualQty,
           OrderQty: item.OrderQty,
+          RequiredWeek: item.RequiredWeek,
+          RequisitionType: item.RequisitionType,
         } as IQuotationGrid;
       });
       return result[0];
@@ -218,7 +221,6 @@ export const getCurrentQuotationRFQAction = createAsyncThunk(
         .getByTitle(CONST.LIST_NAME_RFQ)
         .renderListDataAsStream({
           ViewXml: `<View>
-        <RowLimit Paged="TRUE">200</RowLimit>
         <Query>
           <Where>
             ${camlEqNumber(Number(RFQId), "ID")}
@@ -250,6 +252,7 @@ export const getCurrentQuotationRFQAction = createAsyncThunk(
           RFQNo: item.RFQNo_x002e_,
           Created: item.Created,
           RFQType: item.RFQType,
+          SupplierName: item.SupplierName,
         } as IRFQGrid;
       });
       return result[0];
@@ -308,6 +311,7 @@ export const updateQuotationAction = createAsyncThunk(
         PartIssue: Quotation.PartIssue,
         DrawingNo_x002e_: Quotation.DrawingNo,
         Status: Quotation.Status,
+        IsQuoted: Quotation.Status === "Quoted" ? "Yes" : null,
         OrderType: Quotation.OrderType,
         MaterialUser: parseNumber(Quotation.MaterialUser),
         Suffix: Quotation.Suffix,
@@ -341,6 +345,7 @@ export const updateQuotationAction = createAsyncThunk(
         PaidProvPartsCost: parseNumber(Quotation.PaidProvPartsCost),
         SuppliedMtrCost: parseNumber(Quotation.SuppliedMtrCost),
         CommentHistory: Quotation.CommentHistory,
+        UOP: Quotation.UnitOfPrice,
       };
       await sp.web.lists
         .getByTitle(CONST.LIST_NAME_REQUISITION)
@@ -372,7 +377,6 @@ export const getActionLogsAction = createAsyncThunk(
         .getByTitle(CONST.LIST_NAME_ACTIONLOG)
         .renderListDataAsStream({
           ViewXml: `<View>
-        <RowLimit Paged="TRUE">200</RowLimit>
         <Query>
           <Where>
             ${

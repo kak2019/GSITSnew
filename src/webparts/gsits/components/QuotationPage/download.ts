@@ -2,11 +2,26 @@ import { spfi } from "@pnp/sp";
 import { getSP } from "../../../../pnpjsConfig";
 import "@pnp/sp/webs";
 import "@pnp/sp/folders";
-import {IRFQGrid} from "../../../../model/rfq"
-import {IRequisitionRFQGrid} from "../../../../model/requisition";
 import * as Excel from 'exceljs';
+import {IUDGSRFQGridModel} from "../../../../model-v2/udgs-rfq-model";
+import {IUDGSNewPartQuotationGridModel} from "../../../../model-v2/udgs-part-model";
+const generateFileName = (rfqNo: string): string => {
+    const now = new Date();
+    ////
+    const YYMMDDhhmm = `${now.getFullYear().toString().slice(2)}${(now.getMonth() + 1)
+        .toString()
+        .padStart(2, "0")}${now.getDate().toString().padStart(2, "0")}${now
+        .getHours()
+        .toString()
+        .padStart(2, "0")}${now.getMinutes().toString().padStart(2, "0")}${now
+        .getSeconds()
+        .toString()
+        .padStart(2, "0")}`;
+
+    return `${rfqNo}_${YYMMDDhhmm}.xlsx`;
+};
 // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
-const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, currentRFQ: IRFQGrid, currentRFQRequisition: IRequisitionRFQGrid[]) => {
+const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, currentRFQ: IUDGSRFQGridModel, currentRFQRequisition:IUDGSNewPartQuotationGridModel[]) => {
     // 检查是否有选中的记录
     if (!selectedItems || selectedItems.length === 0) {
         alert("No records selected for export!");
@@ -37,39 +52,41 @@ const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, 
                 worksheet.getCell('B' + rowIndex).value = matchedRecord.Qualifier || "";
                 worksheet.getCell('C' + rowIndex).value = matchedRecord.MaterialUser || "";
                 worksheet.getCell('D' + rowIndex).value = matchedRecord.Porg || "";
-                worksheet.getCell('E' + rowIndex).value = currentRFQ.HandlerName || ""; // Handle 存疑
-                worksheet.getCell('F' + rowIndex).value = currentRFQ.BuyerName || "";
-                worksheet.getCell('G' + rowIndex).value = matchedRecord.Suffix || "";
+                worksheet.getCell('E' + rowIndex).value = matchedRecord.Handler || ""; // Handle 存疑
+                worksheet.getCell('F' + rowIndex).value = matchedRecord.HandlerName || "";
+                worksheet.getCell('G' + rowIndex).value = matchedRecord.UDGSSuffix || "";
                 worksheet.getCell('H' + rowIndex).value = currentRFQ.Parma || "";
                 worksheet.getCell('I' + rowIndex).value = matchedRecord.OrderCoverageTime || "";
                 worksheet.getCell('J' + rowIndex).value = matchedRecord.NamedPlace || "";
-                worksheet.getCell('K' + rowIndex).value = matchedRecord.NamedPlace || "";
+                worksheet.getCell('K' + rowIndex).value = matchedRecord.NamedPlaceDescription || "";
                 worksheet.getCell('L' + rowIndex).value = matchedRecord.FirstLot || "";
-                worksheet.getCell('M' + rowIndex).value = matchedRecord.CountryOfOrigin || "";
-                worksheet.getCell('N' + rowIndex).value = matchedRecord.QuotedBasicUnitPriceTtl || "";
+                worksheet.getCell('M' + rowIndex).value = matchedRecord.CountryofOrigin || "";
+                worksheet.getCell('N' + rowIndex).value = matchedRecord.QuotedUnitPriceTtl || "";
                 worksheet.getCell('O' + rowIndex).value = matchedRecord.Currency || "";
-                worksheet.getCell('P' + rowIndex).value = matchedRecord.QuotedUnitPrice || ""; // 存疑
+                worksheet.getCell('P' + rowIndex).value = matchedRecord.UOP|| ""; // 存疑
                 worksheet.getCell('Q' + rowIndex).value = matchedRecord.OrderPriceStatusCode || "";
                 worksheet.getCell('R' + rowIndex).value = matchedRecord.MaterialsCostsTtl || "";
                 worksheet.getCell('S' + rowIndex).value = matchedRecord.PurchasedPartsCostsTtl || "";
                 worksheet.getCell('T' + rowIndex).value = matchedRecord.ProcessingCostsTtl || "";
                 worksheet.getCell('U' + rowIndex).value = matchedRecord.ToolingJigDeprCostTtl || "";
                 worksheet.getCell('V' + rowIndex).value = matchedRecord.AdminExpProfit || "";
-                worksheet.getCell('W' + rowIndex).value = matchedRecord.PackingAndDistributionCosts || "";
+                worksheet.getCell('W' + rowIndex).value = matchedRecord.PackingandDistributionCosts || "";
                 worksheet.getCell('X' + rowIndex).value = matchedRecord.Other || "";
                 worksheet.getCell('Y' + rowIndex).value = matchedRecord.PaidProvPartsCost || "";
                 worksheet.getCell('Z' + rowIndex).value = matchedRecord.SuppliedMtrCost || "";
                 worksheet.getCell('AA' + rowIndex).value = matchedRecord.PartIssue || "";
                 worksheet.getCell('AB' + rowIndex).value = matchedRecord.AnnualQty || "";
-                worksheet.getCell('AC' + rowIndex).value = currentRFQ.OrderType || "";
+                worksheet.getCell('AC' + rowIndex).value = matchedRecord.OrderQty || "";
                 worksheet.getCell('AD' + rowIndex).value = matchedRecord.SurfaceTreatmentCode || "";
                 worksheet.getCell('AE' + rowIndex).value = matchedRecord.DrawingNo || "";
 
             }
         });
+        // 生成文件名
+        const fileName = generateFileName( String(currentRFQ?.RFQNo));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         workbookTemplate.xlsx.writeBuffer().then(buffer => {
-            download(buffer, 'exportFile.xlsx');
+            download(buffer, fileName);
         }).catch(e => console.error(e));
     } catch (err) {
         console.error("Error reading or writing Excel file", err);

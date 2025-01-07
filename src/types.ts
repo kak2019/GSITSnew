@@ -8,4 +8,6 @@ export interface IComment {
 export interface IAttachment {
   File: File;
   Url: string;
+  Name: string;
+  Date: string;
 }

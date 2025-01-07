@@ -70,6 +70,8 @@ export interface IRequisitionRFQGrid {
   StandardOrderText3?: string;
   FreePartText?: string;
   OrderNumber?: string;
+  HandlerName?: string;
+  PriceType?:string;
 }
 
 export interface IQuotationGrid {
@@ -95,7 +97,8 @@ export interface IQuotationGrid {
   FirstLot?: string; //Column "First Lot"
   SupplierPartNumber?: string; //Column "Supplier Part Number"
   Currency?: string; //Column "Currency"
-  UnitOfPrice?: string; //Column "UOM"
+  UnitOfPrice?: string; //Column "UOP"
+  UOM?: string; //Column "UOM"
   QuotedUnitPriceTtl?: string; //Column "Quoted Unit Price"
   OrderPriceStatusCode?: string; //Column "Price Type"
   QuotedToolingPriceTtl?: string; //Column "Quoted Tooling Price Ttl"
@@ -114,6 +117,7 @@ export interface IQuotationGrid {
   AnnualQty?: string; //Column "Annual Qty"
   OrderQty?: string; //Column "Order Qty"
   RequiredWeek?: string; //Column "Required Week"
+  RequisitionType?: string; //Column "Requisition Type"
 }
 export interface IProceedToPoFields {
   ID?: string;

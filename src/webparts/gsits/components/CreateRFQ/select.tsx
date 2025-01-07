@@ -12,7 +12,7 @@ import {
   Stack,
   IconButton,
   mergeStyleSets,
-  TextField
+  TextField, IColumn
 } from '@fluentui/react';
 import { getAADClient } from '../../../../pnpjsConfig';
 import { AadHttpClient } from '@microsoft/sp-http';
@@ -21,6 +21,8 @@ import { useContext, useEffect, useState } from "react";
 import { Logger, LogLevel } from "@pnp/logging";
 import { useUser } from "../../../../hooks";
 import AppContext from "../../../../AppContext";
+import {t} from "i18next";
+
 
 const classes = mergeStyleSets({
   areaBox: {
@@ -121,20 +123,20 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
         console.error('Error fetching supplier data:', error);
       }}
   };
-  useEffect(() => {
-    if (parma?.parma) {
-      fetchSuppliers(parma).then(
-          _ => {
-            // 明确的处理逻辑，例如记录日志或更新状态
-            console.log('Fetch succeeded:', _);
-          },
-          error => {
-            // 处理错误
-            console.error('Fetch failed:', error);
-          }
-      );
-    }
-  }, [parma?.parma]);
+  // useEffect(() => {
+  //   if (parma?.parma) {
+  //     fetchSuppliers(parma).then(
+  //         _ => {
+  //           // 明确的处理逻辑，例如记录日志或更新状态
+  //           console.log('Fetch succeeded:', _);
+  //         },
+  //         error => {
+  //           // 处理错误
+  //           console.error('Fetch failed:', error);
+  //         }
+  //     );
+  //   }
+  // }, [parma?.parma]);
   useEffect(() => {
     if (parma?.parma) {
       fetchSuppliers(parma).then(
@@ -194,7 +196,8 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
       const newContacts = [...prevContacts];
       selectedContacts.forEach((contact, index) => {
         if (index < newContacts.length) {
-          newContacts[index] = { name: contact.name, email: contact.email, title: contact.title, functions: contact.functions };
+          //newContacts[index] = { name: contact.name, email: contact.email, title: contact.title, functions: contact.functions };
+          newContacts[index] = { name: contact.lastName + " " + contact.firstName, email: contact.email, title: contact.title, functions: contact.functions };
         }
       });
       return newContacts;
@@ -217,7 +220,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
     });
   };
 
-  const columns = [
+  const columns:IColumn[] = [
     {
       key: 'column1',
       name: '',
@@ -231,10 +234,14 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
           />
       ),
     },
-    { key: 'column2', name: 'Name', fieldName: 'name', minWidth: 100 },
-    { key: 'column3', name: 'Email', fieldName: 'email', minWidth: 150 },
-    { key: 'column4', name: 'Title', fieldName: 'title', minWidth: 150 },
-    { key: 'column5', name: 'Functions', fieldName: 'functions', minWidth: 150 },
+    { key: 'column2', name: 'Name', fieldName: 'name', minWidth: 120,isResizable: true ,
+      onRender: (item) => {
+          return <span>{item.lastName+" " + item.firstName}</span>
+      }
+    },
+    { key: 'column3', name: 'Email', fieldName: 'email', minWidth: 240 ,isResizable: true},
+    { key: 'column4', name: 'Title', fieldName: 'title', minWidth: 150 ,isResizable: true},
+    { key: 'column5', name: 'Functions', fieldName: 'functions', minWidth: 150 ,isResizable: true},
   ];
 
   const handleAddContacts = (): void => {
@@ -281,17 +288,17 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
 
   return (
       <Stack>
-        <span className={classes.title}>Supplier Contact <span style={{color:'#a4262c'}}>*</span></span>
+        <span className={classes.title}>{t('Supplier Contact')} <span style={{color:'#a4262c'}}>*</span></span>
         <div className={classes.areaBox}>
           <div className={classes.uploadArea} onClick={handleAddContacts}>
-            <span style={{ fontWeight: 'bold' }}>+ Click to Select</span>
+            <span style={{ fontWeight: 'bold' }}>+ {t('Click to Select')}</span>
             <span> (up to 5)</span>
           </div>
           {/*<div className={classes.uploadArea} onClick={fetchSuppliers}>*/}
           {/*  <span style={{ fontWeight: 'bold' }}>+ Fetch Supplier Data</span> /!* 新增的按钮，点击后执行fetchSuppliers *!/*/}
           {/*</div>*/}
           <div className={classes.uploadArea} onClick={handleOpenCreate}>
-            <span style={{ fontWeight: 'bold' }}>+ Click to Create New</span>
+            <span style={{ fontWeight: 'bold' }}>+ {t('Click to Create New')}</span>
           </div>
         </div>
 
@@ -300,7 +307,8 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
               <div key={index} className={`${classes.fileItem} ${index % 2 === 0 ? classes.evenItem : classes.oddItem}`}>
                 {contact ? (
                     <>
-                      <span>{contact.name} - {contact.email} - {contact.title} - {contact.functions} </span>
+                      <span>{contact.name} - {contact.email} </span>
+                      {/*<span>{contact.name} - {contact.email} - {contact.title} - {contact.functions} </span>*/}
                       <IconButton
                           iconProps={{ iconName: 'Delete' }}
                           onClick={() => handleRemoveContact(index)}
@@ -318,7 +326,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             onDismiss={() => setIsOpen(false)}
             dialogContentProps={{
               type: DialogType.normal,
-              title: 'Supplier Selection',
+              title: t('Supplier Selection'),
             }}
 
             modalProps={{
@@ -327,13 +335,13 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             maxWidth={800}
         >
           <Stack style={{ marginBottom: 10 }}>
-            <TextField placeholder="Search for a name or create a new one" onChange={(val: any) => {
+            <TextField placeholder={t("Search for a name or create a new one")} onChange={(val: any) => {
               if (val.target.value) {
                 setUn(supplierData.filter(item => item.name?.toLowerCase().includes(val.target.value.toLowerCase())));
               } else {
                 setUn(supplierData);
               }
-            }} style={{ width: '100%' }} />
+            }} style={{ width: '600px' }} />
           </Stack>
           <DetailsList
               items={unSelectedSuppliers}
@@ -341,10 +349,11 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
               layoutMode={DetailsListLayoutMode.fixedColumns}
               selectionMode={0} // Disable selection mode on DetailsList
               onRenderDetailsHeader={() => null}
+              // styles={theme.detaillist}
           />
-          <span>Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled. Only name and email are needed for a new contact</span>
+          {/*<span>Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled. Only name and email are needed for a new contact</span>*/}
           <DialogFooter>
-            <PrimaryButton onClick={handleSelect} text="Select" />
+            <PrimaryButton onClick={handleSelect} text={t("Select")} />
             {/*<DefaultButton onClick={() => setIsOpen(false)} text="Cancel" />*/}
           </DialogFooter>
         </Dialog>
@@ -354,14 +363,14 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             onDismiss={closeDialog}
             dialogContentProps={{
               type: DialogType.normal,
-              title: 'Create New Contact',
+              title: t('Create New Contact'),
             }}
             maxWidth={500}
         >
           <Stack horizontal wrap tokens={{ childrenGap: 10 }}>
             <Stack.Item grow styles={{ root: { flexBasis: '40%', width: '50%' } }}>
               <TextField
-                  label="Name"
+                  label={t("Name")}
                   required
                   value={createState.name}
                   onChange={(e, newValue) => setState({ ...createState, name: newValue })}
@@ -369,7 +378,7 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             </Stack.Item>
             <Stack.Item grow styles={{ root: { flexBasis: '40%', width: '50%' } }}>
               <TextField
-                  label="Email"
+                  label={t("Email")}
                   required
                   value={createState.email}
                   onChange={(e, newValue) => setState({ ...createState, email: newValue })}
@@ -377,22 +386,22 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             </Stack.Item>
             <Stack.Item grow styles={{ root: { flexBasis: '40%', width: '50%' } }}>
               <TextField
-                  label="Title"
+                  label={t("Title")}
                   value={createState.title}
                   onChange={(e, newValue) => setState({ ...createState, title: newValue })}
               />
             </Stack.Item>
             <Stack.Item grow styles={{ root: { flexBasis: '40%', width: '50%' } }}>
               <TextField
-                  label="Function"
+                  label={t("Function")}
                   value={createState.functions}
                   onChange={(e, newValue) => setState({ ...createState, functions: newValue })}
               />
             </Stack.Item>
           </Stack>
-          <p>Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled.</p>
+          <p>{t('Note: Newly created contacts are temporary and will disappear when New Parts RFQ Creation is created or cancelled.')}</p>
           <DialogFooter>
-            <PrimaryButton onClick={handleAdd} disabled={!createState.name || !createState.email} text="Add" />
+            <PrimaryButton onClick={handleAdd} disabled={!createState.name || !createState.email} text={t("Add")} />
           </DialogFooter>
         </Dialog>
 
@@ -406,8 +415,8 @@ const SupplierSelection: React.FC<SupplierSelectionProps> = ({onContactsChange, 
             }}
         >
           <DialogFooter>
-            <PrimaryButton onClick={toggleHideDialog}  text="OK" />
-            <DefaultButton onClick={toggleHideDialog} text="Cancel" />
+            <PrimaryButton onClick={toggleHideDialog}  text={t("OK")} />
+            <DefaultButton onClick={toggleHideDialog} text={t("Cancel")} />
           </DialogFooter>
         </Dialog>
       </Stack>

@@ -10,7 +10,7 @@ import { AadHttpClient } from '@microsoft/sp-http';
 import "@pnp/graph/users";
 import { spfi } from '@pnp/sp';
 import { Logger, LogLevel } from '@pnp/logging';
-import { IGPSUser } from '../model/user';
+import { IGPSUser, ISupplierHostBuyerMapping } from '../model/user';
 import { CONST } from '../config/const';
 import { AppContextProps } from '../AppContext';
 
@@ -21,6 +21,7 @@ type UseUser = {
     getUserSupplierId: (identifier: string) => Promise<string>,
     getGPSUser: (email: string) => Promise<IGPSUser | undefined>,
     getUserPicture: (userId: string) => Promise<Readonly<UserOperators>>,
+    getSupplierHostBuyerMapping: (parmaId: string) => Promise<ISupplierHostBuyerMapping | undefined>,
 };
 type UserOperators = [userPicture: string];
 
@@ -115,6 +116,7 @@ export function useUser(): UseUser {
                     name: result.name,
                     sectionCode: result.sectionCode,
                     handlercode: result.handlercode,
+                    porg: result.porg
                 } as IGPSUser;
             } 
             return undefined;
@@ -138,7 +140,51 @@ export function useUser(): UseUser {
                 Logger.write(`No UserPicture found ${error}`, LogLevel.Error);
             }
         }
+        else
+        {
+            try {
+                const sp = spfi(getSP());
+                const profile = await sp.profiles.userProfile;
+                userPicture=profile?.PictureUrl || '';
+            }
+            catch (error) {
+                Logger.write(`No UserPicture found ${error}`, LogLevel.Error);
+            }
+        }
         return [userPicture] as const;
+    }
+    async function getSupplierHostBuyerMapping(
+        parmaId: string
+    ): Promise<ISupplierHostBuyerMapping | undefined> {
+        const sp = spfi(getSP());
+        const response = await sp.web.lists
+        .getByTitle(CONST.LIST_NAME_SUPPLIERHOSTBUYERMAPPING)
+        .renderListDataAsStream({
+            ViewXml: `<View>
+                        <Query>
+                                <Where>
+                                <Eq>
+                                    <FieldRef Name="PARMANbr"/>
+                                    <Value Type="Text">${parmaId}</Value>
+                                </Eq>
+                            </Where>
+                            <OrderBy>
+                                <FieldRef Name="ID" Ascending="FALSE" />
+                            </OrderBy>
+                        </Query>
+                    </View>`,
+        });
+        if (response && response.Row && response.Row.length) {
+            return {
+                PARMANbr: response.Row[0].PARMANbr,
+                PARMANm: response.Row[0].PARMANm,
+                SupplierHostPorg: response.Row[0].SupplierHostPorg,
+                SupplierHostCd: response.Row[0].SupplierHostCd,
+                SupplierHostName: response.Row[0].SupplierHostName,
+            } as ISupplierHostBuyerMapping;
+        } else {
+            return Promise.reject();
+        }
     }
     return {
         getUserEmail,
@@ -147,5 +193,6 @@ export function useUser(): UseUser {
         getUserSupplierId,
         getGPSUser,
         getUserPicture,
+        getSupplierHostBuyerMapping
     };
 }

@@ -13,8 +13,10 @@ import CreateRFQ from "../CreateRFQ";
 import DemoForm from "../UIDemo/DemoForm";
 import QuotationPage from "../QuotationPage";
 import PriceBreakDown from "../PriceBreakDown";
-import PriceChangeRequest from '../PriceChange';
+import PriceChangeRequest from '../PriceChangeRequest';
 import PriceChangeRequestDetail from "../PriceChangeRequestDetail";
+import PriceCreateRFQ from "../PriceCreateRFQ";
+import PriceChangeENegotiation from "../PriceChangeENegotiation";
 
 const GSITSRoutes: React.FC = () => {
 
@@ -36,6 +38,12 @@ const GSITSRoutes: React.FC = () => {
                 <Route path="detail" element={<Outlet />} >
                     <Route index element={<PriceChangeRequestDetail />} />
                 </Route>
+                <Route path="create-price-rfq" element={<Outlet />} >
+                    <Route index element={<PriceCreateRFQ />} />
+                </Route>
+            </Route>
+            <Route path="/pce" element={<Outlet />} >
+                <Route index element={<PriceChangeENegotiation />} />
             </Route>
             {/* 传递 userType */}
             <Route path="*" element={<PageNotFound />} />

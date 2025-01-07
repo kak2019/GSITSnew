@@ -16,8 +16,17 @@ export interface IUserRole {
 }
 
 export interface IGPSUser {
+  porg: string;
   role: string;
   name: string;
   sectionCode: string;
   handlercode: string;
+}
+
+export interface ISupplierHostBuyerMapping {
+  PARMANbr: string;
+  PARMANm: string;
+  SupplierHostPorg: string;
+  SupplierHostCd: string;
+  SupplierHostName: string;
 }

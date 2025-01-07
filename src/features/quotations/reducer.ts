@@ -32,6 +32,7 @@ const quotationsSlice = createSlice({
         state.status = QuotationStatus.Loading;
       })
       .addCase(getAllQuotationsAction.fulfilled, (state, action) => {
+        state.message = "";
         state.status = QuotationStatus.Idle;
         state.AllQuotations = [
           ...(action.payload as readonly IQuotationGrid[]),
@@ -45,6 +46,7 @@ const quotationsSlice = createSlice({
         state.status = QuotationStatus.Loading;
       })
       .addCase(updateQuotationAction.fulfilled, (state, action) => {
+        state.message = "";
         state.status = QuotationStatus.Idle;
       })
       .addCase(updateQuotationAction.rejected, (state, action) => {
@@ -56,6 +58,7 @@ const quotationsSlice = createSlice({
       })
       .addCase(getCurrentQuotationAction.fulfilled, (state, action) => {
         state.status = QuotationStatus.Idle;
+        state.message = "";
         state.CurrentQuotation = action.payload as IQuotationGrid;
       })
       .addCase(getCurrentQuotationAction.rejected, (state, action) => {
@@ -67,6 +70,7 @@ const quotationsSlice = createSlice({
       })
       .addCase(getCurrentQuotationRFQAction.fulfilled, (state, action) => {
         state.status = QuotationStatus.Idle;
+        state.message = "";
         state.CurrentQuotationRFQ = action.payload;
       })
       .addCase(getCurrentQuotationRFQAction.rejected, (state, action) => {

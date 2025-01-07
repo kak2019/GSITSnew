@@ -160,7 +160,6 @@ export const queryRequisitionsAction = createAsyncThunk(
         .getByTitle(CONST.LIST_NAME_REQUISITION)
         .renderListDataAsStream({
           ViewXml: `<View>
-        <RowLimit Paged="TRUE">200</RowLimit>
         <Query>
         ${queryXml}
         <OrderBy>

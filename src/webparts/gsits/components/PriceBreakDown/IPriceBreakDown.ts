@@ -1,7 +1,8 @@
 import { IDropdownOption } from "@fluentui/react";
-import { IQuotationGrid } from "../../../../model/requisition";
 import { IColumn } from "@fluentui/react";
-import { IRFQGrid } from "../../../../model/rfq";
+import { IUDGSQuotationGridModel } from "../../../../model-v2/udgs-quotation-model";
+import { IUDGSRFQGridModel } from "../../../../model-v2/udgs-rfq-model";
+import { IUDGSNewPartGridModel } from "../../../../model-v2/udgs-part-model";
 
 //#region model
 export interface ITextFieldPriceBreakdown {
@@ -9,29 +10,34 @@ export interface ITextFieldPriceBreakdown {
   Align?: "start" | "center" | "end";
   AdditionalIcon?: boolean;
   ShowMandatoryIcon?: boolean;
-  DataSource?: "Quotation" | "RFQ";
+  DataSource?: "Part" | "RFQ" | "Quotation";
   Label?: string;
-  Key?: keyof IQuotationGrid | keyof IRFQGrid;
+  Key?:
+    | keyof IUDGSRFQGridModel
+    | keyof IUDGSNewPartGridModel
+    | keyof IUDGSQuotationGridModel;
   ErrorMessage?: string;
   Choice?: IDropdownOption[];
   MaxLength?: number;
   MaxValue?: number;
   MinValue?: number;
   ReadOnly?: boolean;
+  IsDate?: boolean;
 }
 export interface ITextFieldRowPriceBreakdown {
   Fields: ITextFieldPriceBreakdown[];
   IsLastRow: boolean;
 }
 interface IFieldValidationModel {
-  Field: keyof IQuotationGrid;
+  Field: keyof IUDGSQuotationGridModel;
   RowIndex: number;
   ColumnIndex: number;
 }
 export interface IMasterData {
   role: "Buyer" | "Supplier";
-  rfqId: string;
-  quotationId: string;
+  rfqID: number;
+  partID: number;
+  quotationID: number;
   supplierId?: string;
   userName?: string;
   userEmail?: string;
@@ -42,7 +48,7 @@ export interface IDialogValue {
   IsOpen: boolean;
   Title: string;
   Tip: string;
-  Type: "Cancel" | "Accepted" | "Returned" | "Close";
+  ActionType: "Cancel" | "Accepted" | "Returned" | "Close" | "Message";
 }
 //#endregion
 //#region options
@@ -179,21 +185,40 @@ export const countryOfOriginOptions: IDropdownOption[] = [
 ];
 export const currencyCodeOptions: IDropdownOption[] = [
   { key: "", text: "" },
+  { key: "SEK", text: "SEK" },
+  { key: "AUD", text: "AUD" },
+  { key: "BRL", text: "BRL" },
+  { key: "CAD", text: "CAD" },
+  { key: "CHF", text: "CHF" },
+  { key: "DKK", text: "DKK" },
+  { key: "EUR", text: "EUR" },
+  { key: "GBP", text: "GBP" },
+  { key: "JPY", text: "JPY" },
+  { key: "MXN", text: "MXN" },
+  { key: "NOK", text: "NOK" },
+  { key: "PLN", text: "PLN" },
+  { key: "USD", text: "USD" },
+  { key: "CNY", text: "CNY" },
   { key: "CZK", text: "CZK" },
+  { key: "HUF", text: "HUF" },
+  { key: "INR", text: "INR" },
   { key: "KRW", text: "KRW" },
+  { key: "MYR", text: "MYR" },
+  { key: "THB", text: "THB" },
+  { key: "ZAR", text: "ZAR" },
 ];
 export const unitOfPriceOptions: IDropdownOption[] = [
   { key: "", text: "" },
-  { key: "MTR", text: "MTR" },
-  { key: "MTR2", text: "MTR2" },
-  { key: "MTR3", text: "MTR3" },
-  { key: "PCE", text: "PCE" },
-  { key: "PCE2", text: "PCE2" },
-  { key: "PCE3", text: "PCE3" },
-  { key: "DMQ", text: "DMQ" },
-  { key: "GRM", text: "GRM" },
-  { key: "KGM", text: "KGM" },
-  { key: "KGM3", text: "KGM3" },
+  { key: "MTR", text: "MTR - Per metre" },
+  { key: "MTR2", text: "MTR2 - Per hundred metres" },
+  { key: "MTR3", text: "MTR3 - Per thousand metres" },
+  { key: "PCE", text: "PCE - Per piece" },
+  { key: "PCE2", text: "PCE2 - Per hundred pieces" },
+  { key: "PCE3", text: "PCE3 - Per thousand pieces" },
+  { key: "DMQ", text: "DMQ - Per litre" },
+  { key: "GRM", text: "GRM - Per gram" },
+  { key: "KGM", text: "KGM - Per kilogram" },
+  { key: "KGM3", text: "KGM3 - Per 1000 kilograms" },
 ];
 export const orderPriceStatusCodeOptionsSME: IDropdownOption[] = [
   { key: "", text: "" },
@@ -206,29 +231,31 @@ export const orderPriceStatusCodeOptionsCommon: IDropdownOption[] = [
 ];
 //#endregion
 //#region autoCaculation
-export const AutoSumQuotedBasicUnitPriceTtlFields: (keyof IQuotationGrid)[] = [
-  "MaterialsCostsTtl",
-  "PurchasedPartsCostsTtl",
-  "ProcessingCostsTtl",
-  "ToolingJigDeprCostTtl",
-  "AdminExpProfit",
-  "PackingAndDistributionCosts",
-  "Other",
-];
-export const AutoSumQuotedUnitPriceTtlFields: (keyof IQuotationGrid)[] = [
-  "PaidProvPartsCost",
-  "SuppliedMtrCost",
-  "MaterialsCostsTtl",
-  "PurchasedPartsCostsTtl",
-  "ProcessingCostsTtl",
-  "ToolingJigDeprCostTtl",
-  "AdminExpProfit",
-  "PackingAndDistributionCosts",
-  "Other",
-];
+export const AutoSumQuotedBasicUnitPriceTtlFields: (keyof IUDGSQuotationGridModel)[] =
+  [
+    "MaterialsCostsTtl",
+    "PurchasedPartsCostsTtl",
+    "ProcessingCostsTtl",
+    "ToolingJigDeprCostTtl",
+    "AdminExpProfit",
+    "PackingAndDistributionCosts",
+    "Other",
+  ];
+export const AutoSumQuotedUnitPriceTtlFields: (keyof IUDGSQuotationGridModel)[] =
+  [
+    "PaidProvPartsCost",
+    "SuppliedMtrCost",
+    "MaterialsCostsTtl",
+    "PurchasedPartsCostsTtl",
+    "ProcessingCostsTtl",
+    "ToolingJigDeprCostTtl",
+    "AdminExpProfit",
+    "PackingAndDistributionCosts",
+    "Other",
+  ];
 //#endregion
 //#region validations
-export const DecimalValidationFieldsTwo: IFieldValidationModel[] = [
+export const NumberValidationFields: IFieldValidationModel[] = [
   { Field: "QuotedToolingPriceTtl", RowIndex: 4, ColumnIndex: 0 },
   { Field: "QuotedOneTimePaymentTtl", RowIndex: 5, ColumnIndex: 0 },
   { Field: "MaterialsCostsTtl", RowIndex: 0, ColumnIndex: 1 },
@@ -250,7 +277,7 @@ export const MandatoryValidationFieldsOne: IFieldValidationModel[] = [
 export const MandatoryValidationFieldsTwo: IFieldValidationModel[] = [
   { Field: "Currency", RowIndex: 0, ColumnIndex: 0 },
   { Field: "QuotedUnitPriceTtl", RowIndex: 1, ColumnIndex: 0 },
-  { Field: "UnitOfPrice", RowIndex: 2, ColumnIndex: 0 },
+  { Field: "UOP", RowIndex: 2, ColumnIndex: 0 },
   { Field: "OrderPriceStatusCode", RowIndex: 3, ColumnIndex: 0 },
 ];
 export const NonDoubleBytesValidationFields: IFieldValidationModel[] = [
@@ -265,23 +292,20 @@ export const IActionLogColumn: IColumn[] = [
     name: "Date",
     fieldName: "Date",
     minWidth: 100,
-    maxWidth: 100,
     isResizable: true,
   },
   {
     key: "User",
     name: "User",
     fieldName: "User",
-    minWidth: 150,
-    maxWidth: 150,
+    minWidth: 200,
     isResizable: true,
   },
   {
     key: "LogType",
     name: "Action",
     fieldName: "LogType",
-    minWidth: 100,
-    maxWidth: 400,
+    minWidth: 150,
     isResizable: true,
   },
 ];
@@ -311,9 +335,9 @@ export const IDialogListColumn: IColumn[] = [
     minWidth: 100,
   },
   {
-    key: "QuotedUnitPrice",
+    key: "QuotedUnitPriceTtl",
     name: "Quoted Unit Price",
-    fieldName: "QuotedUnitPrice",
+    fieldName: "QuotedUnitPriceTtl",
     minWidth: 150,
   },
 ];
@@ -321,41 +345,88 @@ export const IDialogListColumn: IColumn[] = [
 //#region infoFields
 const basicInfoRowOne: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Part Number", Key: "PartNumber", DataSource: "Quotation" },
-    { Label: "Qualifier", Key: "Qualifier", DataSource: "Quotation" },
+    {
+      Label: "Part Number",
+      Key: "PartNumber",
+      DataSource: "Part",
+      Align: "start",
+    },
+    {
+      Label: "Qualifier",
+      Key: "Qualifier",
+      DataSource: "Part",
+      Align: "start",
+    },
     {
       Label: "Part Description",
       Key: "PartDescription",
-      DataSource: "Quotation",
+      DataSource: "Part",
+      Align: "start",
     },
-    { Label: "Part Issue", Key: "PartIssue", DataSource: "Quotation" },
+    {
+      Label: "Part Issue",
+      Key: "PartIssue",
+      DataSource: "Part",
+      Align: "start",
+    },
   ],
   IsLastRow: false,
 };
 const basicInfoRowTwo: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "PDrawing No.", Key: "DrawingNo", DataSource: "Quotation" },
-    { Label: "RFQ No.", Key: "RFQNo", DataSource: "RFQ" },
-    { Label: "RFQ Due Date", Key: "RFQDueDate", DataSource: "RFQ" },
-    { Label: "Status", Key: "Status", DataSource: "Quotation" },
+    {
+      Label: "Drawing No.",
+      Key: "DrawingNo",
+      DataSource: "Part",
+      Align: "start",
+    },
+    { Label: "RFQ No.", Key: "RFQNo", DataSource: "RFQ", Align: "start" },
+    {
+      Label: "RFQ Due Date",
+      Key: "RFQDueDate",
+      DataSource: "RFQ",
+      Align: "start",
+      IsDate: true,
+    },
+    { Label: "Status", Key: "RFQStatus", DataSource: "RFQ", Align: "start" },
   ],
   IsLastRow: false,
 };
 const basicInfoRowThree: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Order Type", Key: "OrderType", DataSource: "Quotation" },
-    { Label: "Material User", Key: "MaterialUser", DataSource: "Quotation" },
-    { Label: "Suffix", Key: "Suffix", DataSource: "Quotation" },
-    { Label: "Porg", Key: "Porg", DataSource: "Quotation" },
+    {
+      Label: "Order Type",
+      Key: "OrderType",
+      DataSource: "RFQ",
+      Align: "start",
+    },
+    {
+      Label: "Material User",
+      Key: "MaterialUser",
+      DataSource: "Part",
+      Align: "start",
+    },
+    { Label: "Suffix", Key: "UDGSSuffix", DataSource: "Part", Align: "start" },
+    { Label: "Porg", Key: "Porg", DataSource: "Part", Align: "start" },
   ],
   IsLastRow: false,
 };
 const basicInfoRowFour: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Handler ID", Key: "HandlerId", DataSource: "Quotation" },
-    { Label: "Buyer Name", Key: "HandlerName", DataSource: "Quotation" },
-    { Label: "PARMA", Key: "Parma", DataSource: "RFQ" },
-    { Label: "Supplier Name", Key: "SupplierName", DataSource: "RFQ" },
+    { Label: "Handler ID", Key: "Handler", DataSource: "Part", Align: "start" },
+    {
+      Label: "Buyer Name",
+      Key: "HandlerName",
+      DataSource: "Part",
+      Align: "start",
+    },
+    { Label: "PARMA", Key: "Parma", DataSource: "RFQ", Align: "start" },
+    {
+      Label: "Supplier Name",
+      Key: "SupplierName",
+      DataSource: "RFQ",
+      Align: "start",
+    },
   ],
   IsLastRow: true,
 };
@@ -367,16 +438,17 @@ export const basicInfo: ITextFieldRowPriceBreakdown[] = [
 ];
 const generalInfoViewRowOne: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Named Place", Key: "NamedPlace" },
+    { Label: "Named Place", Key: "NamedPlace", DataSource: "Quotation" },
     {
       Label: "Named Place Description",
       Key: "NamedPlaceDescription",
+      DataSource: "Quotation",
     },
     {
       Label: "Surface Treatment Code",
       Key: "SurfaceTreatmentCode",
+      DataSource: "Quotation",
     },
-    { Label: "Part Issue", Key: "PartIssue" },
   ],
   IsLastRow: false,
 };
@@ -385,10 +457,10 @@ const generalInfoViewRowTwo: ITextFieldRowPriceBreakdown = {
     {
       Label: "Country of Origin",
       Key: "CountryOfOrigin",
+      DataSource: "Quotation",
     },
-    { Label: "Order Qty", Key: "OrderQty" },
-    { Label: "Annual Qty", Key: "AnnualQty" },
-    { Label: "Status", Key: "Status" },
+    { Label: "Order Qty", Key: "OrderQty", DataSource: "Part" },
+    { Label: "Annual Qty", Key: "AnnualQty", DataSource: "Part" },
   ],
   IsLastRow: false,
 };
@@ -397,13 +469,14 @@ const generalInfoViewRowThree: ITextFieldRowPriceBreakdown = {
     {
       Label: "Order Coverate Time",
       Key: "OrderCoverageTime",
+      DataSource: "Quotation",
     },
-    { Label: "First Lot", Key: "FirstLot" },
+    { Label: "First Lot", Key: "FirstLot", DataSource: "Quotation" },
     {
       Label: "Supplier Part Number",
       Key: "SupplierPartNumber",
+      DataSource: "Quotation",
     },
-    { Label: "Porg", Key: "Porg" },
   ],
   IsLastRow: true,
 };
@@ -419,6 +492,7 @@ const generalInfoEditRowOne: ITextFieldRowPriceBreakdown = {
       Align: "start",
       Label: "Named Place",
       Key: "NamedPlace",
+      DataSource: "Quotation",
       AdditionalIcon: true,
       ShowMandatoryIcon: true,
     },
@@ -427,6 +501,7 @@ const generalInfoEditRowOne: ITextFieldRowPriceBreakdown = {
       Align: "center",
       Label: "Named Place Description",
       Key: "NamedPlaceDescription",
+      DataSource: "Quotation",
       MaxLength: 50,
       AdditionalIcon: true,
     },
@@ -435,39 +510,73 @@ const generalInfoEditRowOne: ITextFieldRowPriceBreakdown = {
       Align: "end",
       Label: "Surface Treatment Code",
       Key: "SurfaceTreatmentCode",
+      DataSource: "Quotation",
       AdditionalIcon: true,
       Choice: surfaceTreatmentOptions,
     },
   ],
   IsLastRow: false,
 };
-const generalInfoEditRowTwo: ITextFieldRowPriceBreakdown = {
-  Fields: [
-    {
-      FieldType: "Choice",
-      Align: "start",
-      Label: "Country of Origin",
-      Key: "CountryOfOrigin",
-      Choice: countryOfOriginOptions,
-      AdditionalIcon: true,
-      ShowMandatoryIcon: true,
-    },
-    {
-      FieldType: "Number",
-      Align: "center",
-      Label: "Order QTY",
-      Key: "OrderQty",
-      AdditionalIcon: true,
-    },
-    {
-      FieldType: "Number",
-      Align: "end",
-      Label: "Annual Qty",
-      Key: "AnnualQty",
-      AdditionalIcon: true,
-    },
-  ],
-  IsLastRow: false,
+const generalInfoEditRowTwo = (
+  orderQtyDisable: boolean
+): ITextFieldRowPriceBreakdown => {
+  return orderQtyDisable
+    ? {
+        Fields: [
+          {
+            FieldType: "Choice",
+            Align: "start",
+            Label: "Country of Origin",
+            Key: "CountryOfOrigin",
+            DataSource: "Quotation",
+            Choice: countryOfOriginOptions,
+            AdditionalIcon: true,
+            ShowMandatoryIcon: true,
+          },
+          {
+            FieldType: "Number",
+            Align: "center",
+            Label: "Annual Qty",
+            Key: "AnnualQty",
+            DataSource: "Part",
+            AdditionalIcon: true,
+          },
+          { Label: "Blank" },
+        ],
+        IsLastRow: false,
+      }
+    : {
+        Fields: [
+          {
+            FieldType: "Choice",
+            Align: "start",
+            Label: "Country of Origin",
+            Key: "CountryOfOrigin",
+            DataSource: "Quotation",
+            Choice: countryOfOriginOptions,
+            AdditionalIcon: true,
+            ShowMandatoryIcon: true,
+          },
+          {
+            FieldType: "Number",
+            Align: "center",
+            Label: "Order Qty",
+            Key: "OrderQty",
+            DataSource: "Part",
+            AdditionalIcon: true,
+            ReadOnly: orderQtyDisable,
+          },
+          {
+            FieldType: "Number",
+            Align: "end",
+            Label: "Annual Qty",
+            Key: "AnnualQty",
+            DataSource: "Part",
+            AdditionalIcon: true,
+          },
+        ],
+        IsLastRow: false,
+      };
 };
 const generalInfoEditRowThree: ITextFieldRowPriceBreakdown = {
   Fields: [
@@ -476,14 +585,18 @@ const generalInfoEditRowThree: ITextFieldRowPriceBreakdown = {
       Align: "start",
       Label: "Order Coverage Time",
       Key: "OrderCoverageTime",
+      DataSource: "Quotation",
       AdditionalIcon: true,
       ShowMandatoryIcon: true,
+      MaxValue: 99,
+      MinValue: 1,
     },
     {
       FieldType: "Text",
       Align: "center",
       Label: "First Lot",
       Key: "FirstLot",
+      DataSource: "Quotation",
       AdditionalIcon: true,
       ShowMandatoryIcon: true,
     },
@@ -492,26 +605,33 @@ const generalInfoEditRowThree: ITextFieldRowPriceBreakdown = {
       Align: "end",
       Label: "Supplier Part Number",
       Key: "SupplierPartNumber",
+      DataSource: "Quotation",
       AdditionalIcon: true,
     },
   ],
   IsLastRow: true,
 };
-export const generalInfoEdit: ITextFieldRowPriceBreakdown[] = [
-  generalInfoEditRowOne,
-  generalInfoEditRowTwo,
-  generalInfoEditRowThree,
-];
+export const generalInfoEdit = (
+  orderQtyDiable: boolean
+): ITextFieldRowPriceBreakdown[] => {
+  return [
+    generalInfoEditRowOne,
+    generalInfoEditRowTwo(orderQtyDiable),
+    generalInfoEditRowThree,
+  ];
+};
 const quoteBreakdownInfoViewRowOne: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Currency", Key: "Currency" },
+    { Label: "Currency", Key: "Currency", DataSource: "Quotation" },
     {
       Label: "Materials Costs Ttl",
       Key: "MaterialsCostsTtl",
+      DataSource: "Quotation",
     },
     {
       Label: "Paid Prov Parts Cost",
       Key: "PaidProvPartsCost",
+      DataSource: "Quotation",
     },
   ],
   IsLastRow: false,
@@ -521,24 +641,28 @@ const quoteBreakdownInfoViewRowTwo: ITextFieldRowPriceBreakdown = {
     {
       Label: "Quoted Unit Price Ttl",
       Key: "QuotedUnitPriceTtl",
+      DataSource: "Quotation",
     },
     {
       Label: "Purchased Parts Costs Ttl",
       Key: "PurchasedPartsCostsTtl",
+      DataSource: "Quotation",
     },
     {
       Label: "Supplied Mtr Cost",
       Key: "SuppliedMtrCost",
+      DataSource: "Quotation",
     },
   ],
   IsLastRow: false,
 };
 const quoteBreakdownInfoViewRowThree: ITextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Unit of Price", Key: "UnitOfPrice" },
+    { Label: "Unit of Price", Key: "UOP", DataSource: "Quotation" },
     {
       Label: "Processing Costs Total",
       Key: "ProcessingCostsTtl",
+      DataSource: "Quotation",
     },
     { Label: "Blank" },
   ],
@@ -549,10 +673,12 @@ const quoteBreakdownInfoViewRowFour: ITextFieldRowPriceBreakdown = {
     {
       Label: "Order Price Status Code",
       Key: "OrderPriceStatusCode",
+      DataSource: "Quotation",
     },
     {
       Label: "Tooling Jig Depr Costs Ttl",
       Key: "ToolingJigDeprCostTtl",
+      DataSource: "Quotation",
     },
     { Label: "Blank" },
   ],
@@ -563,8 +689,13 @@ const quoteBreakdownInfoViewRowFive: ITextFieldRowPriceBreakdown = {
     {
       Label: "Quoted Tooling Price Ttl",
       Key: "QuotedToolingPriceTtl",
+      DataSource: "Quotation",
     },
-    { Label: "Admin Exp/Profit", Key: "AdminExpProfit" },
+    {
+      Label: "Admin Exp/Profit",
+      Key: "AdminExpProfit",
+      DataSource: "Quotation",
+    },
     { Label: "Blank" },
   ],
   IsLastRow: false,
@@ -574,10 +705,12 @@ const quoteBreakdownInfoViewRowSix: ITextFieldRowPriceBreakdown = {
     {
       Label: "Quoted One Time Payment Ttl",
       Key: "QuotedOneTimePaymentTtl",
+      DataSource: "Quotation",
     },
     {
       Label: "Packing and Distribution Costs",
       Key: "PackingAndDistributionCosts",
+      DataSource: "Quotation",
     },
     { Label: "Blank" },
   ],
@@ -586,7 +719,7 @@ const quoteBreakdownInfoViewRowSix: ITextFieldRowPriceBreakdown = {
 const quoteBreakdownInfoViewRowSeven: ITextFieldRowPriceBreakdown = {
   Fields: [
     { Label: "Blank" },
-    { Label: "Other", Key: "Other" },
+    { Label: "Other", Key: "Other", DataSource: "Quotation" },
     { Label: "Blank" },
   ],
   IsLastRow: false,
@@ -597,6 +730,7 @@ const quoteBreakdownInfoViewRowEight: ITextFieldRowPriceBreakdown = {
     {
       Label: "Quoted Basic Unit Price Ttl",
       Key: "QuotedBasicUnitPriceTtl",
+      DataSource: "Quotation",
     },
     { Label: "Blank" },
   ],
@@ -619,6 +753,7 @@ const quoteBreakdownInfoEditRowOne: ITextFieldRowPriceBreakdown = {
       Align: "start",
       Label: "Currency",
       Key: "Currency",
+      DataSource: "Quotation",
       Choice: currencyCodeOptions,
       AdditionalIcon: true,
       ShowMandatoryIcon: true,
@@ -628,12 +763,14 @@ const quoteBreakdownInfoEditRowOne: ITextFieldRowPriceBreakdown = {
       Align: "center",
       Label: "Materials Costs Ttl",
       Key: "MaterialsCostsTtl",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Number",
       Align: "end",
       Label: "Paid Prov Parts Cost",
       Key: "PaidProvPartsCost",
+      DataSource: "Quotation",
     },
   ],
   IsLastRow: false,
@@ -645,6 +782,7 @@ const quoteBreakdownInfoEditRowTwo: ITextFieldRowPriceBreakdown = {
       Align: "start",
       Label: "Quoted Unit Price Ttl",
       Key: "QuotedUnitPriceTtl",
+      DataSource: "Quotation",
       ShowMandatoryIcon: true,
       ReadOnly: true,
     },
@@ -653,12 +791,14 @@ const quoteBreakdownInfoEditRowTwo: ITextFieldRowPriceBreakdown = {
       Align: "center",
       Label: "Purchased Parts Costs Ttl",
       Key: "PurchasedPartsCostsTtl",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Number",
       Align: "end",
       Label: "Supplied Mtr Cost",
       Key: "SuppliedMtrCost",
+      DataSource: "Quotation",
     },
   ],
   IsLastRow: false,
@@ -669,7 +809,8 @@ const quoteBreakdownInfoEditRowThree: ITextFieldRowPriceBreakdown = {
       FieldType: "Choice",
       Align: "start",
       Label: "Unit of Price",
-      Key: "UnitOfPrice",
+      Key: "UOP",
+      DataSource: "Quotation",
       Choice: unitOfPriceOptions,
       AdditionalIcon: true,
       ShowMandatoryIcon: true,
@@ -679,6 +820,7 @@ const quoteBreakdownInfoEditRowThree: ITextFieldRowPriceBreakdown = {
       Align: "center",
       Label: "Processing Costs Total",
       Key: "ProcessingCostsTtl",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Blank",
@@ -697,10 +839,10 @@ const quoteBreakdownInfoEditRowFour = (
         Align: "start",
         Label: "Order Price Status Code",
         Key: "OrderPriceStatusCode",
-        Choice:
-          masterData.isSME && masterData.role === "Supplier"
-            ? orderPriceStatusCodeOptionsSME
-            : orderPriceStatusCodeOptionsCommon,
+        DataSource: "Quotation",
+        Choice: masterData.isSME
+          ? orderPriceStatusCodeOptionsSME
+          : orderPriceStatusCodeOptionsCommon,
         ShowMandatoryIcon: true,
       },
       {
@@ -708,6 +850,7 @@ const quoteBreakdownInfoEditRowFour = (
         Align: "center",
         Label: "Tooling Jig Depr Cost Ttl",
         Key: "ToolingJigDeprCostTtl",
+        DataSource: "Quotation",
       },
       {
         FieldType: "Blank",
@@ -724,12 +867,14 @@ const quoteBreakdownInfoEditRowFive: ITextFieldRowPriceBreakdown = {
       Align: "start",
       Label: "Quoted Tooling Price Ttl",
       Key: "QuotedToolingPriceTtl",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Number",
       Align: "center",
       Label: "Admin Exp/Profit",
       Key: "AdminExpProfit",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Blank",
@@ -745,12 +890,14 @@ const quoteBreakdownInfoEditRowSix: ITextFieldRowPriceBreakdown = {
       Align: "start",
       Label: "Quoted One Time Payment Ttl",
       Key: "QuotedOneTimePaymentTtl",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Number",
       Align: "center",
       Label: "Packing and Distribution Costs",
       Key: "PackingAndDistributionCosts",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Blank",
@@ -770,6 +917,7 @@ const quoteBreakdownInfoEditRowSeven: ITextFieldRowPriceBreakdown = {
       Align: "center",
       Label: "Other",
       Key: "Other",
+      DataSource: "Quotation",
     },
     {
       FieldType: "Blank",
@@ -789,6 +937,7 @@ const quoteBreakdownInfoEditRowEight: ITextFieldRowPriceBreakdown = {
       Align: "center",
       Label: "Quoted Basic Unit Price Ttl",
       Key: "QuotedBasicUnitPriceTtl",
+      DataSource: "Quotation",
       ReadOnly: true,
     },
     {

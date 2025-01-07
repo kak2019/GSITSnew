@@ -12,7 +12,6 @@ export const getSupplierIdByUserEmailAction = createAsyncThunk(
   `${FeatureKey.USERROLES}/getSupplierIdByUserEmail`,
   async (email: string): Promise<string> => {
     const sp = spfi(getSP());
-
     try {
       let items: IUserMapping[] = [];
       let hasNext = true;

@@ -38,8 +38,14 @@
 .toggleContainer {
   width: 7em;
   padding-top: 0.4em;
+  flex-grow: 1;
+  justify-items: flex-end;
 }
-
+.pictureContainer {
+  margin-left: 4px;
+  display: inline-flex;
+  width: 2.4em;
+}
 .active {
   background-color: #515151;
   color: #d6d7d6;

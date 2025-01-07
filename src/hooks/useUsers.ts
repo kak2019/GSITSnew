@@ -12,7 +12,7 @@ type UserRoleOperators = [
   isFetching: UserRoleStatus,
   supplierId: string,
   errorMessage: string,
-  getSupplierId: (email: string) => void
+  getSupplierId: (email: string) => Promise<string>
 ];
 
 export const useUsers = (): Readonly<UserRoleOperators> => {
@@ -21,8 +21,13 @@ export const useUsers = (): Readonly<UserRoleOperators> => {
   const errorMessage = useAppSelector(messageSelector);
   const supplierId = useAppSelector(supplierIdSelector);
   const getSupplierId = useCallback(
-    (email: string) => {
-      return dispatch(getSupplierIdByUserEmailAction(email));
+    async (email: string):Promise<string> => {
+      const actionResult=await dispatch(getSupplierIdByUserEmailAction(email)).catch((err)=>{console.log(err)});
+      if (getSupplierIdByUserEmailAction.fulfilled.match(actionResult)) {
+        return actionResult.payload as string;
+      } else {
+        throw new Error("Error When Return New RFQ ID");
+      }
     },
     [dispatch]
   );

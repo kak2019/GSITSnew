@@ -46,9 +46,9 @@ export const inputCommentsStyles = {
   },
 };
 export const commentHistoryStyles = {
-  root: { width: "inherit" },
+  root: { width: "100%" },
   field: {
-    resize: "vertical",
+    resize: "none",
     fontSize: "12px",
   },
 };

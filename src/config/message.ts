@@ -4,5 +4,6 @@ const MESSAGE = {
   retrieveDataFailed: "Error to retrieve data",
   updateDataFailed: "Error when updating data",
   createDataFailed: "Error when create data",
+  deleteDataFailed: "Error when delete data",
 };
 export { MESSAGE };

@@ -1,22 +1,41 @@
+import { escapeXmlChars } from "./commonHelper";
+
 export const camlContainsText = (term: string, field: string): string =>
   `<Contains>
         <FieldRef Name="${field}"/>
-        <Value Type="Text">${term}</Value>
+        <Value Type="Text">${escapeXmlChars(term)}</Value>
     </Contains>`;
 export const camlEqText = (term: string, field: string): string =>
   `<Eq>
         <FieldRef Name="${field}"/>
-        <Value Type="Text">${term}</Value>
+        <Value Type="Text">${escapeXmlChars(term)}</Value>
     </Eq>`;
 export const camlGeqText = (term: string, field: string): string =>
   `<Geq>
         <FieldRef Name="${field}"/>
-        <Value Type="Text">${term}</Value>
+        <Value Type="Text">${escapeXmlChars(term)}</Value>
     </Geq>`;
 export const camlLeqText = (term: string, field: string): string =>
   `<Leq>
         <FieldRef Name="${field}"/>
-        <Value Type="Text">${term}</Value>
+        <Value Type="Text">${escapeXmlChars(term)}</Value>
+    </Leq>`;
+export const camlInNumber = (term: number[], field: string): string =>
+  `<In>
+        <FieldRef Name="${field}" />
+        <Values>
+        ${term.map((value) => `<Value Type='Number'>${value}</Value>`).join("")}
+        </Values>
+   </In>`;
+export const camlGeqNumber = (term: number, field: string): string =>
+  `<Geq>
+        <FieldRef Name="${field}"/>
+        <Value Type="Number">${term}</Value>
+    </Geq>`;
+export const camlLeqNumber = (term: number, field: string): string =>
+  `<Leq>
+        <FieldRef Name="${field}"/>
+        <Value Type="Number">${term}</Value>
     </Leq>`;
 export const camlEqNumber = (term: number, field: string): string =>
   `<Eq>
@@ -30,7 +49,7 @@ export const camlIsNullChoice = (field: string): string =>
 export const camlEqChoice = (term: string, field: string): string =>
   `<Eq>
         <FieldRef Name="${field}"/>
-        <Value Type="Choice">${term}</Value>
+        <Value Type="Choice">${escapeXmlChars(term)}</Value>
     </Eq>`;
 export const camlCompareValueChoiceText = (
   term: string,
@@ -50,14 +69,16 @@ export const camlGeqDate = (term: string, field: string): string => {
     </Geq>`;
 };
 
-export const camlLtDate = (term: string, field: string): string =>
-  `<Lt>
+export const camlLtDate = (term: string, field: string): string => {
+  const date = new Date(term);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `<Lt>
         <FieldRef Name="${field}"/>
-        <Value Type="DateTime" IncludeTimeValue="TRUE" StorageTZ="TRUE">${term.replace(
-          /\//g,
-          "-"
-        )}T15:00:00Z</Value>
+        <Value Type="DateTime" IncludeTimeValue="TRUE" StorageTZ="TRUE">${year}-${month}-${day}T15:00:00Z</Value>
     </Lt>`;
+};
 export const camlOr = (query1: string, query2: string): string =>
   `<Or>
         ${query1}

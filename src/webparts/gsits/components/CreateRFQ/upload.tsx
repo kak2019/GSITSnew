@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as React from 'react';
 import { IconButton, Stack, mergeStyleSets } from '@fluentui/react';
+import {t} from "i18next";
 
 interface FileUploadComponentProps {
   title: string;
@@ -53,9 +54,7 @@ const useStyles = mergeStyleSets({
   }
 });
 
-const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
-                                                                   title,
-                                                                   initalNum = 0, // 初始文件数量为0
+const FileUploadComponent: React.FC<FileUploadComponentProps> = ({title, initalNum = 0, // 初始文件数量为0
                                                                    uploadTitle,
                                                                    subtitle, onFileSelect,
                                                                  }) => {
@@ -65,11 +64,19 @@ const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const newFiles = Array.from(event.target.files || []);
+    const maxFileSize = 10 * 1024 * 1024; // 10MB
     const updatedFiles = [...files, ...newFiles];
     if (updatedFiles.length>10){
       alert("You can only upload up to 10 files."); // 提示用户
       return;
     }
+    // 检查文件大小
+    const oversizedFiles = updatedFiles.filter(file => file.size > maxFileSize);
+    if (oversizedFiles.length > 0) {
+      alert(`Some files exceed the 10MB size limit and cannot be uploaded: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
+    }
+
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
     // 调用回调函数，将文件传递给父组件
     if (onFileSelect) {
@@ -89,7 +96,7 @@ const FileUploadComponent: React.FC<FileUploadComponentProps> = ({
 
   return (
       <div>
-        <span className={classes.title}>{title}</span>
+        <span className={classes.title}>{t(title)}</span>
         <div className={classes.uploadArea}>
           <input
               type="file"

@@ -56,3 +56,13 @@ div[data-automation-id="contentScrollRegion"] {
 div[data-automation-id="contentScrollRegion"]::-webkit-scrollbar {
     display: none; /* Chrome, Safari, and Opera */
 }
+
+
+  /* .ms-TextField-field {
+    font-size: 12px !important;
+  }
+  .ms-TextField-wrapper .ms-Label {
+    font-size: 12px !important;
+    height: 30px !important;
+  } */
+  

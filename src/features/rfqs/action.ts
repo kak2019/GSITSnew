@@ -151,6 +151,13 @@ export const getRFQAction = createAsyncThunk(
               Porg: item.Porg,
               Handler: item.Handler,
               Parma: item.Parma,
+              StandardOrderText1: item.StandardOrderText1,
+              StandardOrderText2: item.StandardOrderText2,
+              StandardOrderText3: item.StandardOrderText3,
+              FreePartText: item.FreePartText,
+              OrderNumber: item.OrderNumber,
+              HandlerName: item.HandlerName,
+                PriceType:item.PriceType,
             } as IRequisitionRFQGrid;
           })
         );
@@ -321,7 +328,6 @@ export const queryRFQsAction = createAsyncThunk(
         .getByTitle(CONST.LIST_NAME_RFQ)
         .renderListDataAsStream({
           ViewXml: `<View>
-        <RowLimit Paged="TRUE">200</RowLimit>
         <Query>
         ${queryXml}
         <OrderBy>
@@ -373,6 +379,9 @@ function FetchLastComment(comments: string): string {
     return "";
   }
   const commentHistory: IComment[] = JSON.parse(comments);
+  if (commentHistory.length === 0) {
+    return "";
+  }
   commentHistory.sort((a, b) => {
     return (
       new Date(b.CommentDate).getTime() - new Date(a.CommentDate).getTime()
@@ -392,11 +401,6 @@ function FetchLastComment(comments: string): string {
   );
   return `${formattedDateString.split(",")[0]} ${commentHistory[0].CommentBy}`;
 }
-// function GetPagingInfo(queryCreteria: IRFQQueryModel): string {
-//   return queryCreteria.LastItemId
-//     ? `Paged=TRUE&p_ID=${queryCreteria.LastItemId}&ix_Paged=TRUE&ix_ID=${queryCreteria.LastItemId}&PageFirstRow=3001&View=00000000-0000-0000-0000-000000000000`
-//     : "";
-// }
 function GetQueryInfo(queryCreteria: IRFQQueryModel): string {
   const creterias: string[] = [];
   if (queryCreteria.RfqType) {

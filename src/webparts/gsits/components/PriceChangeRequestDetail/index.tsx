@@ -1,4 +1,7 @@
-import React, { useEffect, useState, useContext } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-floating-promises */
+import React, { useEffect, useState, useContext, useMemo } from "react";
 import {
   Stack,
   TextField,
@@ -11,17 +14,16 @@ import {
   Selection,
   Link,
   IconButton,
+  Spinner,
+  SpinnerSize,
 } from "@fluentui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import AppContext from "../../../../AppContext";
-import { getAADClient } from "../../../../pnpjsConfig";
-import { CONST } from "../../../../config/const";
-import { AadHttpClient } from "@microsoft/sp-http";
 import { useUser } from "../../../../hooks";
-import { boolean } from "yup";
 import styles from "./index.module.scss";
-import { IComment, IAttachment } from "../../../../types";
+import { IComment } from "../../../../types";
+import { IUDGSAttachmentGridModel } from "../../../../model-v2/udgs-attachment-model";
 import {
   buttonStyles,
   addButtonStyles,
@@ -29,162 +31,218 @@ import {
   commentHistoryStyles,
   detailsListStyles,
 } from "./styles";
-import { BasicInfoItem, BasicInfoParmaItem } from "./Component";
-import { BackDialog, FeedbackDialog } from "./Dialog";
-
-interface IDetailsListItem {
-  HandlerCode: string;
-  ResponsibleBuyerName: string;
-  Status: string;
-  RFQNumber: string;
-}
+import {
+  BasicInfoItem,
+  BasicInfoParmaItem,
+  TextfieldItem,
+  DatePickerItem,
+} from "./Component";
+import { BackDialog, FeedbackDialog, FeedbackType } from "./Dialog";
+import ForwardDialog from "../PriceChangeRequest/ForwardDialog";
+import { getSupplierInfoRequest, ISupplierInfoResponse } from "../../../../api";
+import { STATUS, USER_TYPE } from "../../../../config/const";
+import { formatDate } from "../../../../utils";
+import { usePriceChange } from "../../../../hooks/usePriceChange";
+import {
+  ISupplierRequestSubItem,
+  ISupplierRequestSubItemFormModel,
+} from "../../../../model/priceChange";
+import { useUDGSAttachment } from "../../../../hooks-v2/use-udgs-attachment";
+import { useENegotiation } from "../../../../hooks/useENegotiation";
+import { IENegotiationRequestFormModel } from "../../../../model/eNegotiation";
 
 const PriceChangeRequestDetail: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { ID: id } = location.state;
+  if (!id) throw new Error("ID is required");
 
-  console.log("location", location);
-
+  // Joy guest测试邮箱
+  // const userEmail = "1986432132@qq.com";
   let userEmail = "";
   let userName = "";
-  let webURL = "";
-  let Site_Relative_Links = "";
   const ctx = useContext(AppContext);
-  if (!ctx || !ctx.context) {
+  if (!ctx || !ctx.context._pageContext) {
     throw new Error("AppContext is not provided or context is undefined");
   } else {
     userEmail = ctx.context._pageContext._user.email;
     userName = ctx.context._pageContext._user?.displayName;
-    webURL = ctx.context?._pageContext?._web?.absoluteUrl;
-    Site_Relative_Links = webURL.slice(webURL.indexOf("/sites"));
-    console.log(userName, Site_Relative_Links);
   }
 
-  const [currentPCR] = useState("");
-  console.log("currentPCR", currentPCR);
+  const [
+    isFetching,
+    ,
+    ,
+    currentPriceChangeRequest,
+    currentPriceChangeRequestSubItemList,
+    ,
+    getSupplierRequest,
+    getSupplierRequestSubitemList,
+    ,
+    updateSupplierRequest,
+    setCurrentPriceChangeRequest,
+    createSupplierRequestSubitems,
+    updateSupplierRequestSubitems,
+  ] = usePriceChange();
+
+  // detail信息是否有编辑过
+  const [detailInfoChange, setDetailInfoChange] = useState(false);
+
   const [commentValue, setCommentValue] = useState("");
   const [commentHistoryValue, setCommentHistoryValue] = useState<IComment[]>(
     []
   );
-  const [attachmentsValue, setAttachmentsValue] = useState<IAttachment[]>([]);
-  const [responsibleBuyers] = useState<IDetailsListItem[]>([]);
-  const [selectedItems, setSelectedItems] = useState<IDetailsListItem[]>([]);
-  console.log("selectedItems", selectedItems);
 
-  const [supplierinfo] = useState({
-    SupplierName: "",
-    IsSme: boolean,
-    CountryCode: "",
-  });
-  console.log("supplierinfo", supplierinfo);
+  const [, , , getAttachments, postAttachments] = useUDGSAttachment();
+  const [attachmentsValue, setAttachmentsValue] = useState<
+    IUDGSAttachmentGridModel[]
+  >([]);
+  const [tempAttachmentsValue, setTempAttachmentsValue] = useState<
+    IUDGSAttachmentGridModel[]
+  >([]);
 
+  const [, , , , createENegotiationRequest, , deleteENegotiationRequests] =
+    useENegotiation();
+  const [selectedItems, setSelectedItems] = useState<ISupplierRequestSubItem[]>(
+    []
+  );
+
+  const [backDialogVisible, setBackDialogVisible] = useState(false);
+  const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
+  const [forwardDialogVisible, setForwardDialogVisible] = useState(false);
+
+  const { getUserType, getGPSUser, getSupplierHostBuyerMapping } = useUser();
   const [userType, setUserType] = useState<string>("Unknown");
-  const { getUserType, getUserSupplierId, getGPSUser } = useUser();
-  console.log("getUserSupplierId, getGPSUser", getUserSupplierId, getGPSUser);
-
-  // 通过role和status判断哪些内容可编辑，可显示，可点击，
-  const [isEditable, setIsEditable] = useState(true);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [supplierinfo, setSupplierinfo] = useState<ISupplierInfoResponse>({
+    supplierName: "",
+    isSME: false,
+    isJP: false,
+  });
   const [userDetails, setUserDetails] = useState({
     role: "",
     name: "",
     sectionCode: "",
     handlercode: "",
+    porg: "",
+    isHostBuyer: false,
   });
-  console.log("userDetails", userDetails);
 
-  const [backDialogVisible, setBackDialogVisible] = useState(false);
-  const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
+  const requestGPSUserData = async () => {
+    // 获取parma和hostbuyer的mapping
+    if (!currentPriceChangeRequest?.Parma) return;
+    const res = await getSupplierHostBuyerMapping(
+      currentPriceChangeRequest?.Parma
+    );
+    if (res && res instanceof Object) {
+      // 获取user detail
+      const result = await getGPSUser(userEmail);
+      if (result && result instanceof Object) {
+        // 如果所有字段都有值，更新状态
+        setUserDetails({
+          role: result.role,
+          name: result.name,
+          sectionCode: result.sectionCode,
+          handlercode: result.handlercode,
+          porg: result.porg,
+          // 需要通过parma和buyer的mapping判断是否是hostbuyer
+          isHostBuyer:
+            res.SupplierHostPorg === result.porg &&
+            res.SupplierHostCd === result.handlercode,
+        });
+      }
+    }
+  };
+
+  const requestSupplierInfoData = async () => {
+    if (!currentPriceChangeRequest?.Parma) return;
+    const result = await getSupplierInfoRequest({
+      parma: currentPriceChangeRequest?.Parma,
+    });
+    if (result && result instanceof Object) {
+      setSupplierinfo(result);
+    }
+  };
+
+  const requestUserTypeData = async () => {
+    const type = await getUserType(userEmail);
+    if (userType !== type) setUserType(type);
+    if (type !== USER_TYPE.GUEST) {
+      requestGPSUserData();
+    } else {
+      requestSupplierInfoData();
+    }
+  };
+
+  const supplierRequestFolderName = "Supplier Request Attachments";
+  const requestAttachmentsData = async () => {
+    const initialAttachmentsValue = await getAttachments({
+      FolderName: supplierRequestFolderName,
+      SubFolderName: id,
+      IsDataNeeded: true,
+    });
+    setAttachmentsValue(initialAttachmentsValue);
+  };
+
+  const requestPiceChangeData = async () => {
+    await getSupplierRequest(id);
+    await getSupplierRequestSubitemList(id);
+    requestAttachmentsData();
+  };
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    const fetchData = async () => {
-      try {
-        const client = getAADClient(); // 请确保getAADClient()已正确实现
-        // 使用模板字符串构建完整的函数URL
-        const functionUrl = `${CONST.azureFunctionBaseUrl}/api/GetGPSUser/${userEmail}`;
-        const response = await client.get(
-          functionUrl,
-          AadHttpClient.configurations.v1
-        );
-        // 确保解析 response 时不抛出错误
-        const result = await response.json();
-        console.log(result, "dsdsd");
-        if (
-          result &&
-          result.role &&
-          result.name &&
-          result.sectionCode &&
-          result.handlercode
-        ) {
-          // 如果所有字段都有值，更新状态
-          setUserDetails({
-            role: result.role,
-            name: result.name,
-            sectionCode: result.sectionCode,
-            handlercode: result.handlercode,
-          });
-          // 通过用户role和request status，判断一些action是否可编辑，
-          setIsEditable(true);
-        } else {
-          console.warn("Incomplete data received:", result);
-        }
-      } catch (error) {
-        console.error("Error fetching GPS user props:", error);
-      }
-    };
+    // 首次渲染请求price change详情数据和responsible buyers数据
+    requestPiceChangeData();
+  }, []);
 
-    // 调用 getUserType 并根据结果执行逻辑
-    getUserType(userEmail)
-      .then((type) => {
-        if (userType !== type) {
-          // 只有当 userType 变化时才更新状态
-          setUserType(type);
-          console.log("UserType updated to: ", userType);
-        }
-        if (type !== "Guest") {
-          fetchData().then(
-            (_) => _,
-            (_) => _
-          );
-        }
-      })
-      .catch((e) => console.error("Error fetching GPS user props:", e));
-  }, [userType]);
+  useEffect(() => {
+    // 请求完详情数据，再请求user相关数据
+    requestUserTypeData();
+    // 处理comment
+    if (currentPriceChangeRequest && currentPriceChangeRequest.CommentHistory) {
+      const comments = JSON.parse(
+        currentPriceChangeRequest.CommentHistory
+      ) as IComment[];
+      setCommentHistoryValue(comments);
+    }
+  }, [currentPriceChangeRequest]);
 
   const columns = [
     {
-      key: "HandlerCode",
-      name: t("Handler Code"),
-      fieldName: "HandlerCode",
+      // Buyer Org + Handler code
+      key: "ResponsibleBuyer",
+      name: t("Responsible Buyer"),
+      fieldName: "ResponsibleBuyer",
       minWidth: 150,
+      isResizable: true,
     },
     {
       key: "ResponsibleBuyerName",
       name: t("Responsible Buyer Name"),
-      fieldName: "ResponsibleBuyerName",
+      fieldName: "HandlerName",
       minWidth: 200,
+      isResizable: true,
     },
     {
       key: "Status",
       name: t("Status"),
-      fieldName: "Status",
+      fieldName: "SupplierRequestSubitemStatus",
       minWidth: 150,
+      isResizable: true,
     },
     {
       key: "RFQNumber",
-      name: t("RFQ Numberr"),
+      name: t("RFQ No."),
       fieldName: "RFQNumber",
       minWidth: 200,
+      isResizable: true,
     },
   ];
 
   const selection = new Selection({
     onSelectionChanged: () => {
-      const items = selection.getSelection(); // 获取选中的记录
-      setSelectedItems(items as IDetailsListItem[]); // 将选中的记录存入状态
+      const items = selection.getSelection();
+      setSelectedItems(items as ISupplierRequestSubItem[]);
     },
   });
 
@@ -197,7 +255,7 @@ const PriceChangeRequestDetail: React.FC = () => {
 
   const handleAddComment = (): void => {
     if (commentValue) {
-      commentHistoryValue.push({
+      commentHistoryValue.unshift({
         CommentDate: new Date(),
         CommentBy: userDetails.name ?? "",
         CommentText: commentValue,
@@ -205,7 +263,12 @@ const PriceChangeRequestDetail: React.FC = () => {
       });
       setCommentHistoryValue(commentHistoryValue);
       setCommentValue("");
+      setDetailInfoChange(true);
       // update comment api
+      updateSupplierRequest({
+        ...currentPriceChangeRequest,
+        CommentHistory: JSON.stringify(commentHistoryValue),
+      });
     }
   };
 
@@ -214,19 +277,179 @@ const PriceChangeRequestDetail: React.FC = () => {
   ): void => {
     const files = event.target.files;
     if (files) {
-      const newAttachments = Array.from(files).map((file) => ({
-        File: file,
-        Url: "",
-      }));
-      const currentAttachments = [...attachmentsValue, ...newAttachments];
-      setAttachmentsValue(currentAttachments);
+      const fileList = Array.from(files);
+      if (fileList.length > 10) {
+        alert("The number of uploaded files cannot exceed 10.");
+        return;
+      }
+      if (fileList.some((file) => file.size > 1024 * 1024)) {
+        alert("Uploaded file size cannot exceed 10MB.");
+        return;
+      }
+      const newAttachments: IUDGSAttachmentGridModel[] = fileList.map(
+        (file) => ({
+          FileItem: file,
+          FileID: "",
+          URL: "",
+          Name: userName,
+        })
+      );
+      const currentAttachments = [...newAttachments, ...tempAttachmentsValue];
+      setTempAttachmentsValue(currentAttachments);
+      setDetailInfoChange(true);
     }
   };
+
+  const handleRemoveFile = (index: number) => {
+    setTempAttachmentsValue(tempAttachmentsValue.filter((_, i) => i !== index));
+  };
+
+  const handleUploadAdd = async () => {
+    await postAttachments({
+      FolderName: supplierRequestFolderName,
+      SubFolderName: id,
+      NewFileItems: tempAttachmentsValue.map((i) => i.FileItem!),
+    });
+    // 上传新attachment后，刷新和重置attachment数据
+    requestAttachmentsData();
+    setTempAttachmentsValue([]);
+  };
+
+  const requestCreateSupplierRequestSubItem = async (items: any[]) => {
+    const forms: ISupplierRequestSubItemFormModel[] = items.map((item) => ({
+      Porg: item.porg,
+      Handler: item.handlerCode,
+      HandlerName: item.handlerName,
+      Section: item.sectionCode,
+      RequestIDRef: id,
+    }));
+    await createSupplierRequestSubitems(forms);
+    setForwardDialogVisible(false);
+    getSupplierRequestSubitemList(id);
+  };
+  const handleForwardConfirm = (items: any[]): void => {
+    requestCreateSupplierRequestSubItem(items);
+  };
+
+  // buttons show and enable
+  // 通过role和status判断哪些内容可编辑，可显示，可点击，
+  // 如何判断是supplier和buyer，buyer如何判断是host和responsible
+  // 获取usertype（member和guest），如果是guest那就是supllier，如果是member那就是buyer
+  // 确定是buyer后，再通过getGPSUser获取具体的用户信息
+  const supplierButtonShow = useMemo(
+    () => !!supplierinfo.supplierName,
+    [supplierinfo]
+  );
+  const cancelOrResubmitSelectedButtonEnable = useMemo(() => {
+    const condition =
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED &&
+      currentPriceChangeRequestSubItemList.length &&
+      selectedItems.length &&
+      selectedItems.every(
+        (item) => item.SupplierRequestSubitemStatus === STATUS.RETURNED
+      );
+    return condition;
+  }, [
+    currentPriceChangeRequest,
+    currentPriceChangeRequestSubItemList,
+    selectedItems,
+  ]);
+  const cancelOrResubmitRequestButtonEnable = useMemo(() => {
+    const condition =
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED &&
+      !currentPriceChangeRequestSubItemList.length;
+    return condition;
+  }, [currentPriceChangeRequest, currentPriceChangeRequestSubItemList]);
+  const fieldsEditable = useMemo(
+    () =>
+      !!supplierinfo.supplierName &&
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED,
+    [supplierinfo, currentPriceChangeRequest]
+  );
+  const attachmentEditable = useMemo(
+    () =>
+      (!!supplierinfo.supplierName &&
+        currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED) ||
+      (!!userDetails.name &&
+        ![STATUS.CANCELLED, STATUS.RETURNED, STATUS.CLOSED].includes(
+          currentPriceChangeRequest?.SupplierRequestStatus || ""
+        )),
+    [supplierinfo, userDetails, currentPriceChangeRequest]
+  );
+  const commentEditable = useMemo(
+    () =>
+      (!!supplierinfo.supplierName &&
+        [STATUS.RETURNED, STATUS.NEW, STATUS.INPROGRESS].includes(
+          currentPriceChangeRequest?.SupplierRequestStatus || ""
+        )) ||
+      !!userDetails.name,
+    [supplierinfo, userDetails, currentPriceChangeRequest]
+  );
+  const returnRequestButtonEnable = useMemo(() => {
+    const condition =
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED;
+    return condition;
+  }, [currentPriceChangeRequest]);
+  const forwardToResponsibleBuyerButtonEnable = useMemo(() => {
+    const condition = ![
+      STATUS.RETURNED,
+      STATUS.CANCELLED,
+      STATUS.CLOSED,
+    ].includes(currentPriceChangeRequest?.SupplierRequestStatus || "");
+    return condition;
+  }, [currentPriceChangeRequest]);
+  const removeResponsibleBuyerButtonEnable = useMemo(() => {
+    const condition = ![
+      STATUS.RETURNED,
+      STATUS.CANCELLED,
+      STATUS.CLOSED,
+    ].includes(currentPriceChangeRequest?.SupplierRequestStatus || "");
+    return condition;
+  }, [currentPriceChangeRequest]);
+  const responsibleBuyerActionButtonEnable = useMemo(() => {
+    const condition =
+      !userDetails.isHostBuyer &&
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.INPROGRESS &&
+      selectedItems.length === 1;
+    return condition;
+  }, [currentPriceChangeRequest, userDetails, selectedItems]);
+
+  const validateFields = (): boolean => {
+    if (!currentPriceChangeRequest) return false;
+    const { ExpectedEffectiveDateFrom, SupplierContact, DetailedDescription } =
+      currentPriceChangeRequest;
+    const SupplierContactValiate = validateEmail(SupplierContact);
+    return (
+      !!ExpectedEffectiveDateFrom &&
+      !!SupplierContact?.trim() &&
+      SupplierContactValiate === undefined &&
+      !!DetailedDescription?.trim()
+    );
+  };
+
+  function validateEmail(value?: string): string | undefined {
+    if (!value || !value?.trim()) return "Value Required";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return "Please input a valid email address.";
+    return undefined;
+  }
+
+  function getLatestCommentHistory(newComment: string): string {
+    const tempCommentHistoryValue = { ...commentHistoryValue };
+    tempCommentHistoryValue.unshift({
+      CommentDate: new Date(),
+      CommentBy: userDetails.name ?? "",
+      CommentText: newComment,
+      CommentType: "Common",
+    });
+    const tempCommentHistoryValueStr = JSON.stringify(tempCommentHistoryValue);
+    return tempCommentHistoryValueStr;
+  }
 
   return (
     <Stack tokens={{ childrenGap: 20, padding: 20 }}>
       {/* Header */}
-      <Text className={styles.header} variant="xxLarge">
+      <Text className={styles.header} variant="large">
         Price Change Request Details
       </Text>
       {/* Basic Info */}
@@ -240,11 +463,14 @@ const PriceChangeRequestDetail: React.FC = () => {
             tokens={{ childrenGap: 10 }}
             styles={{ root: { width: "25%" } }}
           >
-            <BasicInfoItem itemLabel="Parma" itemValue={"currentPCR"} />
+            <BasicInfoItem
+              itemLabel={t("Request ID")}
+              itemValue={currentPriceChangeRequest?.ID}
+            />
             <BasicInfoParmaItem
-              itemLabel="Request ID"
-              itemValue={"currentPCR"}
-              supplierNameValue={"currentPCR"}
+              itemLabel={t("Parma")}
+              itemValue={currentPriceChangeRequest?.Parma}
+              supplierNameValue={currentPriceChangeRequest?.SupplierName}
             />
           </Stack>
           <Stack
@@ -252,45 +478,109 @@ const PriceChangeRequestDetail: React.FC = () => {
             styles={{ root: { width: "25%" } }}
           >
             <BasicInfoItem
-              itemLabel="Request Status"
-              itemValue={"currentPCR"}
+              itemLabel={t("Request Status")}
+              itemValue={currentPriceChangeRequest?.SupplierRequestStatus}
             />
             <BasicInfoItem
-              itemLabel="Host Buyer Name"
-              itemValue={"currentPCR"}
+              itemLabel={t("Host Buyer Name")}
+              itemValue={currentPriceChangeRequest?.HostBuyerName}
             />
           </Stack>
           <Stack
             tokens={{ childrenGap: 10 }}
             styles={{ root: { width: "25%" } }}
           >
-            <BasicInfoItem itemLabel="Created By" itemValue={"currentPCR"} />
             <BasicInfoItem
-              itemLabel="Expected Effective Date"
-              itemValue={"currentPCR"}
+              itemLabel={t("Created By")}
+              itemValue={currentPriceChangeRequest?.CreatedBy}
             />
+            {fieldsEditable ? (
+              <DatePickerItem
+                itemLabel={t("Expected Effective Date")}
+                itemValue={
+                  new Date(
+                    currentPriceChangeRequest?.ExpectedEffectiveDateFrom || ""
+                  )
+                }
+                required
+                onSelectDate={(date: Date | undefined) => {
+                  if (date && currentPriceChangeRequest) {
+                    setCurrentPriceChangeRequest({
+                      ...currentPriceChangeRequest,
+                      ExpectedEffectiveDateFrom: date,
+                    });
+                    setDetailInfoChange(true);
+                  }
+                }}
+              />
+            ) : (
+              <BasicInfoItem
+                itemLabel={t("Expected Effective Date")}
+                itemValue={formatDate(
+                  currentPriceChangeRequest?.ExpectedEffectiveDateFrom
+                )}
+              />
+            )}
           </Stack>
           <Stack
             tokens={{ childrenGap: 10 }}
             styles={{ root: { width: "25%" } }}
           >
-            <BasicInfoItem itemLabel="Created Date" itemValue={"currentPCR"} />
             <BasicInfoItem
-              itemLabel="Supplier Contact(Email)"
-              itemValue={"currentPCR"}
+              itemLabel={t("Created Date")}
+              itemValue={formatDate(currentPriceChangeRequest?.CreatedDate)}
             />
+            {fieldsEditable ? (
+              <TextfieldItem
+                itemLabel={t("Supplier Contact")}
+                itemValue={currentPriceChangeRequest?.SupplierContact}
+                required
+                validate={validateEmail}
+                onChange={(_, newValue?: string) => {
+                  if (currentPriceChangeRequest) {
+                    setCurrentPriceChangeRequest({
+                      ...currentPriceChangeRequest,
+                      SupplierContact: newValue || "",
+                    });
+                    setDetailInfoChange(true);
+                  }
+                }}
+              />
+            ) : (
+              <BasicInfoItem
+                itemLabel={t("Supplier Contact")}
+                itemValue={currentPriceChangeRequest?.SupplierContact}
+              />
+            )}
           </Stack>
         </Stack>
         <Stack>
-          <BasicInfoItem
-            itemLabel="Detailed Description"
-            itemValue={"currentPCR"}
-          />
+          {fieldsEditable ? (
+            <TextfieldItem
+              itemLabel={t("Detailed Description")}
+              itemValue={currentPriceChangeRequest?.DetailedDescription}
+              required
+              onChange={(_, newValue?: string) => {
+                if (currentPriceChangeRequest) {
+                  setCurrentPriceChangeRequest({
+                    ...currentPriceChangeRequest,
+                    DetailedDescription: newValue || "",
+                  });
+                  setDetailInfoChange(true);
+                }
+              }}
+            />
+          ) : (
+            <BasicInfoItem
+              itemLabel={t("Detailed Description")}
+              itemValue={currentPriceChangeRequest?.DetailedDescription}
+            />
+          )}
         </Stack>
       </Stack>
       {/* Comment and Attach */}
       <Stack className={styles.content} horizontal tokens={{ childrenGap: 10 }}>
-        <Stack.Item grow={1}>
+        <Stack.Item grow={1} align="start" style={{ flexBasis: 0 }}>
           <Text variant="medium" className={styles.subHeader}>
             {t("Comment")}
           </Text>
@@ -299,17 +589,18 @@ const PriceChangeRequestDetail: React.FC = () => {
               {t("Input Comments")}
             </Text>
             <Stack horizontal tokens={{ childrenGap: 10 }}>
-              <Stack.Item grow={4}>
+              <Stack.Item grow={1}>
                 <TextField
-                  onChange={handleCommentChange}
                   styles={inputCommentsStyles}
+                  onChange={handleCommentChange}
                 />
               </Stack.Item>
-              <Stack.Item grow={1}>
+              <Stack.Item>
                 <PrimaryButton
-                  text="Add"
+                  text={t("Add")}
                   styles={addButtonStyles}
                   onClick={handleAddComment}
+                  disabled={!commentEditable}
                 />
               </Stack.Item>
             </Stack>
@@ -317,8 +608,9 @@ const PriceChangeRequestDetail: React.FC = () => {
               {t("Comment History")}
             </Text>
             <TextField
+              styles={commentHistoryStyles}
               multiline
-              rows={8}
+              rows={7}
               readOnly
               value={commentHistoryValue
                 .map(
@@ -328,55 +620,85 @@ const PriceChangeRequestDetail: React.FC = () => {
                     }`
                 )
                 .join("\n")}
-              styles={commentHistoryStyles}
             />
           </Stack>
         </Stack.Item>
-        <Stack.Item grow={1}>
+        <Stack.Item grow={1} align="start" style={{ flexBasis: 0 }}>
           <Text variant="medium" className={styles.subHeader}>
-            {t("Attachments")}
+            {t("Attach File")}
           </Text>
           <Stack
             className={styles.attachmentsContent}
             tokens={{ childrenGap: 10 }}
           >
-            {isEditable && (
-              <>
-                <div>
-                  <Text variant="medium">Please download template</Text>
-                  <Link href="" style={{ marginLeft: "5px" }}>
-                    here
-                  </Link>
-                </div>
-                <div className={styles.uploadArea}>
+            <div>
+              <div className={styles.uploadContent}>
+                <div
+                  className={styles.uploadArea}
+                  style={{
+                    cursor: !attachmentEditable ? "not-allowed" : "pointer",
+                  }}
+                >
                   <input
+                    disabled={!attachmentEditable}
                     type="file"
                     multiple
-                    style={{ display: "none" }}
-                    id="file-input"
+                    style={{
+                      display: "none",
+                    }}
+                    id="fileInput"
                     onChange={handleUploadFile}
                   />
-                  <label htmlFor="file-input">
+                  <label
+                    htmlFor="fileInput"
+                    style={{
+                      cursor: !attachmentEditable ? "not-allowed" : "pointer",
+                    }}
+                  >
                     <IconButton
                       iconProps={{ iconName: "Attach" }}
                       className={styles.iconUpload}
+                      style={{
+                        cursor: !attachmentEditable ? "not-allowed" : "pointer",
+                      }}
                     />
-                    <div style={{ display: "inline-block" }}>
-                      <span
-                        role="img"
-                        aria-label="paperclip"
-                        className={styles.textUpload}
-                      >
-                        Click to Upload
-                      </span>
-                      <span style={{ marginLeft: "5px" }}>
-                        (File number limit: 10; Single file size limit: 10MB)
-                      </span>
-                    </div>
+                    <span className={styles.textUpload}>Click to Upload</span>
+                    <span style={{ marginLeft: "5px", fontSize: 12 }}>
+                      (File number limit: 10; Single file size limit: 10MB)
+                    </span>
                   </label>
                 </div>
-              </>
-            )}
+                <PrimaryButton
+                  text={t("Add")}
+                  styles={addButtonStyles}
+                  onClick={handleUploadAdd}
+                  disabled={!attachmentEditable}
+                />
+              </div>
+              {tempAttachmentsValue.map((file, index) => (
+                <div
+                  key={index}
+                  className={
+                    index % 2 === 0 ? styles.fileItemEven : styles.fileItemOdd
+                  }
+                >
+                  <Text
+                    style={{ flex: 1 }}
+                    className={`${styles.fileItemExtraInfoTitle} ${styles.textEllipsis}`}
+                  >
+                    {file.FileItem?.name}
+                  </Text>
+                  <span className={styles.fileItemExtraInfo}>{file.Name}</span>
+                  <span className={styles.fileItemExtraInfo}>
+                    <IconButton
+                      iconProps={{ iconName: "Delete" }}
+                      title="Remove"
+                      onClick={() => handleRemoveFile(index)}
+                    />
+                  </span>
+                </div>
+              ))}
+            </div>
             <Stack className={styles.fileList}>
               {(attachmentsValue.length >= 4
                 ? attachmentsValue
@@ -386,14 +708,35 @@ const PriceChangeRequestDetail: React.FC = () => {
               ).map((val, i) => {
                 return val ? (
                   <div
+                    key={i}
                     className={
                       i % 2 === 0 ? styles.fileItemEven : styles.fileItemOdd
                     }
                   >
-                    <Link href={val.Url}>{val.File.name}</Link>
+                    <Link
+                      style={{ flex: 1 }}
+                      className={`${styles.fileItemExtraInfoTitle} ${styles.textEllipsis}`}
+                      href={val.URL}
+                      title={val.FileItem?.name}
+                      target="_blank"
+                    >
+                      {val.FileItem?.name}
+                    </Link>
+                    <span
+                      className={`${styles.fileItemExtraInfo} ${styles.textEllipsis}`}
+                      title={val.Name}
+                    >
+                      {val.Name}
+                    </span>
+                    <span
+                      className={`${styles.fileItemExtraInfo} ${styles.textEllipsis}`}
+                    >
+                      {formatDate(new Date(val?.UploadTime || ""))}
+                    </span>
                   </div>
                 ) : (
                   <div
+                    key={i}
                     className={
                       i % 2 === 0 ? styles.fileItemEven : styles.fileItemOdd
                     }
@@ -401,81 +744,250 @@ const PriceChangeRequestDetail: React.FC = () => {
                 );
               })}
             </Stack>
-            <span>
+            <span style={{ fontSize: 12 }}>
               Once uploaded, the file is not able to edited or removed
             </span>
           </Stack>
         </Stack.Item>
       </Stack>
       {/* Host Buyer Action */}
-      <Stack
-        horizontal
-        tokens={{ childrenGap: 10 }}
-        horizontalAlign="start"
-        style={{ alignItems: "center" }}
-      >
-        <Text className={styles.subHeader} variant="large">
-          Host Buyer Action:{" "}
-        </Text>
-        <PrimaryButton
-          text={t("Return Request")}
-          onClick={() => {
-            // show dialog
-          }}
-          styles={buttonStyles}
-        />
-        <PrimaryButton
-          text={t("Forward to Responsible Buyer")}
-          onClick={() => {
-            // show dialog
-          }}
-          styles={buttonStyles}
-        />
-        <PrimaryButton
-          text={t("Remove Responsible Buyer")}
-          onClick={() => {
-            // show dialog
-          }}
-          styles={buttonStyles}
-        />
-      </Stack>
+      {userDetails.isHostBuyer && (
+        <Stack
+          horizontal
+          tokens={{ childrenGap: 10 }}
+          horizontalAlign="start"
+          style={{ alignItems: "center" }}
+        >
+          <Text className={styles.subHeader} variant="large">
+            {t("Host Buyer Action")}:
+          </Text>
+          <PrimaryButton
+            text={t("Return Request")}
+            onClick={async () => {
+              // update request status to Returned and send email to supplier
+              await updateSupplierRequest({
+                ...currentPriceChangeRequest,
+                SupplierRequestStatus: STATUS.RETURNED,
+              });
+              getSupplierRequest(id);
+            }}
+            styles={buttonStyles}
+            disabled={!returnRequestButtonEnable}
+          />
+          <PrimaryButton
+            text={t("Forward to Responsible Buyer")}
+            onClick={() => setForwardDialogVisible(true)}
+            styles={buttonStyles}
+            disabled={!forwardToResponsibleBuyerButtonEnable}
+          />
+          <PrimaryButton
+            text={t("Remove Responsible Buyer")}
+            onClick={() => {
+              // 如果没有selected items，弹出提示
+              // 如果selected items，判断选择的buyers有没有创建negotiation，没有创建则可以删除，否则弹出提示
+              // status是in progress，则表示这个responsible buyer已创建eNegotiation
+              if (selectedItems.length) {
+                if (
+                  selectedItems.some(
+                    (item) =>
+                      item.SupplierRequestSubitemStatus === STATUS.INPROGRESS
+                  )
+                ) {
+                  alert(
+                    "e-Negotiation already created, not able to remove responsible buyer."
+                  );
+                } else {
+                  const ids = selectedItems.map((item) => item.ID);
+                  deleteENegotiationRequests(ids);
+                }
+              } else {
+                alert("Please select responsible buyer and then remove.");
+              }
+            }}
+            styles={buttonStyles}
+            disabled={!removeResponsibleBuyerButtonEnable}
+          />
+        </Stack>
+      )}
       {/* List */}
       <Stack tokens={{ childrenGap: 10 }}>
         <Text className={styles.subHeader} variant="large">
-          Responsible Buyer Processing
+          {t("Responsible Buyer Processing Status")}
         </Text>
-        <DetailsList
-          items={responsibleBuyers}
-          columns={columns}
-          layoutMode={DetailsListLayoutMode.fixedColumns}
-          selectionMode={SelectionMode.multiple}
-          selection={selection}
-          styles={detailsListStyles}
-        />
+        {isFetching ? (
+          <Spinner label={t("Loading...")} size={SpinnerSize.large} />
+        ) : (
+          <DetailsList
+            items={currentPriceChangeRequestSubItemList}
+            columns={columns}
+            layoutMode={DetailsListLayoutMode.fixedColumns}
+            selectionMode={SelectionMode.multiple}
+            selection={selection}
+            styles={detailsListStyles}
+          />
+        )}
       </Stack>
       {/* Footer */}
+      {supplierButtonShow && (
+        <Stack horizontal tokens={{ childrenGap: 10 }} horizontalAlign="start">
+          <DefaultButton
+            text={t("Cancel Selected")}
+            onClick={async () => {
+              // update selected items status to Cancelled, refresh table list
+              // all res buyers status are cancelled，update request status to cancelled
+              // all res buyers status are cancelled or returned，update request status to returned
+              const forms = selectedItems.map((item) => ({
+                ...item,
+                SupplierRequestSubitemStatus: STATUS.CANCELLED,
+              }));
+              await updateSupplierRequestSubitems(forms);
+              // refresh
+              const updatedSubitems = await getSupplierRequestSubitemList(id);
+              // 后续判断status的逻辑
+              if (
+                updatedSubitems.every(
+                  (item) =>
+                    item.SupplierRequestSubitemStatus === STATUS.CANCELLED
+                )
+              ) {
+                await updateSupplierRequest({
+                  ...currentPriceChangeRequest,
+                  SupplierRequestStatus: STATUS.CANCELLED,
+                });
+                getSupplierRequest(id);
+              }
+              const subitemStatusList = Array.from(
+                new Set(
+                  updatedSubitems
+                    .filter((item) => !!item.SupplierRequestSubitemStatus)
+                    .map((item) => item.SupplierRequestSubitemStatus)
+                )
+              );
+              if (
+                subitemStatusList.length === 2 &&
+                subitemStatusList.every((item) =>
+                  [STATUS.CANCELLED, STATUS.RETURNED].includes(item!)
+                )
+              ) {
+                await updateSupplierRequest({
+                  ...currentPriceChangeRequest,
+                  SupplierRequestStatus: STATUS.RETURNED,
+                });
+                getSupplierRequest(id);
+              }
+            }}
+            disabled={!cancelOrResubmitSelectedButtonEnable}
+          />
+          <DefaultButton
+            text={t("Resubmit Selected")}
+            onClick={async () => {
+              // 需要校验表单数据（必填和格式），失败则弹框提示，成功则更新request数据
+              // selected items status都是returned，更新selected items status到new，更新request status到in progress，并发送邮件
+              const validateResult = validateFields();
+              if (validateResult) {
+                // update
+                if (
+                  selectedItems.every(
+                    (item) =>
+                      item.SupplierRequestSubitemStatus === STATUS.RETURNED
+                  )
+                ) {
+                  // update subitems
+                  const forms = selectedItems.map((item) => ({
+                    ...item,
+                    SupplierRequestSubitemStatus: STATUS.NEW,
+                  }));
+                  await updateSupplierRequestSubitems(forms);
+                  await getSupplierRequestSubitemList(id);
+                  // update request
+                  await updateSupplierRequest({
+                    ...currentPriceChangeRequest,
+                    SupplierRequestStatus: STATUS.INPROGRESS,
+                  });
+                  getSupplierRequest(id);
+                }
+              }
+            }}
+            styles={buttonStyles}
+            disabled={!cancelOrResubmitSelectedButtonEnable}
+          />
+        </Stack>
+      )}
       <Stack horizontal tokens={{ childrenGap: 10 }} horizontalAlign="start">
-        <DefaultButton text="Back" onClick={() => setBackDialogVisible(true)} />
         <DefaultButton
-          text={t("Cancel Request")}
+          text={t("Back")}
           onClick={() => {
-            // show dialog
+            if (detailInfoChange) {
+              setBackDialogVisible(true);
+            } else {
+              navigate("/pricechange");
+            }
           }}
         />
-        <DefaultButton
-          text={t("Resubmit Request")}
-          onClick={() => {
-            // show dialog
-          }}
-          styles={buttonStyles}
-        />
-        <DefaultButton
-          text={t("Responsible Buyer Action")}
-          onClick={() => {
-            setFeedbackDialogVisible(true);
-          }}
-          styles={buttonStyles}
-        />
+        {supplierButtonShow && (
+          <>
+            <DefaultButton
+              text={t("Cancel Request")}
+              onClick={async () => {
+                // update request status to Cancelled and send email to host buyer
+                await updateSupplierRequest({
+                  ...currentPriceChangeRequest,
+                  SupplierRequestStatus: STATUS.CANCELLED,
+                });
+                // 更新完刷新页面
+                getSupplierRequest(id);
+              }}
+              disabled={!cancelOrResubmitRequestButtonEnable}
+            />
+            <DefaultButton
+              text={t("Resubmit Request")}
+              onClick={async () => {
+                // 需要校验表单数据（必填和格式），失败则弹框提示，成功则更新request数据
+                // 若无responsible buyers，request status是returned，更新request status到new，并发送邮件
+                const validateResult = validateFields();
+                if (validateResult) {
+                  // update
+                  await updateSupplierRequest({
+                    ...currentPriceChangeRequest,
+                    SupplierRequestStatus: STATUS.NEW,
+                  });
+                  // 更新完刷新页面
+                  getSupplierRequest(id);
+                }
+              }}
+              styles={buttonStyles}
+              disabled={!cancelOrResubmitRequestButtonEnable}
+            />
+          </>
+        )}
+        {!!userDetails.name && !userDetails.isHostBuyer && (
+          <DefaultButton
+            text={t("Responsible Buyer Action")}
+            onClick={() => {
+              // 校验items有没有被选择，没有的话弹出提示；若选择了，需要判断选择的items是否match userinfo，不满足弹出提示
+              // 若选择是user自己的items，校验items status；如果是new则正常流程弹出responsible buyer action弹框，如果不是new，弹出提示
+              if (
+                selectedItems.length &&
+                selectedItems[0].Porg === userDetails.porg &&
+                String(selectedItems[0].Handler) === userDetails.handlercode
+              ) {
+                if (
+                  selectedItems[0].SupplierRequestSubitemStatus === STATUS.NEW
+                ) {
+                  setFeedbackDialogVisible(true);
+                } else {
+                  alert("Request has been handled, cannot change feedback.");
+                }
+              } else {
+                alert(
+                  "please select your responsible buyer record before taking any further action."
+                );
+              }
+            }}
+            styles={buttonStyles}
+            disabled={!responsibleBuyerActionButtonEnable}
+          />
+        )}
       </Stack>
       {/* Dialog */}
       <BackDialog
@@ -484,13 +996,90 @@ const PriceChangeRequestDetail: React.FC = () => {
         onOk={() => navigate("/pricechange")}
       />
       <FeedbackDialog
-        detailInfo={{ requestId: "1", parma: "2" }}
+        detailInfo={currentPriceChangeRequest}
+        supplierinfo={supplierinfo}
         visible={feedbackDialogVisible}
         onCancel={() => setFeedbackDialogVisible(false)}
-        onOk={(formData) => {
-          console.log(formData);
+        onOk={async (type, formData) => {
+          console.log(type, formData, selectedItems);
           // request api
+          if (type === FeedbackType.ProceedToENegotiationNotJP) {
+            const forms = selectedItems.map((item) => ({
+              ...item,
+              SupplierRequestSubitemStatus: STATUS.REQUESTED,
+            }));
+            await updateSupplierRequestSubitems(forms);
+            setFeedbackDialogVisible(false);
+            await getSupplierRequestSubitemList(id);
+          } else if (type === FeedbackType.ProceedToENegotiationCreate) {
+            // 生成e-negotiation
+            const form: IENegotiationRequestFormModel = {
+              RequestID: "", // TODO 生成规则在8.3, 应该通过flow生成
+              Parma: formData.Parma,
+              SupplierContact: currentPriceChangeRequest.SupplierContact,
+              Porg: selectedItems[0].Porg,
+              Handler: String(selectedItems[0].Handler),
+              ExpectedEffectiveDateFrom: formData.ExpectedEffectiveDateFrom,
+              ReasonCode: formData.reasonCodeKey,
+            };
+            await createENegotiationRequest(form);
+            // update subitems
+            const forms = selectedItems.map((item) => ({
+              ...item,
+              SupplierRequestSubitemStatus: STATUS.INPROGRESS,
+            }));
+            await updateSupplierRequestSubitems(forms);
+            setFeedbackDialogVisible(false);
+            await getSupplierRequestSubitemList(id);
+          } else if (type === FeedbackType.ReturnRequest) {
+            const tempCommentHistoryValueStr = getLatestCommentHistory(
+              formData.newComment
+            );
+            // update
+            const forms = selectedItems.map((item) => ({
+              ...item,
+              SupplierRequestSubitemStatus: STATUS.RETURNED,
+            }));
+            await updateSupplierRequestSubitems(forms);
+            const updatedSubitems = await getSupplierRequestSubitemList(id);
+            if (
+              updatedSubitems.every((item) =>
+                [STATUS.RETURNED, STATUS.CANCELLED, STATUS.CLOSED].includes(
+                  item.SupplierRequestSubitemStatus || ""
+                )
+              )
+            ) {
+              await updateSupplierRequest({
+                ...currentPriceChangeRequest,
+                CommentHistory: tempCommentHistoryValueStr,
+                SupplierRequestStatus: STATUS.RETURNED,
+              });
+            } else {
+              await updateSupplierRequest({
+                ...currentPriceChangeRequest,
+                CommentHistory: tempCommentHistoryValueStr,
+              });
+            }
+            // 更新完刷新页面
+            getSupplierRequest(id);
+          } else if (type === FeedbackType.FeedbackToHostbuyer) {
+            const tempCommentHistoryValueStr = getLatestCommentHistory(
+              formData.newComment
+            );
+            // 只更新comment
+            await updateSupplierRequest({
+              ...currentPriceChangeRequest,
+              CommentHistory: tempCommentHistoryValueStr,
+            });
+            // 更新完刷新页面
+            getSupplierRequest(id);
+          }
         }}
+      />
+      <ForwardDialog
+        isOpen={forwardDialogVisible}
+        onDismiss={() => setForwardDialogVisible(false)}
+        onConfirm={handleForwardConfirm}
       />
     </Stack>
   );

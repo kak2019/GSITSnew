@@ -146,6 +146,11 @@
   text-align: center;
   background: #f3f9fc;
 }
+.listWrapper {
+  padding-top: 40px;
+  padding-left: 1.5%;
+  padding-right: 1.5%;
+}
 .ms-List-cell,
 .ms-DetailsHeader,
 .ms-DetailsHeader-cell,

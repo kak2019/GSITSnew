@@ -14,6 +14,7 @@ import { Spinner } from "@fluentui/react";
 import Routes from "./router";
 import LanguageToggle from "./common/LanguageToggle";
 import SplashScreen from "./SplashScreen";
+import RenderProfilePicture from "./common/RenderProfilePicture";
 
 interface IGsitsStates{
   hasShownSplash:boolean
@@ -27,7 +28,9 @@ export default class Gsits extends React.Component<IGsitsProps,IGsitsStates> {
   }
   render(): React.ReactElement<IGsitsProps> {
     const { hasTeamsContext, context } = this.props;
-    
+    const { isExternalGuestUser } = context?._pageContext?._user??{isExternalGuestUser:true};
+
+
     const handleSplashEnd = (): void => {
       this.setState((prevState)=>({hasShownSplash:true}));
     };
@@ -45,16 +48,21 @@ export default class Gsits extends React.Component<IGsitsProps,IGsitsStates> {
             >
               <nav className={styles.nav}>
                 <ul>
-                  <li>
-                    <NavLink
-                      to="/requisition"
-                      className={({ isActive }) =>
-                        isActive ? styles.active : ""
-                      }
-                    >
-                      New Part Requisition
-                    </NavLink>
-                  </li>
+                  {isExternalGuestUser === false && (
+                    <>
+                      <li>
+                        <NavLink
+                          to="/requisition"
+                          className={({ isActive }) =>
+                            isActive ? styles.active : ""
+                          }
+                        >
+                          New Part Requisition
+                        </NavLink>
+                      </li>
+                    </>
+                  )}
+
                   <li>
                     <NavLink
                       to="/pricechange"
@@ -62,9 +70,24 @@ export default class Gsits extends React.Component<IGsitsProps,IGsitsStates> {
                         isActive ? styles.active : ""
                       }
                     >
-                      Price Change Request
+                      Price Change Request - Supplier
                     </NavLink>
                   </li>
+                  {isExternalGuestUser === false && (
+                    <>
+                      <li>
+                        <NavLink
+                          to="/pce"
+                          className={({ isActive }) =>
+                            isActive ? styles.active : ""
+                          }
+                        >
+                          Price Change E-negotiation
+                        </NavLink>
+                      </li>
+                    </>
+                  )}
+
                   <li>
                     <NavLink
                       to="/rfq"
@@ -78,6 +101,9 @@ export default class Gsits extends React.Component<IGsitsProps,IGsitsStates> {
                 </ul>
                 <div className={styles.toggleContainer}>
                   <LanguageToggle />
+                </div>
+                <div className={styles.pictureContainer}>
+                  <RenderProfilePicture/>
                 </div>
               </nav>
               <div className={styles.contentMain}>
