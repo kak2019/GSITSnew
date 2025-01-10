@@ -3,9 +3,15 @@ import { getAttachments } from "../actions/get-attachments";
 import { getPartNegotiation } from "../actions/get-part-negotiation";
 import { getQuotation } from "../actions/get-quotation";
 import { getRFQ } from "../actions/get-rfq";
+import { postAttachments } from "../actions/post-attachments";
 import { postQuotation } from "../actions/post-quotation";
 import { putPartNegotiation } from "../actions/put-part-negotiation";
 import { putQuotation } from "../actions/put-quotation";
+import {
+  IUDGSAttachmentFormModel,
+  IUDGSAttachmentGridModel,
+} from "../model-v2/udgs-attachment-model";
+import { IUDGSCommentModel } from "../model-v2/udgs-comment-model";
 import {
   IActionlogCreteriaModel,
   INegotiationPartCreteriaModel,
@@ -27,7 +33,15 @@ type UsePriceBreakdownNegotiation = {
   ) => Promise<IPriceBreakdownInitiateDataModel>;
   saveData: (
     quotationValue: IUDGSQuotationFormModel,
-    partValue: IUDGSNegotiationPartFormModel
+    partValue: IUDGSNegotiationPartFormModel,
+    attachmentsValue: IUDGSAttachmentGridModel[],
+    removeAttachmentIDs: string[]
+  ) => Promise<IPriceBreakdownModifiedModel>;
+  postComment: (
+    partID: number,
+    quotationID: number,
+    modified: Date,
+    commentValue: IUDGSCommentModel[]
   ) => Promise<IPriceBreakdownModifiedModel>;
 };
 export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
@@ -65,10 +79,13 @@ export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
   }
   async function saveData(
     quotationValue: IUDGSQuotationFormModel,
-    partValue: IUDGSNegotiationPartFormModel
+    partValue: IUDGSNegotiationPartFormModel,
+    attachmentsValue: IUDGSAttachmentGridModel[],
+    removeAttachmentIDs: string[]
   ): Promise<IPriceBreakdownModifiedModel> {
     try {
       let quotationModifiedDate: Date;
+      let quotationID: number;
       if (quotationValue.ID !== 0) {
         const spItemQuotation = await getQuotation({
           ID: quotationValue.ID,
@@ -79,19 +96,72 @@ export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
         ) {
           throw new Error("Unmatch Version Detected, Please Refresh the Page");
         }
+        quotationID = quotationValue.ID!;
         quotationModifiedDate = await putQuotation(quotationValue);
       } else {
         const newQuotationID = await postQuotation(quotationValue);
         const newQuotation = await getQuotation({
           ID: newQuotationID,
         } as IQuotationCreteriaModel);
+        quotationID = newQuotationID;
         quotationModifiedDate = newQuotation.Modified;
       }
       const partModifiedDate = await putPartNegotiation(partValue);
+      await postAttachments({
+        FolderName: "Quotation Attachments",
+        SubFolderName: quotationID.toString(),
+        NewFileItems: attachmentsValue
+          .filter((x) => !x.URL)
+          .map((i) => i.FileItem),
+        RemoveFileIDs: removeAttachmentIDs,
+      } as IUDGSAttachmentFormModel);
+      const attachmentValue = await getAttachments(
+        "Quotation Attachments",
+        quotationID.toString(),
+        true
+      );
       return {
         partModifiedDate: partModifiedDate,
         quotationModifiedDate: quotationModifiedDate,
+        attachmentValue: attachmentValue,
       } as IPriceBreakdownModifiedModel;
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
+  async function postComment(
+    partID: number,
+    quotationID: number,
+    modified: Date,
+    commentValue: IUDGSCommentModel[]
+  ): Promise<IPriceBreakdownModifiedModel> {
+    try {
+      if (quotationID !== 0) {
+        const modifiedDate = await putQuotation({
+          ID: quotationID,
+          Modified: modified,
+          CommentHistory: JSON.stringify(commentValue),
+        } as IUDGSQuotationFormModel);
+        return {
+          partModifiedDate: new Date(),
+          quotationModifiedDate: modifiedDate,
+          attachmentValue: [],
+          quotationID: quotationID,
+        } as IPriceBreakdownModifiedModel;
+      }
+      const newQuotationID = await postQuotation({
+        CommentHistory: JSON.stringify(commentValue),
+        PartIDRef: partID,
+      });
+      const newQuotation = await getQuotation({
+        ID: newQuotationID,
+      } as IQuotationCreteriaModel);
+      return {
+        partModifiedDate: new Date(),
+        quotationModifiedDate: newQuotation.Modified,
+        attachmentValue: [],
+        quotationID: newQuotationID,
+      };
     } catch (err) {
       throw new Error(err);
     }
@@ -99,5 +169,6 @@ export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
   return {
     getInitiateData,
     saveData,
+    postComment,
   };
 }

@@ -14,5 +14,6 @@ export interface IPriceBreakdownInitiateDataModel {
 export interface IPriceBreakdownModifiedModel {
   partModifiedDate: Date;
   quotationModifiedDate: Date;
-  rfqModifiedDate?: Date;
+  attachmentValue: IUDGSAttachmentGridModel[];
+  quotationID?: number;
 }

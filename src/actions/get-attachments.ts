@@ -22,23 +22,43 @@ export async function getAttachments(
           const file = await sp.web
             .getFileByServerRelativePath(fileInfo.ServerRelativeUrl)
             .getBlob();
+          const fileItem = await sp.web
+            .getFileByServerRelativePath(fileInfo.ServerRelativeUrl)
+            .getItem();
+          const fileItemData = await fileItem
+            .select("Author/Title")
+            .expand("Author")();
           return {
             FileItem: new File([file], fileInfo.Name, { type: file.type }),
             FileID: fileInfo.UniqueId,
             URL: `${siteUrl}${fileInfo.ServerRelativeUrl}`,
             Name: fileInfo.Name,
+            UploadTime: fileInfo.TimeCreated,
+            CreatedBy: fileItemData.Author.Title,
+          } as IUDGSAttachmentGridModel;
+        })
+      );
+      return attachments;
+    } else {
+      const attachments = await Promise.all(
+        fileInfos.map(async (fileInfo) => {
+          const fileItem = await sp.web
+            .getFileByServerRelativePath(fileInfo.ServerRelativeUrl)
+            .getItem();
+          const fileItemData = await fileItem
+            .select("Author/Title")
+            .expand("Author")();
+          return {
+            FileID: fileInfo.UniqueId,
+            URL: `${siteUrl}${fileInfo.ServerRelativeUrl}`,
+            Name: fileInfo.Name,
+            UploadTime: fileInfo.TimeCreated,
+            CreatedBy: fileItemData.Author.Title,
           } as IUDGSAttachmentGridModel;
         })
       );
       return attachments;
     }
-    return fileInfos.map((fileInfo) => {
-      return {
-        URL: `${siteUrl}${fileInfo.ServerRelativeUrl}`,
-        FileID: fileInfo.UniqueId,
-        Name: fileInfo.Name,
-      } as IUDGSAttachmentGridModel;
-    });
   } catch (err) {
     Logger.write(
       `${CONST.LOG_SOURCE} (_getAttachments) - ${JSON.stringify(err)}`,

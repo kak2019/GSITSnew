@@ -33,6 +33,8 @@ export interface IUDGSQuotationGridModel {
   SurfaceTreatmentCode: string;
   OrderPriceStatusCode: string;
   OrderNumber: string;
+  PartIDRef: number;
+  CurrentUnitPrice:number
 }
 export interface IUDGSQuotationFormModel {
   ID?: number;

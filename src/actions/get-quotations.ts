@@ -7,11 +7,11 @@ import { MESSAGE } from "../config/message";
 import { IQuotationCreteriaModel } from "../model-v2/udgs-creteria-model";
 import { IUDGSQuotationGridModel } from "../model-v2/udgs-quotation-model";
 import { getSP } from "../pnpjsConfig";
-import { camlAndFinal, camlEqNumber } from "../common/camlHelper";
+import {camlAndFinal, camlEqNumber, camlInNumber} from "../common/camlHelper";
 
 export async function getQuotation(
   creteria: IQuotationCreteriaModel
-): Promise<IUDGSQuotationGridModel> {
+): Promise<IUDGSQuotationGridModel[]> {
   try {
     const sp = spfi(getSP());
     const response = await sp.web.lists
@@ -86,9 +86,10 @@ export async function getQuotation(
         OrderPriceStatusCode: item.OrderPriceStatusCode,
         OrderNumber: item.OrderNumber,
         PartIDRef: Number(item["PartIDRef."]),
+        CurrentUnitPrice:Number(item["CurrentUnitPrice."]),
       } as IUDGSQuotationGridModel;
     });
-    return quotations[0];
+    return quotations;
   } catch (err) {
     Logger.write(
       `${CONST.LOG_SOURCE} (_getQuotationByID) - ${JSON.stringify(err)}`,
@@ -104,6 +105,9 @@ export async function getQuotation(
 function getFilterString(creteria: IQuotationCreteriaModel): string {
   if (creteria.ID) {
     return camlAndFinal([camlEqNumber(creteria.ID, "ID")]);
+  }
+  if (creteria.PartIDs) {
+    return camlAndFinal([camlInNumber(creteria.PartIDs, "PartIDRef")]);
   }
   return "";
 }

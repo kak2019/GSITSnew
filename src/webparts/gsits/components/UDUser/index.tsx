@@ -4,7 +4,6 @@ import {
   DetailsListLayoutMode,
   SelectionMode,
 } from "@fluentui/react";
-import { useRFQ } from "../../../../hooks/useRFQ";
 
 const UDUser: React.FC = () => {
   //#region demo data
@@ -34,8 +33,6 @@ const UDUser: React.FC = () => {
   ];
   //#endregion
   //#region properties
-
-  const [, allRFQs, , , , getAllRFQs, , , ,] = useRFQ();
   const columns = [
     {
       key: "supplierid",
@@ -112,12 +109,9 @@ const UDUser: React.FC = () => {
   ];
   //#endregion
   //#region events
-  React.useEffect(() => {
-    getAllRFQs();
-  }, []);
+  React.useEffect(() => {}, []);
   const Test = (): void => {
     console.log("test");
-    console.log(allRFQs);
   };
   //#endregion
   //#region html

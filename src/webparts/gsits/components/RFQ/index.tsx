@@ -21,24 +21,24 @@ import {
     TooltipHost,
 } from "@fluentui/react";
 import * as React from "react";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
+import {useState} from "react";
+import {useTranslation} from "react-i18next";
 //import { useRFQ } from "../../../../hooks/useRFQ";
-import { useUser } from "../../../../hooks";
+import {useUser} from "../../../../hooks";
 import AppContext from "../../../../AppContext";
 //import { getAADClient } from "../../../../pnpjsConfig";
 //import { CONST } from "../../../../config/const";
 //import { AadHttpClient } from "@microsoft/sp-http";
-import { useNavigate } from "react-router-dom";
+import {useNavigate} from "react-router-dom";
 import theme from "../../../../config/theme";
 // import styles from "./index.module.scss";
 // import styles from "../App.module.scss";
 import styles from "./index.module.scss";
-import { useUDGSRFQ } from "../../../../hooks-v2/use-udgs-rfq";
-import { getAADClient } from "../../../../pnpjsConfig";
-import { CONST } from "../../../../config/const";
-import { AadHttpClient } from "@microsoft/sp-http";
-import { useUDGSUser } from "../../../../hooks-v2/use-udgs-user";
+import {useUDGSRFQ} from "../../../../hooks-v2/use-udgs-rfq";
+import {getAADClient} from "../../../../pnpjsConfig";
+import {CONST} from "../../../../config/const";
+import {AadHttpClient} from "@microsoft/sp-http";
+import {useUDGSUser} from "../../../../hooks-v2/use-udgs-user";
 
 
 // 定义接口
@@ -83,9 +83,9 @@ const RFQ: React.FC = () => {
         ,
         ,
         ,] = useUDGSRFQ();
-    const { getUserType } = useUser();
+    const {getUserType} = useUser();
     const [userType, setUserType] = useState<string>("Unknown");
-    const { t } = useTranslation();
+    const {t} = useTranslation();
     const [isSearchVisible, setIsSearchVisible] = useState(true);
 
     const [isItemSelected, setIsItemSelected] = useState(false);
@@ -151,27 +151,32 @@ const RFQ: React.FC = () => {
     const navigate = useNavigate();
 
     const handleViewRFQ = (): void => {
-        navigate("/rfq/quotation", { state: { selectedItems } });
+        navigate("/rfq/quotation", {state: {selectedItems}});
     };
 
 
-
     const typeOptions = [
-        { key: "", text: "All" },
-        { key: "New Part Price", text: "New Part Price" },
-        { key: "Price Change", text: "Price Change" },
+        {key: "", text: "All"},
+        {key: "New Part Price", text: "New Part Price"},
+        {key: "Price Change", text: "Price Change"},
     ];
     const statusOptions = [
 
-        { key: "New", text: "New" },
-        { key: "In Progress", text: "In Progress" },
-        { key: "Sent to GPS", text: "Sent to GPS" },
-        { key: "Closed", text: "Closed" },
+        {key: "New", text: "New"},
+        {key: "In Progress", text: "In Progress"},
+        {key: "Sent to GPS", text: "Sent to GPS"},
+        {key: "Closed", text: "Closed"},
+    ];
+    const statusOptionsSupplier = [
+
+        {key: "New", text: "New"},
+        {key: "In Progress", text: "In Progress"},
+        {key: "Closed", text: "Closed"},
     ];
 
     const columns: IColumn[] = [
-        { key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, isResizable: true, },
-        { key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 140, isResizable: true, },
+        {key: "Parma", name: t("Parma"), fieldName: "Parma", minWidth: 100, isResizable: true,},
+        {key: "RFQNo", name: t("RFQ No."), fieldName: "RFQNo", minWidth: 140, isResizable: true,},
         {
             key: "BuyerInfo",
             name: t("Buyer"),
@@ -188,7 +193,7 @@ const RFQ: React.FC = () => {
             isResizable: true,
 
         },
-        { key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, isResizable: true, },
+        {key: "RFQType", name: t("Type"), fieldName: "RFQType", minWidth: 100, isResizable: true,},
         // {
         //     key: "ReasonOfRFQ",
         //     name: t("Reason of RFQ"),
@@ -231,6 +236,13 @@ const RFQ: React.FC = () => {
             fieldName: "RFQStatus",
             minWidth: 100,
             isResizable: true,
+            onRender: (item: Item) => {
+                let displayStatus = item.RFQStatus;
+                if (userType === "Guest" && item.RFQStatus === "Sent to GPS") {
+                    displayStatus = "In Progress";
+                }
+                return <span>{displayStatus}</span>
+            }
         },
         {
             key: "EffectiveDateSupplier",
@@ -257,7 +269,7 @@ const RFQ: React.FC = () => {
         return `${year}/${month}/${day}`;
     };
 
-    const fieldStyles = { root: { width: "100%" } };
+    const fieldStyles = {root: {width: "100%"}};
 
     const toggleSearchBar = (): void => {
         setIsSearchVisible(!isSearchVisible);
@@ -330,8 +342,7 @@ const RFQ: React.FC = () => {
                 // .join(" "), // 用空格拼接,
             }));
             console.log("Selected Key:", option.key);
-        }
-        else {
+        } else {
             setSelectedBuyerValue(undefined);
             setSearchConditions((prev) => ({
                 ...prev,
@@ -467,7 +478,6 @@ const RFQ: React.FC = () => {
     // }, [])
 
 
-
     // React.useEffect(() => {
     //     if (userDetails.role === "Manager") {
     //         setSelectedSectionValue(userDetails.sectionCode);
@@ -509,12 +519,12 @@ const RFQ: React.FC = () => {
     // }, [userDetails]);
 
     React.useEffect(() => {
-        const initializeFilters = async ():Promise<void>=> {
+        const initializeFilters = async (): Promise<void> => {
             try {
                 // 获取用户信息
                 const u = useUser();
                 userEmail = u.getUserEmail(ctx);
-                console.log("supplierdetail: ",ctx);
+                console.log("supplierdetail: ", ctx);
                 console.log("User Email:", userEmail);
 
                 // 并行调用获取用户类型和角色的方法
@@ -525,14 +535,14 @@ const RFQ: React.FC = () => {
                 setUserType(usertype);
                 console.log("User Type:", usertype);
                 console.log("GPS User Details:", UserDetails);
-    
-                const defaultConditions = { ...searchConditions };
-    
+
+                const defaultConditions = {...searchConditions};
+
                 // 根据用户类型和角色设置默认条件
                 if (usertype === "Guest") {
                     const supplierId = await getSupplierId(userEmail);
                     console.log("Supplier ID:", supplierId);
-    
+
                     defaultConditions.ParmaAccurate = supplierId.toString() || "";
                 } else if (UserDetails?.role === "Manager") {
                     defaultConditions.Section = UserDetails.sectionCode || "";
@@ -555,7 +565,7 @@ const RFQ: React.FC = () => {
                         },
                     ]);
                 }
-    
+
                 // 更新搜索条件并查询
                 console.log("Default Conditions:", defaultConditions);
                 setSearchConditions(defaultConditions);
@@ -564,17 +574,15 @@ const RFQ: React.FC = () => {
                 console.error("Error initializing filters:", error);
             }
         };
-    
-        const executeInitialization = () :void => {
+
+        const executeInitialization = (): void => {
             initializeFilters().catch(error => {
                 console.error("Initialization error:", error);
             });
         };
-    
+
         executeInitialization();
     }, []);
-    
-
 
 
     const applyFilters = (): void => {
@@ -605,12 +613,36 @@ const RFQ: React.FC = () => {
     ): void => {
         setSearchConditions(prev => {
             const currentSelection = Array.isArray(prev[key]) ? (prev[key] as string[]) : [];
-            const updatedSelection = option?.selected
-                ? [...currentSelection, option.key as string] // 如果选中，添加到数组
-                : currentSelection.filter(item => item !== option?.key); // 如果取消选中，从数组中移除
+            //     const updatedSelection = option?.selected
+            //         ? [...currentSelection, option.key as string] // 如果选中，添加到数组
+            //         : currentSelection.filter(item => item !== option?.key); // 如果取消选中，从数组中移除
+            //     return {
+            //         ...prev,
+            //         [key]: updatedSelection, // 更新状态
+            //     };
+            // });
+            let updatedSelection: string[];
+
+            if (option?.selected) {
+                // 如果选中，添加到数组
+                if (userType === 'Guest' && option.key === "In Progress") {
+                    // 处理用户是'guest'，则同时添加"Sent to GPS"
+                    updatedSelection = [...currentSelection, "In Progress", "Sent to GPS"];
+                } else {
+                    updatedSelection = [...currentSelection, option.key as string];
+                }
+            } else {
+                // 如果取消选中
+                if (userType === 'Guest' && option?.key === "In Progress") {
+                    // 处理用户是'guest'，同时移除"In Progress"和"Sent to GPS"
+                    updatedSelection = currentSelection.filter(item => item !== "In Progress" && item !== "Sent to GPS");
+                } else {
+                    updatedSelection = currentSelection.filter(item => item !== option?.key);
+                }
+            }
             return {
                 ...prev,
-                [key]: updatedSelection, // 更新状态
+                [key]: updatedSelection, // 更新状态并去重
             };
         });
     };
@@ -629,17 +661,17 @@ const RFQ: React.FC = () => {
     ) => {
         return (
             <div
-                style={{ display: "grid", gridTemplateRows: "auto auto", gap: "4px" }}
+                style={{display: "grid", gridTemplateRows: "auto auto", gap: "4px"}}
             >
                 <div
-                    style={{ display: "flex", alignItems: "center", marginBottom: "4px" }}
+                    style={{display: "flex", alignItems: "center", marginBottom: "4px"}}
                 >
                     <span
-                        style={{ marginRight: "8px", fontSize: "14px", fontWeight: "500" }}
+                        style={{marginRight: "8px", fontSize: "14px", fontWeight: "500"}}
                     >
                         {label}
                     </span>
-                    <TooltipHost content={tooltip} calloutProps={{ gapSpace: 0 }}>
+                    <TooltipHost content={tooltip} calloutProps={{gapSpace: 0}}>
                         <Icon
                             iconName="Info"
                             styles={{
@@ -658,9 +690,8 @@ const RFQ: React.FC = () => {
     };
 
 
-
     return (
-        <Stack tokens={{ childrenGap: 20 }} styles={{
+        <Stack tokens={{childrenGap: 20}} styles={{
             root: {
                 width: "100%",
                 paddingTop: 0, // 去掉顶部空白
@@ -669,14 +700,14 @@ const RFQ: React.FC = () => {
                 paddingBottom: 0, // 保留左右空白
                 margin: "0"
             }
-        }} >
+        }}>
             <h2 className={styles.mainTitle}>RFQ & Quote</h2>
 
             {/* 搜索栏标题 */}
             <Stack
                 horizontal
                 verticalAlign="center"
-                tokens={{ childrenGap: 10 }}
+                tokens={{childrenGap: 10}}
                 className={styles.noMargin}
                 styles={{
                     root: {
@@ -692,9 +723,9 @@ const RFQ: React.FC = () => {
             >
                 <Icon
                     iconName={isSearchVisible ? "ChevronDown" : "ChevronRight"}
-                    style={{ fontSize: 16 }}
+                    style={{fontSize: 16}}
                 />
-                <Label styles={{ root: { fontWeight: "bold" } }}>{t("Search")}</Label>
+                <Label styles={{root: {fontWeight: "bold"}}}>{t("Search")}</Label>
             </Stack>
             {/* 搜索区域 */}
             {isSearchVisible && (
@@ -766,31 +797,33 @@ const RFQ: React.FC = () => {
                     {fieldWithTooltip(
                         t("Section"),
                         "Search by Section code/Section Description", <ComboBox
-                        componentRef={comboBoxRefSec}
+                            componentRef={comboBoxRefSec}
 
-                        options={filteredSectionOptions}
-                        autoComplete="on"
-                        allowFreeform={true}
-                        openOnKeyboardFocus={true}
-                        onInputValueChange={handleInputSectionChange}
-                        //onBlur={handleBlur}
-                        useComboBoxAsMenuWidth={false}
-                        // text={form.parma}
-                        selectedKey={selectedSectionValue}
-                        //styles={comboBoxStyles}
-                        onChange={handleSectionSelectionChange}
+                            options={filteredSectionOptions}
+                            autoComplete="on"
+                            allowFreeform={true}
+                            openOnKeyboardFocus={true}
+                            onInputValueChange={handleInputSectionChange}
+                            //onBlur={handleBlur}
+                            useComboBoxAsMenuWidth={false}
+                            // text={form.parma}
+                            selectedKey={selectedSectionValue}
+                            //styles={comboBoxStyles}
+                            onChange={handleSectionSelectionChange}
 
-                    />)}
+                        />)}
 
                     <Dropdown
                         label={t("Status")}
                         selectedKeys={searchConditions.Status}
                         multiSelect
                         onChange={(e, option) => {
-                            if (option) { console.log("Selected status: ", option) }
+                            if (option) {
+                                console.log("Selected status: ", option)
+                            }
                             handleMultiSelectChange('Status', option)
                         }}
-                        options={statusOptions}
+                        options={userType === "Guest" ? statusOptionsSupplier : statusOptions}
 
                         styles={fieldStyles}
                     />
@@ -872,7 +905,7 @@ const RFQ: React.FC = () => {
                     />
 
                     {/* 搜索按钮 */}
-                    <Stack.Item style={{ gridRow: "3", gridColumn: "5", justifySelf: "end" }}>
+                    <Stack.Item style={{gridRow: "3", gridColumn: "5", justifySelf: "end"}}>
                         <PrimaryButton
                             text={t("Search")}
                             styles={buttonStyles}
@@ -885,7 +918,7 @@ const RFQ: React.FC = () => {
 
             {/* 结果展示区域 */}
             {isFetching ? (
-                <Spinner label={t("Loading...")} size={SpinnerSize.large} />
+                <Spinner label={t("Loading...")} size={SpinnerSize.large}/>
             ) : (
                 <Stack>
                     <DetailsList
@@ -893,7 +926,7 @@ const RFQ: React.FC = () => {
                         columns={columns.map((col) => ({
                             ...col,
                             onColumnClick: undefined, // 禁用点击功能
-                            styles: { root: { textAlign: "center" } }, // 单元格居中
+                            styles: {root: {textAlign: "center"}}, // 单元格居中
 
 
                         }))}
@@ -918,7 +951,7 @@ const RFQ: React.FC = () => {
                         horizontal
                         horizontalAlign="space-between"
                         verticalAlign="center"
-                        tokens={{ childrenGap: 10 }}
+                        tokens={{childrenGap: 10}}
                         styles={{
                             root: {
 
@@ -928,7 +961,7 @@ const RFQ: React.FC = () => {
                         }}
                     >
                         <IconButton
-                            iconProps={{ iconName: "DoubleChevronLeft" }}
+                            iconProps={{iconName: "DoubleChevronLeft"}}
                             title="First Page"
                             ariaLabel="First Page"
                             disabled={currentPage === 1}
@@ -950,7 +983,7 @@ const RFQ: React.FC = () => {
                             }}
                         />
                         <IconButton
-                            iconProps={{ iconName: "ChevronLeft" }}
+                            iconProps={{iconName: "ChevronLeft"}}
                             title="Previous Page"
                             ariaLabel="Previous Page"
                             disabled={currentPage === 1}
@@ -971,11 +1004,11 @@ const RFQ: React.FC = () => {
                                 },
                             }}
                         />
-                        <Label styles={{ root: { alignSelf: "center" } }}>
+                        <Label styles={{root: {alignSelf: "center"}}}>
                             Page {currentPage} of {totalPages}
                         </Label>
                         <IconButton
-                            iconProps={{ iconName: "ChevronRight" }}
+                            iconProps={{iconName: "ChevronRight"}}
                             title="Next Page"
                             ariaLabel="Next Page"
                             disabled={currentPage === totalPages}
@@ -997,7 +1030,7 @@ const RFQ: React.FC = () => {
                             }}
                         />
                         <IconButton
-                            iconProps={{ iconName: "DoubleChevronRight" }}
+                            iconProps={{iconName: "DoubleChevronRight"}}
                             title="Last Page"
                             ariaLabel="Last Page"
                             disabled={currentPage === totalPages}
@@ -1025,7 +1058,7 @@ const RFQ: React.FC = () => {
             {/* <Stack.Item style={{ gridColumn: '5', justifySelf: 'end' }}>
               <PrimaryButton text="View" styles={buttonStyles} onClick={() => console.log('Button clicked')} />
                       </Stack.Item> */}
-            <Stack.Item style={{ gridColumn: "5", justifySelf: "end" }}>
+            <Stack.Item style={{gridColumn: "5", justifySelf: "end"}}>
                 <PrimaryButton
                     text={t("View")}
                     disabled={!isItemSelected}

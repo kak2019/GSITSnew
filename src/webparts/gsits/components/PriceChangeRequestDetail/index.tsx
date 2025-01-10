@@ -326,6 +326,12 @@ const PriceChangeRequestDetail: React.FC = () => {
     await createSupplierRequestSubitems(forms);
     setForwardDialogVisible(false);
     getSupplierRequestSubitemList(id);
+    // update supplier request status to in progress
+    await updateSupplierRequest({
+      ...currentPriceChangeRequest,
+      SupplierRequestStatus: STATUS.INPROGRESS,
+    });
+    getSupplierRequest(id);
   };
   const handleForwardConfirm = (items: any[]): void => {
     requestCreateSupplierRequestSubItem(items);

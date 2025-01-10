@@ -135,7 +135,7 @@ const Requisition: React.FC = () => {
     );
     const status = React.useRef(false)
     // 定义 Selection，用于 DetailsList 的选择
-    const [selection] = useState(new Selection({
+    const [selection, setSelection] = useState(new Selection({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         getKey(item: any, index) {
             return item.ID
@@ -215,6 +215,44 @@ const Requisition: React.FC = () => {
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    useEffect(() => {
+        const s = new Selection({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            getKey(item: any, index) {
+                return item.ID
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            canSelectItem: (item: any) => {
+
+                // const arr: Item[] = selection.getSelection()
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                // 如果 Parma 有值，返回 false，否则返回 true //&& item.handler === userDetails.handlercode;
+                if (userDetails.role === "BizAdmin") {
+                    //return !item.Parma
+                    return !item.RFQIDRef
+                } else {
+                    return !item.RFQIDRef && String(item?.Handler.toString().replace(/,/g, '')) === code?.current
+                }
+
+            },
+            onSelectionChanged: () => {
+                if (status.current) return
+                const allItems = s.getItems()
+                const selets = s.getSelection()
+                allItems.forEach(val => {
+                    if (selets.includes(val)) {
+                        sets[val.ID] = true
+                    } else {
+                        sets[val.ID] = false
+                    }
+                })
+                setSets({...sets})
+                // setSelectedItems(selection.getSelection() as Item[]);
+            },
+        })
+        setSelection(s)
+    }, [userDetails])
 
     const itemWidth = `calc(${100 / columnsPerRow}% - ${((columnsPerRow - 1) * 10) / columnsPerRow
     }px)`;

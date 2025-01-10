@@ -9,8 +9,8 @@ import { AppInsightsService } from "../../config/AppInsightsService";
 import {
   camlAndFinal,
   camlChoiceMultipleText,
-  camlContainsText,
   camlEqNumber,
+  camlInNumber,
   camlEqText,
   camlGeqDate,
   camlLtDate,
@@ -19,6 +19,7 @@ import {
   ISupplierRequestCreteriaModel,
   ISupplierRequestFormModel,
   ISupplierRequest,
+  ISupplierRequestSubItemCreteriaModel,
   ISupplierRequestSubItemFormModel,
   ISupplierRequestSubItem,
 } from "../../model/priceChange";
@@ -247,6 +248,62 @@ export const getSupplierRequestSubitemListAction = createAsyncThunk(
     }
   }
 );
+export const getSupplierRequestSubitemListByFilterAction = createAsyncThunk(
+  `${FeatureKey.PRICECHANGE}/getSupplierRequestSubitemListByFilter`,
+  async (
+    Query: ISupplierRequestSubItemCreteriaModel
+  ): Promise<ISupplierRequestSubItem[]> => {
+    const sp = spfi(getSP());
+    try {
+      const queryXml = GetSubitemQueryInfo(Query);
+      const response = await sp.web.lists
+        .getByTitle(CONST.LIST_NAME_SUPPLIERREQUESTSUBITEMS)
+        .renderListDataAsStream({
+          ViewXml: `<View>
+        <Query>
+        ${queryXml}
+        <OrderBy>
+          <FieldRef Name="ID" Ascending="FALSE" />
+        </OrderBy>
+        </Query>
+        </View>`,
+        });
+      return response.Row.map((item) => {
+        return {
+          ID: item.ID,
+          ExpectedEffectiveDateFrom: item.ExpectedEffectiveDateFrom,
+          Handler: item.Handler,
+          HandlerName: item.HandlerName,
+          IsSenttoHostBuyer: item.IsSenttoHostBuyer,
+          NotificationDate: item.NotificationDate,
+          Porg: item.Porg,
+          ResponsibleBuyer: `${item.Porg} ${item.Handler}`,
+          ReasonCode: item.ReasonCode,
+          RequestIDRef: item.RequestIDRef,
+          Section: item.Section,
+          SectionDescription: item.SectionDescription,
+          SupplierRequestSubitemStatus: item.SupplierRequestSubitemStatus,
+          CreatedDate: item.Created,
+          CreatedBy: item.Author && item.Author[0] ? item.Author[0].title : "",
+          ModifiedDate: item.Modified,
+          ModifiedBy: item.Editor && item.Editor[0] ? item.Editor[0].title : "",
+        } as ISupplierRequestSubItem;
+      });
+    } catch (err) {
+      Logger.write(
+        `${
+          CONST.LOG_SOURCE
+        } (_getSupplierRequestSubitemListByFilter) - ${JSON.stringify(err)}`,
+        LogLevel.Error
+      );
+      AppInsightsService.aiInstance.trackEvent({
+        name: MESSAGE.retrieveDataFailed,
+        properties: { error: err },
+      });
+      return Promise.reject(MESSAGE.retrieveDataFailed);
+    }
+  }
+);
 export const createSupplierRequestSubitemsAction = createAsyncThunk(
   `${FeatureKey.PRICECHANGE}/createSupplierRequestSubitems`,
   async (forms: ISupplierRequestSubItemFormModel[]): Promise<string[]> => {
@@ -351,12 +408,10 @@ export const setCurrentPriceChangeRequestAction = createAction(
 function GetQueryInfo(queryCreteria: ISupplierRequestCreteriaModel): string {
   const creterias: string[] = [];
   if (queryCreteria.HostBuyer) {
-    creterias.push(camlContainsText(queryCreteria.HostBuyer, "HostBuyer"));
+    creterias.push(camlEqText(queryCreteria.HostBuyer, "HostBuyer"));
   }
-  if (queryCreteria.ResponsibleBuyer) {
-    creterias.push(
-      camlContainsText(queryCreteria.ResponsibleBuyer, "ResponsibleBuyer")
-    );
+  if (queryCreteria.IDS) {
+    creterias.push(camlInNumber(queryCreteria.IDS, "ID"));
   }
   if (
     queryCreteria.SupplierRequestStatus &&
@@ -372,7 +427,6 @@ function GetQueryInfo(queryCreteria: ISupplierRequestCreteriaModel): string {
   if (queryCreteria.Parma) {
     creterias.push(camlEqText(queryCreteria.Parma, "Parma"));
   }
-
   if (queryCreteria.ExpectedEffectiveDateFrom) {
     creterias.push(
       camlGeqDate(queryCreteria.ExpectedEffectiveDateFrom, "Created")
@@ -383,6 +437,35 @@ function GetQueryInfo(queryCreteria: ISupplierRequestCreteriaModel): string {
       camlLtDate(queryCreteria.ExpectedEffectiveDateTo, "Created")
     );
   }
+  return camlAndFinal(creterias);
+}
 
+function GetSubitemQueryInfo(
+  queryCreteria: ISupplierRequestSubItemCreteriaModel
+): string {
+  const creterias: string[] = [];
+  if (
+    queryCreteria.SupplierRequestSubitemStatus &&
+    queryCreteria.SupplierRequestSubitemStatus.length
+  ) {
+    creterias.push(
+      camlChoiceMultipleText(
+        "SupplierRequestSubitemStatus",
+        queryCreteria.SupplierRequestSubitemStatus
+      )
+    );
+  }
+  if (queryCreteria.Porg) {
+    creterias.push(camlEqText(queryCreteria.Porg, "Porg"));
+  }
+  if (queryCreteria.Handler) {
+    creterias.push(camlEqNumber(queryCreteria.Handler, "Handler"));
+  }
+  if (queryCreteria.HandlerName) {
+    creterias.push(camlEqText(queryCreteria.HandlerName, "HandlerName"));
+  }
+  if (queryCreteria.Section) {
+    creterias.push(camlEqText(queryCreteria.Section, "Section"));
+  }
   return camlAndFinal(creterias);
 }

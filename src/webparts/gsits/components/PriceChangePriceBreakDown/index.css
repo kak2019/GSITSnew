@@ -1,155 +1,142 @@
-.displayFlex,
-.fileItemOdd,
-.fileItemEven,
-.label,
-.labelUpload {
+.pcpb--flex {
   display: flex;
-}
-.displayFlex,
-.fileItemOdd,
-.fileItemEven,
-.label,
-.labelUpload {
   align-items: center;
 }
-.iconLabel,
-.labelUnit {
-  padding-left: 5px;
+.pcpb--paddingleft {
+  padding-left: 4px;
 }
-.iconLabel,
-.labelUpload {
+.pcpb--flexbasiszero {
+  flex-basis: 0;
+}
+.pcpb--bolder {
+  font-weight: 600;
+}
+.pcpb__comment {
+  flex-basis: 0;
+  padding: 10px 5%;
+}
+.pcpb__comment__input {
+  width: 100%;
+}
+.pcpb__detailslist {
+  padding-top: 40px;
+  padding-left: 1.5%;
+  padding-right: 1.5%;
+}
+.pcpb__form__wrapper {
+  background: #cceeff;
+  padding: 10px 1.5%;
+}
+.pcpb__form__header {
+  border: 1px solid #ccc;
+  padding: 10px 1.5%;
+}
+.pcpb__form__header--view {
+  font-weight: 600;
+  padding: 0 2.5%;
+}
+.pcpb__form__field {
+  width: 25vi;
+  height: 40px;
+}
+.pcpb__form__field__wrapper,
+.pcpb__form__field__wrapper--lastrow {
+  padding: 0 1.5%;
+}
+.pcpb__form__field__wrapper--lastrow {
+  padding-bottom: 20px;
+}
+.pcpb__form__field__label {
   font-size: 10px;
 }
-.iconUpload,
-.label,
-.textUpload {
+.pcpb__form__field__label--red {
+  padding-left: 2px;
+  color: red;
+}
+.pcpb__form__field__label--bold {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.pcpb__form__field__label--current {
+  font-size: 10px;
+  width: 12vi;
+  white-space: nowrap;
+  overflow: visible;
+}
+.pcpb__form__field__value {
+  line-height: 30px;
+}
+.pcpb__form__field__value--current {
+  font-size: 11px;
+  height: 20px;
+}
+.pcpb__header {
+  font-weight: 600;
+  background: #99ccff;
+  padding: 5px;
+}
+.pcpb__upload__label {
+  cursor: pointer;
+  border: 1px dashed #0078d4;
+  padding: 10px;
+  height: 25px;
+  text-align: center;
+  background: #f3f9fc;
+}
+.pcpb__upload__label__input {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+}
+.pcpb__upload__label__input__icon {
+  width: 15px;
+  height: 15px;
+  color: black;
   font-weight: bold;
 }
-.fileList,
-.stackButton {
-  margin-top: 10px;
+.pcpb__upload__label__input__text {
+  font-weight: bold;
+  font-size: 12px;
+  margin-right: 5;
 }
-.fileItemOdd,
-.fileItemEven {
+.pcpb__upload__label__input__hint {
+  font-size: 12px;
+  padding-left: 4px;
+}
+.pcpb__upload__list {
+  margin-top: 10px;
+  position: relative;
+  height: 130px;
+  overflow: hidden;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+}
+.pcpb__upload__list--odd,
+.pcpb__upload__list--even {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 5px 10px;
   height: 30px;
   box-sizing: border-box;
   font-size: 12px;
-}
-.fileItemOdd,
-.fileItemEven,
-.stackSubHeader {
   border: 1px solid #ccc;
 }
-.labelUpload,
-.labelUnit {
-  height: 100%;
-}
-.labelUpload,
-.uploadArea {
-  cursor: pointer;
-}
-.textBolder,
-.header,
-.subHeader {
-  font-weight: 600;
-}
-.stackSubHeader,
-.stackInput {
-  padding: 10px 1.5%;
-}
-.stackButton,
-.stackHorizontal,
-.stackHorizontalLastRow {
-  padding: 0 1.5%;
-}
-.stackHorizontalLastRow {
-  padding-bottom: 20px;
-}
-.labelUpload,
-.stackCommentInput {
-  width: 100%;
-}
-.iconLabel {
-  align-content: center;
-  height: 10px;
-  width: 10px;
-}
-.iconUpload {
-  width: 20px;
-  height: 20px;
-  color: black;
-}
-.fileList {
-  position: relative;
-  height: 130px;
-  overflow: hidden;
-  overflow-y: auto;
-}
-.fileItemOdd {
+.pcpb__upload__list--odd {
   background: #fff;
 }
-.fileItemEven {
+.pcpb__upload__list--even {
   background: #f6f6f6;
 }
-.label {
-  margin-top: 4px;
-}
-.labelItem {
-  width: 15vi;
-  height: 40px;
-}
-.labelValue {
-  line-height: 30px;
-}
-.labelUpload {
-  justify-content: center;
-}
-.labelRed {
-  padding-left: 2px;
-  color: red;
-}
-.inputArea {
-  padding-bottom: 20px;
-}
-.labelUnit,
-.textUpload {
-  font-size: 13px;
-}
-.textUpload {
-  margin-right: 5;
-}
-.textPaddingLeft {
-  padding-left: 4px;
-}
-.header {
-  background: #99ccff;
-  padding: 5px;
-}
-.subHeader {
-  padding: 0 2.5%;
-}
-.stackComment {
-  padding: 10px 5%;
-}
-.stackCommentInput,
-.flexBasisZero {
-  flex-basis: 0;
-}
-.stackInput {
-  background: #cceeff;
-}
-.uploadArea {
-  border: 1px dashed #0078d4;
-  padding: 10px;
-  text-align: center;
-  background: #f3f9fc;
-}
-.listWrapper {
-  padding-top: 40px;
-  padding-left: 1.5%;
-  padding-right: 1.5%;
+.pcpb__footer__btnfield {
+  margin-top: 10px;
+  padding: 0 1.5%;
 }
 .ms-List-cell,
 .ms-DetailsHeader,

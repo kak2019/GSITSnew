@@ -367,6 +367,130 @@ export const priceBreakdownStyles = {
     focusZone: {},
   } as IDetailsListStyles,
 };
+export const priceChangePriceBreakdownStyles = {
+  textField: {
+    fieldGroup: {
+      height: "22px",
+    },
+    errorMessage: { paddingTop: "0px" },
+    field: {
+      height: "100%",
+      fontSize: "11px",
+    },
+    root: { width: "12vi" },
+  },
+  textFieldComment: {
+    fieldGroup: {
+      height: "22px",
+    },
+    field: {
+      height: "100%",
+      fontSize: "11px",
+    },
+    root: { width: "100%" },
+  },
+  textFieldMultiline: {
+    field: {
+      resize: "vertical",
+      overflow: "auto",
+      fontSize: "12px",
+    },
+    root: { width: "inherit" },
+  } as ITextFieldStyles,
+  dropdown: {
+    title: {
+      height: "25px",
+      fontSize: "13px",
+      display: "flex",
+      alignItems: "center",
+    },
+    caretDownWrapper: {
+      height: "25px",
+      display: "flex",
+      alignItems: "center",
+    },
+    errorMessage: { paddingTop: "0px" },
+    root: {
+      width: "12vi",
+    },
+  },
+  buttonDefault: {
+    root: {
+      height: "30px",
+      borderRadius: "5px",
+      minHeight: "30px",
+    },
+    textContainer: { height: "100%" },
+    label: { lineHeight: "30px" },
+  },
+  buttonPrimary: {
+    root: {
+      height: "30px",
+      width: "120px",
+      borderRadius: "5px",
+      minHeight: "30px",
+    },
+    rootHovered: {},
+    textContainer: { height: "100%" },
+    label: { lineHeight: "30px" },
+  },
+  buttonPrimarySmall: {
+    root: {
+      height: "25px",
+      borderRadius: "5px",
+      minHeight: "25px",
+    },
+    textContainer: { height: "100%" },
+    label: { lineHeight: "25px" },
+  },
+  buttonDialogBox: {
+    root: {
+      height: "30px",
+      borderRadius: "5px",
+      minHeight: "30px",
+      paddingLeft: "20px",
+    },
+    rootHovered: {},
+    textContainer: { height: "100%" },
+    label: { lineHeight: "30px" },
+  },
+  icon: {
+    root: {
+      paddingLeft: "5px",
+      fontSize: "10px",
+      paddingTop: "4px",
+      verticalAlign: "Top",
+    },
+  },
+  detailsList: {
+    root: {
+      width: "95%",
+      border: "1px solid #ccc",
+      overflow: "visible",
+    },
+    headerWrapper: {},
+    contentWrapper: {},
+    focusZone: {},
+  } as IDetailsListStyles,
+  detailsListDialogBox: {
+    root: {
+      backgroundColor: "#FFFFFF",
+      border: "1px solid #ddd",
+      borderRadius: "4px",
+    },
+    headerWrapper: {
+      backgroundColor: "#AFAFAF",
+      selectors: {
+        ".ms-DetailsHeader": {
+          backgroundColor: "#BDBDBD",
+          fontWeight: 600,
+        },
+      },
+    },
+    contentWrapper: {},
+    focusZone: {},
+  } as IDetailsListStyles,
+};
 // Export the theme
 const theme = {
   colors,

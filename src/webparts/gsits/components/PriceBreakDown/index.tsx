@@ -81,7 +81,7 @@ const PriceBreakDown: React.FC = () => {
     ,
     postActionlog,
   ] = useUDGSActionlog();
-  const [, errorMessageAttachment, , getAttachments, postAttachments] =
+  const [, errorMessageAttachment, , getAttachmentsUDGS, postAttachments] =
     useUDGSAttachment();
   const [, errorMessagePart, , , , , , getPartByID, , putPart, acceptReturn] =
     useUDGSPart();
@@ -100,19 +100,19 @@ const PriceBreakDown: React.FC = () => {
   const { t } = useTranslation();
   const ctx = useContext(AppContext);
   const location = useLocation();
-  //const masterData: IMasterData = location.state;
-  console.log(location.state);
-  const masterData: IMasterData = {
-    role: "Supplier",
-    rfqID: 2,
-    partID: 3,
-    quotationID: 17,
-    supplierId: "111",
-    userName: "Rodger Ruan",
-    userEmail: "rodger.ruan@udtrucks.com",
-    isSME: true,
-    countryCode: "CN",
-  };
+  const masterData: IMasterData = location.state;
+  // console.log(location.state);
+  // const masterData: IMasterData = {
+  //   role: "Supplier",
+  //   rfqID: 2,
+  //   partID: 3,
+  //   quotationID: 17,
+  //   supplierId: "111",
+  //   userName: "Rodger Ruan",
+  //   userEmail: "rodger.ruan@udtrucks.com",
+  //   isSME: true,
+  //   countryCode: "CN",
+  // };
   const navigate = useNavigate();
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
   const orderQtyEditableType = [
@@ -201,7 +201,7 @@ const PriceBreakDown: React.FC = () => {
           initialQuotationValue = deepCopy(
             await getQuotationByID(masterData.quotationID)
           );
-          initialAttachmentsValue = await getAttachments({
+          initialAttachmentsValue = await getAttachmentsUDGS({
             FolderName: "Quotation Attachments",
             SubFolderName: masterData.quotationID.toString(),
             IsDataNeeded: true,
@@ -417,7 +417,7 @@ const PriceBreakDown: React.FC = () => {
     handleReturn();
   };
   const onClickSaveBtn = async (): Promise<void> => {
-    await save("Draft").then(() => {
+    await save("Draft").then(async () => {
       setDialogValue({
         IsOpen: true,
         Title: t("Submit Success"),
@@ -439,19 +439,6 @@ const PriceBreakDown: React.FC = () => {
             PartIDRef: partValue.ID,
             RFQIDRef: rfqValue.ID,
           } as IUDGSActionlogFormModel);
-          const rfqUpdateValue = {
-            ID: masterData.rfqID,
-            Modified: rfqValue.Modified,
-            LatestQuoteDate: new Date(),
-            RFQStatus: "In Progress",
-          };
-          const rfqNewModified = await putRFQ(rfqUpdateValue);
-          const rfqValueDup = deepCopy(rfqValue);
-          rfqValueDup.Modified = rfqNewModified;
-          rfqValueDup.LatestQuoteDate = rfqUpdateValue.LatestQuoteDate;
-          rfqValueDup.RFQStatus = "In Progress";
-          setRFQValue(rfqValueDup);
-          setIsDirty(false);
           setIsEditable(false);
           setDialogValue({
             IsOpen: true,
@@ -974,6 +961,18 @@ const PriceBreakDown: React.FC = () => {
         setAttachmentsValue(updatedAttachmentsValue);
         setRemovedAttachmentIdsValue([]);
       }
+      const rfqUpdateValue = {
+        ID: masterData.rfqID,
+        Modified: rfqValue.Modified,
+        LatestQuoteDate: new Date(),
+        RFQStatus: "In Progress",
+      };
+      const rfqNewModified = await putRFQ(rfqUpdateValue);
+      const rfqValueDup = deepCopy(rfqValue);
+      rfqValueDup.Modified = rfqNewModified;
+      rfqValueDup.LatestQuoteDate = rfqUpdateValue.LatestQuoteDate;
+      rfqValueDup.RFQStatus = "In Progress";
+      setRFQValue(rfqValueDup);
     } catch (err) {
       setIsLoading(false);
       throw new Error(err);

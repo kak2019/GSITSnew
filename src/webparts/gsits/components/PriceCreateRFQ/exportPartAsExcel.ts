@@ -3,7 +3,8 @@ import { getSP } from "../../../../pnpjsConfig";
 import "@pnp/sp/webs";
 import "@pnp/sp/folders";
 import * as Excel from 'exceljs';
-import {PartItem} from "./IDetailsListColumn";
+import {IUDGSNegotiationPartGridModel} from "../../../../model-v2/udgs-negotiation-model";
+import {IUDGSQuotationGridModel} from "../../../../model-v2/udgs-quotation-model";
 // const generateFileName = (rfqNo: string): string => {
 //     const now = new Date();
 //     ////
@@ -19,8 +20,9 @@ import {PartItem} from "./IDetailsListColumn";
 //
 //     return `${rfqNo}_${YYMMDDhhmm}.xlsx`;
 // };
-// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-function-return-type
-const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string) => {
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const exportToExcel = async (selectedItems:  IUDGSNegotiationPartGridModel[]&  IUDGSQuotationGridModel[], Site_Relative_Links: string) => {
     // 检查是否有选中的记录
     if (!selectedItems || selectedItems.length === 0) {
         alert("No records selected for export!");
@@ -40,20 +42,20 @@ const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string) 
         }
 
         // 遍历 selectedItems，根据 key 从 currentRFQRequisition 过滤数据
-        selectedItems.forEach((item:PartItem, index) => {
+        selectedItems.forEach((item :IUDGSNegotiationPartGridModel & IUDGSQuotationGridModel, index) => {
                 const rowIndex = index + 2; // 从第二行开始填充数据
 
                 // 按照需求写入特定的单元格
-                worksheet.getCell('A' + rowIndex).value = item.partNo || "";
-                worksheet.getCell('B' + rowIndex).value = item.qualifier || "";
-                worksheet.getCell('C' + rowIndex).value = item.partDescription || "";
-                worksheet.getCell('D' + rowIndex).value = item.parma || "";
-                worksheet.getCell('E' + rowIndex).value = item.materialUser || "";
-                worksheet.getCell('F' + rowIndex).value = item.currency || "";
-                worksheet.getCell('G' + rowIndex).value = item.unit || "";
-                worksheet.getCell('H' + rowIndex).value = item.uop || "";
-                worksheet.getCell('I' + rowIndex).value = item.currentTotalPrice || "";
-                worksheet.getCell('J' + rowIndex).value = item.forecastQTY || "";
+                worksheet.getCell('A' + rowIndex).value = item.PartNumber || "";
+                worksheet.getCell('B' + rowIndex).value = item.Qualifier || "";
+                worksheet.getCell('C' + rowIndex).value = item.PartDescription || "";
+                worksheet.getCell('D' + rowIndex).value = item.Parma || "";
+                worksheet.getCell('E' + rowIndex).value = item.MaterialUser || "";
+                worksheet.getCell('F' + rowIndex).value = item.Currency || "";
+                worksheet.getCell('G' + rowIndex).value = item.Unit || "";
+                worksheet.getCell('H' + rowIndex).value = item.UOP || "";
+                worksheet.getCell('I' + rowIndex).value = item.CurrentUnitPrice || "";
+                worksheet.getCell('J' + rowIndex).value = item.ForecastQuantity || "";
                 worksheet.getCell('K' + rowIndex).value = item.ID || "";
 
 

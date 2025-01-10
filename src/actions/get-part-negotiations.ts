@@ -10,7 +10,7 @@ import { camlAndFinal, camlEqNumber, camlEqText } from "../common/camlHelper";
 
 export async function getPartNegotiation(
   creteria: INegotiationPartCreteriaModel
-): Promise<IUDGSNegotiationPartGridModel> {
+): Promise<IUDGSNegotiationPartGridModel[]> {
   try {
     const sp = spfi(getSP());
     const response = await sp.web.lists
@@ -56,7 +56,7 @@ export async function getPartNegotiation(
         Ver: Number(item["Ver."]),
       } as IUDGSNegotiationPartGridModel;
     });
-    return parts[0];
+    return parts;
   } catch (err) {
     Logger.write(
       `${CONST.LOG_SOURCE} (_getNegotiationPart) - ${JSON.stringify(err)}`,

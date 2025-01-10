@@ -134,7 +134,19 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = matchedRecord.UOP || "";
                             break;
                         case "Order Price Status Code":
-                            cellValue = matchedRecord.OrderPriceStatusCode || "";
+                            //cellValue = matchedRecord.OrderPriceStatusCode || "";
+                            if (orderType.slice(0, 4).includes("SAPP") && matchedRecord.OrderPriceStatusCode) {
+                                switch (matchedRecord.OrderPriceStatusCode) {
+                                    case "N":
+                                        cellValue = "Negotiated";
+                                        break;
+                                    case "E":
+                                        cellValue = "Estimated";
+                                        break;
+                                }
+                            } else {
+                                cellValue =matchedRecord.OrderPriceStatusCode|| ""; // 如果条件不满足，cellValue为空字符串
+                            }
                             break;
                         case "Order Coverage Time":
                             cellValue = matchedRecord.OrderCoverageTime || "";

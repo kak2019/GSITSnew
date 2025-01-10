@@ -5,6 +5,7 @@ export interface ISupplierRequestCreteriaModel {
   ExpectedEffectiveDateTo?: string;
   Parma?: string;
   ResponsibleBuyer?: string;
+  IDS?: number[];
 }
 
 export interface ISupplierRequestFormModel {
@@ -40,6 +41,14 @@ export interface ISupplierRequest {
   CreatedBy?: string;
   ModifiedDate?: Date;
   ModifiedBy?: string;
+}
+
+export interface ISupplierRequestSubItemCreteriaModel {
+  Porg?: string;
+  Handler?: number;
+  HandlerName?: string;
+  Section?: string;
+  SupplierRequestSubitemStatus?: string[];
 }
 
 export interface ISupplierRequestSubItemFormModel {

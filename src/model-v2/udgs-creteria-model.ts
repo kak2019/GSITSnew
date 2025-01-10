@@ -6,6 +6,10 @@ export interface IActionlogCreteriaModel extends IBaseCreteriaModel {
   RFQID?: number;
 }
 export interface IRequisitionPartCreteriaModel extends IBaseCreteriaModel {}
-export interface INegotiationPartCreteriaModel extends IBaseCreteriaModel {}
+export interface INegotiationPartCreteriaModel extends IBaseCreteriaModel {
+  NegotiationRefNo?: string;
+}
 export interface IRFQCreteriaModel extends IBaseCreteriaModel {}
-export interface IQuotationCreteriaModel extends IBaseCreteriaModel {}
+export interface IQuotationCreteriaModel extends IBaseCreteriaModel {
+  PartIDs?: number[];
+}

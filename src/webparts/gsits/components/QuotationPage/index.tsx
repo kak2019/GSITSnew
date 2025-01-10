@@ -165,7 +165,7 @@ const fetchData = async (parmaValue: string): Promise<any> => {
 };
 
 const QuoteCreation: React.FC = () => {
-    
+
     const [isLoading, setIsLoading] = useState(false);
     //const [, , , , , , , , , , , , createActionLog, acceptOrReturn, , , proceedToPo,] = useQuotation();
     //const [, , , , , , , , , , , , createActionLog, acceptOrReturn, , , proceedToPo,] = useQuotation();
@@ -176,14 +176,47 @@ const QuoteCreation: React.FC = () => {
     const navigate = useNavigate();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [selectedItems, setSelectedItems] = useState<any[]>([]);
-    const selection = new Selection({
-        onSelectionChanged: () => {
-            const items = selection.getSelection(); // 获取选中的记录
-            setSelectedItems(items); // 将选中的记录存入状态
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [sets, setSets] = useState<any>({})
+    const status = React.useRef(false)
+    const [selection] = useState(new Selection({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        getKey(item: any, index) {
+            return item.ID
         },
-    });
+        onSelectionChanged: () => {
+            if (status.current) return
+            const allItems = selection.getItems()
+            const selets = selection.getSelection()
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            allItems.forEach((val:any) => {
+                if (selets.includes(val)) {
+                    sets[val.ID] = true
+                } else {
+                    sets[val.ID] = false
+                }
+                setSets({...sets})
+            })
+            // setSelectedItems(selection.getSelection() as Item[]);
+        },
+    }));
+    useEffect(() => {
+        setSelectedItems(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (currentPartWithQuotation as any).filter((val: any) => {
+                return sets[val.ID]
+            })
+        )
+    }, [sets])
 
     const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        selectedItems.forEach((val: any) => {
+            selection.setKeySelected(val.ID, true, false)
+        })
+    }, [currentPage])
     const itemsPerPage = 20;
     const paginatedItems = React.useMemo(() => {
         const startIndex = (currentPage - 1) * itemsPerPage;
@@ -519,7 +552,7 @@ const QuoteCreation: React.FC = () => {
                 }
 
                 return <span>{displayStatus}</span>;
-        }},
+            }},
         {
             key: "column13", name: t("Parma"), fieldName: "Parma", minWidth: 100,
             onRender: () => {
@@ -547,7 +580,7 @@ const QuoteCreation: React.FC = () => {
                             //props.PartStatus === 'Quoted' &&  <KnowledgeArticleIcon className={iconClass}/>
                         }
                         {userType === "Guest" &&
-                            ["New", "Draft", "Returned"].includes(props.PartStatus) ? (
+                        ["New", "Draft", "Returned"].includes(props.PartStatus) ? (
                             <button
                                 style={{ margin: "5px", width: "56px", border: 0 }}
                                 onClick={() => {
@@ -669,7 +702,7 @@ const QuoteCreation: React.FC = () => {
         },
         {
             key: "column20",
-            name: t("Standard Text Per Order 1"),
+            name: t("Standard Text Per Order 3"),
             fieldName: "StandardOrderText3",
             minWidth: 220,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -702,9 +735,9 @@ const QuoteCreation: React.FC = () => {
         },
         {
             key: "column21",
-            name: t("Free Text per Par"),
+            name: t("Free Text per Part"),
             fieldName: "FreePartText",
-            minWidth: 75,
+            minWidth: 120,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onRender: (props: any, i: any) => {
                 return (
@@ -1193,114 +1226,114 @@ const QuoteCreation: React.FC = () => {
                         headerWrapper: theme.detaillist.headerWrapper,
                     }}
                 />
-                  {/* 分页控件 */}
-                  <Stack
-                        horizontal
-                        horizontalAlign="space-between"
-                        verticalAlign="center"
-                        tokens={{ childrenGap: 10 }}
+                {/* 分页控件 */}
+                <Stack
+                    horizontal
+                    horizontalAlign="space-between"
+                    verticalAlign="center"
+                    tokens={{ childrenGap: 10 }}
+                    styles={{
+                        root: {
+
+                            ...theme.paginated.paginatedbackground,
+
+                        },
+                    }}
+                >
+                    <IconButton
+                        iconProps={{ iconName: "DoubleChevronLeft" }}
+                        title="First Page"
+                        ariaLabel="First Page"
+                        disabled={currentPage === 1}
+                        onClick={() => goToPage(1)}
                         styles={{
                             root: {
-
-                                ...theme.paginated.paginatedbackground,
+                                ...theme.paginated.paginatedicon.root
+                            },
+                            icon: {
+                                ...theme.paginated.paginatedicon.icon
 
                             },
+                            rootHovered: {
+                                ...theme.paginated.paginatedicon.rootHovered
+                            },
+                            rootDisabled: {
+                                ...theme.paginated.paginatedicon.rootDisabled
+                            },
                         }}
-                    >
-                        <IconButton
-                            iconProps={{ iconName: "DoubleChevronLeft" }}
-                            title="First Page"
-                            ariaLabel="First Page"
-                            disabled={currentPage === 1}
-                            onClick={() => goToPage(1)}
-                            styles={{
-                                root: {
-                                    ...theme.paginated.paginatedicon.root
-                                },
-                                icon: {
-                                    ...theme.paginated.paginatedicon.icon
+                    />
+                    <IconButton
+                        iconProps={{ iconName: "ChevronLeft" }}
+                        title="Previous Page"
+                        ariaLabel="Previous Page"
+                        disabled={currentPage === 1}
+                        onClick={() => goToPage(currentPage - 1)}
+                        styles={{
+                            root: {
+                                ...theme.paginated.paginatedicon.root
+                            },
+                            icon: {
+                                ...theme.paginated.paginatedicon.icon
 
-                                },
-                                rootHovered: {
-                                    ...theme.paginated.paginatedicon.rootHovered
-                                },
-                                rootDisabled: {
-                                    ...theme.paginated.paginatedicon.rootDisabled
-                                },
-                            }}
-                        />
-                        <IconButton
-                            iconProps={{ iconName: "ChevronLeft" }}
-                            title="Previous Page"
-                            ariaLabel="Previous Page"
-                            disabled={currentPage === 1}
-                            onClick={() => goToPage(currentPage - 1)}
-                            styles={{
-                                root: {
-                                    ...theme.paginated.paginatedicon.root
-                                },
-                                icon: {
-                                    ...theme.paginated.paginatedicon.icon
+                            },
+                            rootHovered: {
+                                ...theme.paginated.paginatedicon.rootHovered
+                            },
+                            rootDisabled: {
+                                ...theme.paginated.paginatedicon.rootDisabled
+                            },
+                        }}
+                    />
+                    <Label styles={{ root: { alignSelf: "center" } }}>
+                        Page {currentPage} of {totalPages}
+                    </Label>
+                    <IconButton
+                        iconProps={{ iconName: "ChevronRight" }}
+                        title="Next Page"
+                        ariaLabel="Next Page"
+                        disabled={currentPage === totalPages}
+                        onClick={() => goToPage(currentPage + 1)}
+                        styles={{
+                            root: {
+                                ...theme.paginated.paginatedicon.root
+                            },
+                            icon: {
+                                ...theme.paginated.paginatedicon.icon
 
-                                },
-                                rootHovered: {
-                                    ...theme.paginated.paginatedicon.rootHovered
-                                },
-                                rootDisabled: {
-                                    ...theme.paginated.paginatedicon.rootDisabled
-                                },
-                            }}
-                        />
-                        <Label styles={{ root: { alignSelf: "center" } }}>
-                            Page {currentPage} of {totalPages}
-                        </Label>
-                        <IconButton
-                            iconProps={{ iconName: "ChevronRight" }}
-                            title="Next Page"
-                            ariaLabel="Next Page"
-                            disabled={currentPage === totalPages}
-                            onClick={() => goToPage(currentPage + 1)}
-                            styles={{
-                                root: {
-                                    ...theme.paginated.paginatedicon.root
-                                },
-                                icon: {
-                                    ...theme.paginated.paginatedicon.icon
+                            },
+                            rootHovered: {
+                                ...theme.paginated.paginatedicon.rootHovered
+                            },
+                            rootDisabled: {
+                                ...theme.paginated.paginatedicon.rootDisabled
+                            },
+                        }}
+                    />
+                    <IconButton
+                        iconProps={{ iconName: "DoubleChevronRight" }}
+                        title="Last Page"
+                        ariaLabel="Last Page"
+                        disabled={currentPage === totalPages}
+                        onClick={() => goToPage(totalPages)}
+                        styles={{
+                            root: {
+                                ...theme.paginated.paginatedicon.root
+                            },
+                            icon: {
+                                ...theme.paginated.paginatedicon.icon
 
-                                },
-                                rootHovered: {
-                                    ...theme.paginated.paginatedicon.rootHovered
-                                },
-                                rootDisabled: {
-                                    ...theme.paginated.paginatedicon.rootDisabled
-                                },
-                            }}
-                        />
-                        <IconButton
-                            iconProps={{ iconName: "DoubleChevronRight" }}
-                            title="Last Page"
-                            ariaLabel="Last Page"
-                            disabled={currentPage === totalPages}
-                            onClick={() => goToPage(totalPages)}
-                            styles={{
-                                root: {
-                                    ...theme.paginated.paginatedicon.root
-                                },
-                                icon: {
-                                    ...theme.paginated.paginatedicon.icon
+                            },
+                            rootHovered: {
+                                ...theme.paginated.paginatedicon.rootHovered
+                            },
+                            rootDisabled: {
+                                ...theme.paginated.paginatedicon.rootDisabled
+                            },
+                        }}
+                    />
+                </Stack>
 
-                                },
-                                rootHovered: {
-                                    ...theme.paginated.paginatedicon.rootHovered
-                                },
-                                rootDisabled: {
-                                    ...theme.paginated.paginatedicon.rootDisabled
-                                },
-                            }}
-                        />
-                    </Stack>
-                
-            
+
             </Stack>
 
             {/* Footer Buttons */}
@@ -1392,7 +1425,8 @@ const QuoteCreation: React.FC = () => {
                             isOpen: true,
                             title: t("Proceed to PO Creation"),
                             tip: t(
-                                "Please refer to GPS screen 9.2.18 for standard text contents."
+                                "Fields (i.e. “Order No.”) will follow UD-GPS default set up if no designated input/selection. " +
+                                "Refer to UD-GPS screen 9.2.18 for Standard Text Contents."
                             ),
                             isProceed: true,
                             selectedItems: selectedItems || [],

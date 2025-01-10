@@ -9,6 +9,7 @@ import {
   getSupplierRequestListAction,
   getSupplierRequestAction,
   getSupplierRequestSubitemListAction,
+  getSupplierRequestSubitemListByFilterAction,
   createSupplierRequestAction,
   updateSupplierRequestAction,
   createSupplierRequestSubitemsAction,
@@ -64,7 +65,35 @@ export const usePriceChange = (): Readonly<PriceChangeOperators> => {
     async (
       query: ISupplierRequestCreteriaModel
     ): Promise<ISupplierRequest[]> => {
-      const result = await dispatch(getSupplierRequestListAction(query));
+      // 筛选条件除了responsible buyer字段，其他的都在supplier request表上有，只有responsible buyer需要特殊处理
+      // ResponsibleBuyer参数是‘porg handler'
+      const tempQuery = { ...query };
+      if (query.ResponsibleBuyer) {
+        const splitResponsibleBuyer = query.ResponsibleBuyer.split(" ");
+        if (splitResponsibleBuyer.length !== 2) {
+          throw new Error("Error Get Supplier Request List");
+        }
+        const Porg = splitResponsibleBuyer[0];
+        const Handler = Number(splitResponsibleBuyer[1]);
+        // 先去subitem表查
+        const subitemsResult = await dispatch(
+          getSupplierRequestSubitemListByFilterAction({ Porg, Handler })
+        );
+        if (
+          getSupplierRequestSubitemListByFilterAction.fulfilled.match(
+            subitemsResult
+          )
+        ) {
+          const supplierRequestIds = subitemsResult.payload.map((item) =>
+            Number(item.RequestIDRef)
+          );
+          // 处理query
+          tempQuery.IDS = supplierRequestIds;
+        } else {
+          throw new Error("Error Get Supplier Request List");
+        }
+      }
+      const result = await dispatch(getSupplierRequestListAction(tempQuery));
       if (getSupplierRequestListAction.fulfilled.match(result)) {
         return result.payload as ISupplierRequest[];
       } else {

@@ -3,6 +3,7 @@ export interface IUDGSAttachmentGridModel {
   FileID?: string;
   URL: string;
   Name: string;
+  CreatedBy?: string;
   UploadTime?: string;
 }
 export interface IUDGSAttachmentFormModel {

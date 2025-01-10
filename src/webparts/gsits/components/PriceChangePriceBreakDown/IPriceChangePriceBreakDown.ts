@@ -2,7 +2,7 @@ import { IDropdownOption } from "@fluentui/react";
 import { IColumn } from "@fluentui/react";
 import { IUDGSQuotationGridModel } from "../../../../model-v2/udgs-quotation-model";
 import { IUDGSRFQGridModel } from "../../../../model-v2/udgs-rfq-model";
-import { IUDGSNewPartGridModel } from "../../../../model-v2/udgs-part-model";
+import { IUDGSNegotiationPartGridModel } from "../../../../model-v2/udgs-negotiation-model";
 
 //#region model
 export interface IPCTextFieldPriceBreakdown {
@@ -14,8 +14,9 @@ export interface IPCTextFieldPriceBreakdown {
   Label?: string;
   Key?:
     | keyof IUDGSRFQGridModel
-    | keyof IUDGSNewPartGridModel
+    | keyof IUDGSNegotiationPartGridModel
     | keyof IUDGSQuotationGridModel;
+  ShowCurrent?: boolean;
   ErrorMessage?: string;
   Choice?: IDropdownOption[];
   MaxLength?: number;
@@ -355,77 +356,58 @@ const PCBasicInfoRowOne: IPCTextFieldRowPriceBreakdown = {
       Label: "Qualifier",
       Key: "Qualifier",
       DataSource: "Part",
-      Align: "start",
+      Align: "center",
     },
     {
       Label: "Part Description",
       Key: "PartDescription",
       DataSource: "Part",
-      Align: "start",
-    },
-    {
-      Label: "Part Issue",
-      Key: "PartIssue",
-      DataSource: "Part",
-      Align: "start",
+      Align: "end",
     },
   ],
   IsLastRow: false,
 };
 const PCBasicInfoRowTwo: IPCTextFieldRowPriceBreakdown = {
   Fields: [
-    {
-      Label: "Drawing No.",
-      Key: "DrawingNo",
-      DataSource: "Part",
-      Align: "start",
-    },
     { Label: "RFQ No.", Key: "RFQNo", DataSource: "RFQ", Align: "start" },
     {
       Label: "RFQ Due Date",
       Key: "RFQDueDate",
       DataSource: "RFQ",
-      Align: "start",
+      Align: "center",
       IsDate: true,
     },
-    { Label: "Status", Key: "RFQStatus", DataSource: "RFQ", Align: "start" },
+    { Label: "Status", Key: "RFQStatus", DataSource: "RFQ", Align: "end" },
   ],
   IsLastRow: false,
 };
 const PCBasicInfoRowThree: IPCTextFieldRowPriceBreakdown = {
   Fields: [
     {
-      Label: "Order Type",
-      Key: "OrderType",
-      DataSource: "RFQ",
-      Align: "start",
-    },
-    {
       Label: "Material User",
       Key: "MaterialUser",
       DataSource: "Part",
       Align: "start",
     },
-    { Label: "Suffix", Key: "UDGSSuffix", DataSource: "Part", Align: "start" },
-    { Label: "Porg", Key: "Porg", DataSource: "Part", Align: "start" },
+    { Label: "Porg", Key: "Porg", DataSource: "Part", Align: "center" },
+    { Label: "Handler ID", Key: "Porg", DataSource: "Part", Align: "end" },
   ],
   IsLastRow: false,
 };
 const PCBasicInfoRowFour: IPCTextFieldRowPriceBreakdown = {
   Fields: [
-    { Label: "Handler ID", Key: "Handler", DataSource: "Part", Align: "start" },
     {
       Label: "Buyer Name",
       Key: "HandlerName",
       DataSource: "Part",
       Align: "start",
     },
-    { Label: "PARMA", Key: "Parma", DataSource: "RFQ", Align: "start" },
+    { Label: "PARMA", Key: "Parma", DataSource: "RFQ", Align: "center" },
     {
       Label: "Supplier Name",
       Key: "SupplierName",
       DataSource: "RFQ",
-      Align: "start",
+      Align: "end",
     },
   ],
   IsLastRow: true,
@@ -436,190 +418,6 @@ export const PCBasicInfo: IPCTextFieldRowPriceBreakdown[] = [
   PCBasicInfoRowThree,
   PCBasicInfoRowFour,
 ];
-const PCGeneralInfoViewRowOne: IPCTextFieldRowPriceBreakdown = {
-  Fields: [
-    { Label: "Named Place", Key: "NamedPlace", DataSource: "Quotation" },
-    {
-      Label: "Named Place Description",
-      Key: "NamedPlaceDescription",
-      DataSource: "Quotation",
-    },
-    {
-      Label: "Surface Treatment Code",
-      Key: "SurfaceTreatmentCode",
-      DataSource: "Quotation",
-    },
-  ],
-  IsLastRow: false,
-};
-const PCGeneralInfoViewRowTwo: IPCTextFieldRowPriceBreakdown = {
-  Fields: [
-    {
-      Label: "Country of Origin",
-      Key: "CountryOfOrigin",
-      DataSource: "Quotation",
-    },
-    { Label: "Order Qty", Key: "OrderQty", DataSource: "Part" },
-    { Label: "Annual Qty", Key: "AnnualQty", DataSource: "Part" },
-  ],
-  IsLastRow: false,
-};
-const PCGeneralInfoViewRowThree: IPCTextFieldRowPriceBreakdown = {
-  Fields: [
-    {
-      Label: "Order Coverate Time",
-      Key: "OrderCoverageTime",
-      DataSource: "Quotation",
-    },
-    { Label: "First Lot", Key: "FirstLot", DataSource: "Quotation" },
-    {
-      Label: "Supplier Part Number",
-      Key: "SupplierPartNumber",
-      DataSource: "Quotation",
-    },
-  ],
-  IsLastRow: true,
-};
-export const PCGeneralInfoView: IPCTextFieldRowPriceBreakdown[] = [
-  PCGeneralInfoViewRowOne,
-  PCGeneralInfoViewRowTwo,
-  PCGeneralInfoViewRowThree,
-];
-const PCGeneralInfoEditRowOne: IPCTextFieldRowPriceBreakdown = {
-  Fields: [
-    {
-      FieldType: "Text",
-      Align: "start",
-      Label: "Named Place",
-      Key: "NamedPlace",
-      DataSource: "Quotation",
-      AdditionalIcon: true,
-      ShowMandatoryIcon: true,
-    },
-    {
-      FieldType: "Text",
-      Align: "center",
-      Label: "Named Place Description",
-      Key: "NamedPlaceDescription",
-      DataSource: "Quotation",
-      MaxLength: 50,
-      AdditionalIcon: true,
-    },
-    {
-      FieldType: "Choice",
-      Align: "end",
-      Label: "Surface Treatment Code",
-      Key: "SurfaceTreatmentCode",
-      DataSource: "Quotation",
-      AdditionalIcon: true,
-      Choice: PCSurfaceTreatmentOptions,
-    },
-  ],
-  IsLastRow: false,
-};
-const PCGeneralInfoEditRowTwo = (
-  orderQtyDisable: boolean
-): IPCTextFieldRowPriceBreakdown => {
-  return orderQtyDisable
-    ? {
-        Fields: [
-          {
-            FieldType: "Choice",
-            Align: "start",
-            Label: "Country of Origin",
-            Key: "CountryOfOrigin",
-            DataSource: "Quotation",
-            Choice: PCCountryOfOriginOptions,
-            AdditionalIcon: true,
-            ShowMandatoryIcon: true,
-          },
-          {
-            FieldType: "Number",
-            Align: "center",
-            Label: "Annual Qty",
-            Key: "AnnualQty",
-            DataSource: "Part",
-            AdditionalIcon: true,
-          },
-          { Label: "Blank" },
-        ],
-        IsLastRow: false,
-      }
-    : {
-        Fields: [
-          {
-            FieldType: "Choice",
-            Align: "start",
-            Label: "Country of Origin",
-            Key: "CountryOfOrigin",
-            DataSource: "Quotation",
-            Choice: PCCountryOfOriginOptions,
-            AdditionalIcon: true,
-            ShowMandatoryIcon: true,
-          },
-          {
-            FieldType: "Number",
-            Align: "center",
-            Label: "Order Qty",
-            Key: "OrderQty",
-            DataSource: "Part",
-            AdditionalIcon: true,
-            ReadOnly: orderQtyDisable,
-          },
-          {
-            FieldType: "Number",
-            Align: "end",
-            Label: "Annual Qty",
-            Key: "AnnualQty",
-            DataSource: "Part",
-            AdditionalIcon: true,
-          },
-        ],
-        IsLastRow: false,
-      };
-};
-const PCGeneralInfoEditRowThree: IPCTextFieldRowPriceBreakdown = {
-  Fields: [
-    {
-      FieldType: "Number",
-      Align: "start",
-      Label: "Order Coverage Time",
-      Key: "OrderCoverageTime",
-      DataSource: "Quotation",
-      AdditionalIcon: true,
-      ShowMandatoryIcon: true,
-      MaxValue: 99,
-      MinValue: 1,
-    },
-    {
-      FieldType: "Text",
-      Align: "center",
-      Label: "First Lot",
-      Key: "FirstLot",
-      DataSource: "Quotation",
-      AdditionalIcon: true,
-      ShowMandatoryIcon: true,
-    },
-    {
-      FieldType: "Text",
-      Align: "end",
-      Label: "Supplier Part Number",
-      Key: "SupplierPartNumber",
-      DataSource: "Quotation",
-      AdditionalIcon: true,
-    },
-  ],
-  IsLastRow: true,
-};
-export const PCGeneralInfoEdit = (
-  orderQtyDiable: boolean
-): IPCTextFieldRowPriceBreakdown[] => {
-  return [
-    PCGeneralInfoEditRowOne,
-    PCGeneralInfoEditRowTwo(orderQtyDiable),
-    PCGeneralInfoEditRowThree,
-  ];
-};
 const PCQuoteBreakdownInfoViewRowOne: IPCTextFieldRowPriceBreakdown = {
   Fields: [
     { Label: "Currency", Key: "Currency", DataSource: "Quotation" },
@@ -764,6 +562,7 @@ const PCQuoteBreakdownInfoEditRowOne: IPCTextFieldRowPriceBreakdown = {
       Label: "Materials Costs Ttl",
       Key: "MaterialsCostsTtl",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
     {
       FieldType: "Number",
@@ -785,6 +584,7 @@ const PCQuoteBreakdownInfoEditRowTwo: IPCTextFieldRowPriceBreakdown = {
       DataSource: "Quotation",
       ShowMandatoryIcon: true,
       ReadOnly: true,
+      ShowCurrent: true,
     },
     {
       FieldType: "Number",
@@ -792,6 +592,7 @@ const PCQuoteBreakdownInfoEditRowTwo: IPCTextFieldRowPriceBreakdown = {
       Label: "Purchased Parts Costs Ttl",
       Key: "PurchasedPartsCostsTtl",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
     {
       FieldType: "Number",
@@ -799,6 +600,7 @@ const PCQuoteBreakdownInfoEditRowTwo: IPCTextFieldRowPriceBreakdown = {
       Label: "Supplied Mtr Cost",
       Key: "SuppliedMtrCost",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
   ],
   IsLastRow: false,
@@ -821,6 +623,7 @@ const PCQuoteBreakdownInfoEditRowThree: IPCTextFieldRowPriceBreakdown = {
       Label: "Processing Costs Total",
       Key: "ProcessingCostsTtl",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
     {
       FieldType: "Blank",
@@ -851,6 +654,7 @@ const PCQuoteBreakdownInfoEditRowFour = (
         Label: "Tooling Jig Depr Cost Ttl",
         Key: "ToolingJigDeprCostTtl",
         DataSource: "Quotation",
+        ShowCurrent: true,
       },
       {
         FieldType: "Blank",
@@ -875,6 +679,7 @@ const PCQuoteBreakdownInfoEditRowFive: IPCTextFieldRowPriceBreakdown = {
       Label: "Admin Exp/Profit",
       Key: "AdminExpProfit",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
     {
       FieldType: "Blank",
@@ -898,6 +703,7 @@ const PCQuoteBreakdownInfoEditRowSix: IPCTextFieldRowPriceBreakdown = {
       Label: "Packing and Distribution Costs",
       Key: "PackingAndDistributionCosts",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
     {
       FieldType: "Blank",
@@ -918,6 +724,7 @@ const PCQuoteBreakdownInfoEditRowSeven: IPCTextFieldRowPriceBreakdown = {
       Label: "Other",
       Key: "Other",
       DataSource: "Quotation",
+      ShowCurrent: true,
     },
     {
       FieldType: "Blank",
@@ -939,6 +746,7 @@ const PCQuoteBreakdownInfoEditRowEight: IPCTextFieldRowPriceBreakdown = {
       Key: "QuotedBasicUnitPriceTtl",
       DataSource: "Quotation",
       ReadOnly: true,
+      ShowCurrent: true,
     },
     {
       FieldType: "Blank",
