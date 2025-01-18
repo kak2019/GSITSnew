@@ -27,3 +27,10 @@
 .noMargin {
   margin-top: 5px !important;
 }
+
+.searchButtonContent {
+  grid-row: 2;
+  grid-column: 4;
+  justify-self: end;
+  align-self: end;
+}

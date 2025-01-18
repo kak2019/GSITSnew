@@ -1,31 +1,31 @@
-import { getActionlogs } from "../actions/get-actionlogs";
-import { getAttachments } from "../actions/get-attachments";
-import { getPartNegotiation } from "../actions/get-part-negotiation";
-import { getQuotation } from "../actions/get-quotation";
-import { getRFQ } from "../actions/get-rfq";
-import { postAttachments } from "../actions/post-attachments";
-import { postQuotation } from "../actions/post-quotation";
-import { putPartNegotiation } from "../actions/put-part-negotiation";
-import { putQuotation } from "../actions/put-quotation";
 import {
-  IUDGSAttachmentFormModel,
-  IUDGSAttachmentGridModel,
-} from "../model-v2/udgs-attachment-model";
-import { IUDGSCommentModel } from "../model-v2/udgs-comment-model";
+  getActionlogs,
+  getAttachments,
+  getPartNegotiation,
+  getQuotation,
+  getRFQ,
+  postAttachments,
+  postQuotation,
+  putPartNegotiation,
+  putQuotation,
+} from "../../../../actions";
 import {
   IActionlogCreteriaModel,
   INegotiationPartCreteriaModel,
   IQuotationCreteriaModel,
   IRFQCreteriaModel,
-} from "../model-v2/udgs-creteria-model";
-import { IUDGSNegotiationPartFormModel } from "../model-v2/udgs-negotiation-model";
-import { IUDGSQuotationFormModel } from "../model-v2/udgs-quotation-model";
+  IUDGSAttachmentFormModel,
+  IUDGSAttachmentGridModel,
+  IUDGSCommentModel,
+  IUDGSNegotiationPartFormModel,
+  IUDGSQuotationFormModel,
+} from "../../../../model-v2";
 import {
   IPriceBreakdownInitiateDataModel,
   IPriceBreakdownModifiedModel,
-} from "../model-v3/pricebreakdown-negotiation-model";
+} from "./IPriceChangePriceBreakDown";
 
-type UsePriceBreakdownNegotiation = {
+type UsePriceBreakdownNegotiationSP = {
   getInitiateData: (
     rfqID: number,
     partID: number,
@@ -44,7 +44,7 @@ type UsePriceBreakdownNegotiation = {
     commentValue: IUDGSCommentModel[]
   ) => Promise<IPriceBreakdownModifiedModel>;
 };
-export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
+export function usePriceBreakdownNegotiationSP(): UsePriceBreakdownNegotiationSP {
   async function getInitiateData(
     rfqID: number,
     partID: number,
@@ -66,12 +66,28 @@ export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
         quotationID.toString(),
         true
       );
+      const commentHistoryValue = quotationValue.CommentHistory
+        ? JSON.parse(quotationValue.CommentHistory).map(
+            (item: IUDGSCommentModel) => {
+              return {
+                ...item,
+                CommentDate: new Date(item.CommentDate),
+              } as IUDGSCommentModel;
+            }
+          )
+        : [];
+      commentHistoryValue.sort((a: IUDGSCommentModel, b: IUDGSCommentModel) => {
+        return (
+          new Date(b.CommentDate).getTime() - new Date(a.CommentDate).getTime()
+        );
+      });
       return {
         rfqValue: rfqValue,
         partValue: partValue,
         quotationValue: quotationValue,
         actionlogValue: actionlogValue,
         attachmentValue: attachmentValue,
+        commentHistoryValue: commentHistoryValue,
       } as IPriceBreakdownInitiateDataModel;
     } catch (err) {
       throw new Error(err);
@@ -133,14 +149,14 @@ export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
     partID: number,
     quotationID: number,
     modified: Date,
-    commentValue: IUDGSCommentModel[]
+    commentHistory: IUDGSCommentModel[]
   ): Promise<IPriceBreakdownModifiedModel> {
     try {
       if (quotationID !== 0) {
         const modifiedDate = await putQuotation({
           ID: quotationID,
           Modified: modified,
-          CommentHistory: JSON.stringify(commentValue),
+          CommentHistory: JSON.stringify(commentHistory),
         } as IUDGSQuotationFormModel);
         return {
           partModifiedDate: new Date(),
@@ -150,7 +166,7 @@ export function usePriceBreakdownNegotiation(): UsePriceBreakdownNegotiation {
         } as IPriceBreakdownModifiedModel;
       }
       const newQuotationID = await postQuotation({
-        CommentHistory: JSON.stringify(commentValue),
+        CommentHistory: JSON.stringify(commentHistory),
         PartIDRef: partID,
       });
       const newQuotation = await getQuotation({

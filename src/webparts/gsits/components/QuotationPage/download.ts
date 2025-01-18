@@ -39,7 +39,7 @@ const exportToExcel = async (selectedItems: any[], Site_Relative_Links: string, 
         if (!worksheet) {
             throw new Error("Sheet1 not found in the template");
         }
-
+        console.log("currentRFQpartwithQuotation",currentRFQRequisition)
         // 遍历 selectedItems，根据 key 从 currentRFQRequisition 过滤数据
         selectedItems.forEach((item, index) => {
             const key = item.ID; // 从 selectedItems 获取 key

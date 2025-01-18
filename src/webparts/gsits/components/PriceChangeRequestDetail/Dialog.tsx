@@ -15,7 +15,7 @@ import {
   TextfieldItem,
 } from "./Component";
 import { ISupplierRequest } from "../../../../model/priceChange";
-import { REASON_CODE } from "../../../../config/const";
+import { REASON_CODE_OPTIONS } from "../../../../config/const";
 import { ISupplierInfoResponse } from "../../../../api";
 import {
   getNextNextMonthFirstDayDate,
@@ -33,7 +33,7 @@ interface FeedbackDialogProps {
   onCancel: () => void;
   onOk: (type: FeedbackType, formData?: any) => void;
   detailInfo?: ISupplierRequest;
-  supplierinfo?: ISupplierInfoResponse;
+  supplierInfo?: ISupplierInfoResponse;
 }
 
 export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
@@ -41,7 +41,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   onCancel,
   onOk,
   detailInfo,
-  supplierinfo,
+  supplierInfo,
 }) => {
   const [formData, setFormData] = useState<ISupplierRequest | undefined>();
   const [selectedFeedbackOptionKey, setSelectedFeedbackOptionKey] = useState<
@@ -60,23 +60,6 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
     { key: 0, text: "Proceed to e-negotiation" },
     { key: 1, text: "Return Request" },
     { key: 2, text: "Feedback to Host Buyer" },
-  ];
-  const reasonCodeOptions = [
-    { key: REASON_CODE.C.CODE, text: REASON_CODE.C.DESC },
-    { key: REASON_CODE.O.CODE, text: REASON_CODE.O.DESC },
-    { key: REASON_CODE.C.CODE, text: REASON_CODE.R.DESC },
-    { key: REASON_CODE.C.CODE, text: REASON_CODE.S.DESC },
-    { key: REASON_CODE.C.CODE, text: REASON_CODE.T.DESC },
-    { key: REASON_CODE.C.CODE, text: REASON_CODE.W.DESC },
-    { key: REASON_CODE["0"].CODE, text: REASON_CODE["0"].DESC },
-    { key: REASON_CODE["1"].CODE, text: REASON_CODE["1"].DESC },
-    { key: REASON_CODE["2"].CODE, text: REASON_CODE["2"].DESC },
-    { key: REASON_CODE["3"].CODE, text: REASON_CODE["3"].DESC },
-    { key: REASON_CODE["4"].CODE, text: REASON_CODE["4"].DESC },
-    { key: REASON_CODE["6"].CODE, text: REASON_CODE["6"].DESC },
-    { key: REASON_CODE["7"].CODE, text: REASON_CODE["7"].DESC },
-    { key: REASON_CODE["8"].CODE, text: REASON_CODE["8"].DESC },
-    { key: REASON_CODE["9"].CODE, text: REASON_CODE["9"].DESC },
   ];
 
   const dateAndReasonCodeRequired = useMemo(() => {
@@ -122,7 +105,10 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             tokens={{ childrenGap: 10 }}
             styles={{ root: { width: "50%" } }}
           >
-            <BasicInfoItem itemLabel="Request ID" itemValue={formData?.ID} />
+            <BasicInfoItem
+              itemLabel="Request ID"
+              itemValue={formData?.RequestID}
+            />
           </Stack>
           <Stack
             tokens={{ childrenGap: 10 }}
@@ -172,7 +158,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             <DropdownItem
               itemLabel="Reason Code"
               selectedKey={reasonCodeKey}
-              options={reasonCodeOptions}
+              options={REASON_CODE_OPTIONS}
               required={dateAndReasonCodeRequired}
               onChange={(e, option) => {
                 console.log("Reason Code", e, option);
@@ -206,13 +192,11 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             // 3
             // 如果选择的是feedback to host buyer，点击save，先校验必填（comment），没填给出提示，满足后update comment，并发送邮件给host buyer，items状态保持不变
             if (selectedFeedbackOptionKey === 0) {
-              if (supplierinfo?.isJP) {
-                // 校验必填
+              if (supplierInfo?.isJP) {
                 const validateResult = validateFields();
                 if (validateResult) {
-                  // 校验时间
                   // 如果是sme，时间早于下下个月的1号，那么显示warning并重置时间到下下个月1号，如果不早于下下个月1号，则可以生成e-negotiation
-                  if (supplierinfo.isSME) {
+                  if (supplierInfo.isSME) {
                     const nextNextMonthFirstDayDate =
                       getNextNextMonthFirstDayDate();
                     const selectDate =
@@ -221,7 +205,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                       selectDate.getTime() < nextNextMonthFirstDayDate.getTime()
                     ) {
                       alert(
-                        "Selected date no earlier than the first of next next month."
+                        "Selected date no earlier than the first day of next next month."
                       );
                       if (formData) {
                         setFormData({
@@ -232,7 +216,8 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     } else {
                       onOk(FeedbackType.ProceedToENegotiationCreate, {
                         ...formData,
-                        reasonCodeKey,
+                        newComment: comment,
+                        ReasonCode: reasonCodeKey,
                       });
                     }
                     // 如果不是sme，时间早于当前时间减90天，那么显示warning并重置时间到当前时间减90天，如果不早于当前时间减90天，则可以生成e-negotiation
@@ -251,7 +236,8 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     } else {
                       onOk(FeedbackType.ProceedToENegotiationCreate, {
                         ...formData,
-                        reasonCodeKey,
+                        newComment: comment,
+                        ReasonCode: reasonCodeKey,
                       });
                     }
                   }
@@ -268,7 +254,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                 onOk(FeedbackType.ReturnRequest, {
                   ...formData,
                   newComment: comment,
-                  reasonCodeKey,
+                  ReasonCode: reasonCodeKey,
                 });
               }
             } else if (selectedFeedbackOptionKey === 2) {
@@ -277,7 +263,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                 onOk(FeedbackType.FeedbackToHostbuyer, {
                   ...formData,
                   newComment: comment,
-                  reasonCodeKey,
+                  ReasonCode: reasonCodeKey,
                 });
               }
             }

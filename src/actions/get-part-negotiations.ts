@@ -52,8 +52,10 @@ export async function getPartNegotiation(
         SupplierName: item.SupplierName,
         SupplierPartNumber: item.SupplierPartNumber,
         SystemPartID: item.SystemPartID,
-        Unit: Number(item["Unit."]),
+        //Unit: Number(item["Unit."]),
+        Unit: item.Unit,
         Ver: Number(item["Ver."]),
+        Handler:item.Handler
       } as IUDGSNegotiationPartGridModel;
     });
     return parts;
@@ -76,6 +78,11 @@ function getFilterString(creteria: INegotiationPartCreteriaModel): string {
   if (creteria.NegotiationRefNo) {
     return camlAndFinal([
       camlEqText(creteria.NegotiationRefNo, "NegotiationRefNo"),
+    ]);
+  }
+  if (creteria.RfqID) {
+    return camlAndFinal([
+      camlEqNumber(creteria.RfqID, "RFQIDRef"),
     ]);
   }
   return "";

@@ -13,32 +13,36 @@ import {
   SelectionMode,
   Icon,
   Label,
-  TooltipHost,
   DatePicker,
-  Spinner,
-  SpinnerSize,
-  IconButton,
+  ComboBox,
+  IComboBoxOption,
+  IDropdownOption,
 } from "@fluentui/react";
 import { useTranslation } from "react-i18next";
 import AppContext from "../../../../AppContext";
 import theme, { buttonStyles } from "../../../../config/theme";
 import styles from "./index.module.scss";
-import { STATUS } from "../../../../config/const";
-import { formatDate } from "../../../../utils";
+import { STATUS, USER_TYPE, ROLE_TYPE } from "../../../../config/const";
+import { formatDate, getJapanDate } from "../../../../utils";
 import CreateENegotiationDialog from "./CreateENegotiationDialog";
+import { FieldWithTooltip } from "../common/FieldWithTooltip";
+import { Pagination } from "../common/Pagination";
 import { useUser } from "../../../../hooks";
 import {
   IENegotiationRequestCreteriaModel,
+  IENegotiationRequestFormModel,
   IENegotiationRequest,
 } from "../../../../model/eNegotiation";
+import { useENegotiation } from "../../../../hooks/useENegotiation";
+import { getGPSUserByQueryRequest } from "../../../../api";
+import { useNavigate } from "react-router-dom";
 
 const PriceChangeRequest: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   let userEmail = "";
   let userName = "";
-  let webURL = "";
-  let Site_Relative_Links = "";
   const ctx = useContext(AppContext);
   if (!ctx || !ctx.context._pageContext) {
     throw new Error("AppContext is not provided or context is undefined");
@@ -46,16 +50,11 @@ const PriceChangeRequest: React.FC = () => {
     console.log("ctx", ctx.context._pageContext);
     userEmail = ctx.context._pageContext._user.email;
     userName = ctx.context._pageContext._user?.displayName;
-    webURL = ctx.context?._pageContext?._web?.absoluteUrl;
-    Site_Relative_Links = webURL.slice(webURL.indexOf("/sites"));
-    console.log(userName, Site_Relative_Links);
+    console.log("userName", userName);
   }
 
-  const [isFetching] = useState(false);
   const [isCreateENegotiationDialogOpen, setIsCreateENegotiationDialogOpen] =
     useState(false);
-  const [isCreateRFQDialogOpen, setIsCreateEFQDialogOpen] = useState(false);
-  console.log("isCreateRFQDialogOpen", isCreateRFQDialogOpen);
   const [isSearchVisible, setIsSearchVisible] = useState(true);
   const [searchConditions, setSearchConditions] =
     useState<IENegotiationRequestCreteriaModel>({
@@ -65,7 +64,7 @@ const PriceChangeRequest: React.FC = () => {
       ExpectedEffectiveDateTo: undefined,
       Parma: "",
       SupplierRequestID: "",
-      Status: [] as string[],
+      RFQStatus: [] as string[],
     });
 
   const { getUserType, getGPSUser } = useUser();
@@ -75,69 +74,67 @@ const PriceChangeRequest: React.FC = () => {
     name: "",
     sectionCode: "",
     handlercode: "",
-    porg: "porg",
+    porg: "",
   });
+
+  const createButtonsEnable = useMemo(() => {
+    return userDetails.role && userDetails.role === ROLE_TYPE.BUYER;
+  }, [userDetails]);
+
+  const [eNegotiationRequestList, setENegotiationRequestList] = useState<
+    IENegotiationRequest[]
+  >([]);
+  const [, , , getENegotiationRequestList, createENegotiationRequest] =
+    useENegotiation();
+  const requestPiceChangeENegotiationData = async (
+    creteria: IENegotiationRequestCreteriaModel
+  ) => {
+    console.log("creteria", creteria);
+    const res = await getENegotiationRequestList(creteria);
+    setENegotiationRequestList(res);
+  };
+
+  const [selectedItems, setSelectedItems] = useState<IENegotiationRequest[]>(
+    []
+  );
 
   const requestGPSUserData = async () => {
     const result = await getGPSUser(userEmail);
     if (result && result instanceof Object) {
-      // 如果所有字段都有值，更新状态
       setUserDetails({
         role: result.role,
         name: result.name,
         sectionCode: result.sectionCode,
         handlercode: result.handlercode,
-        porg: "porg",
+        porg: result.porg,
       });
     }
-  };
-
-  const [eNegotiationList, setENegotiationList] = useState<
-    IENegotiationRequest[]
-  >([]);
-  const requestPiceChangeENegotiationData = async (
-    creteria: IENegotiationRequestCreteriaModel
-  ) => {
-    console.log("creteria", creteria);
-    const data: IENegotiationRequest[] = [
-      {
-        ID: "1",
-        RequestID: "345678901234",
-        Parma: "212432",
-        Porg: "UDT 21",
-        Handler: "First Last Name",
-        ExpectedEffectiveDateFrom: new Date(),
-        Status: "Requested",
-      },
-    ];
-    setENegotiationList(data);
   };
 
   const requestUserTypeData = async () => {
     const type = await getUserType(userEmail);
     if (userType !== type) setUserType(type);
-    if (type === "Member") {
+    if (type === USER_TYPE.MEMBER) {
       requestGPSUserData();
-      // 如果是buyer，再请求price change e-negotiation列表数据
+      // if is buyer，request price change e-negotiation list info
       requestPiceChangeENegotiationData(searchConditions);
     }
   };
 
   useEffect(() => {
-    // 请求user相关数据
     requestUserTypeData();
   }, []);
 
-  // list相关
+  // list pagnation
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
   const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return eNegotiationList.slice(startIndex, startIndex + itemsPerPage);
-  }, [currentPage, eNegotiationList]);
+    return eNegotiationRequestList.slice(startIndex, startIndex + itemsPerPage);
+  }, [currentPage, eNegotiationRequestList]);
   const totalPages = Math.max(
     1,
-    Math.ceil(eNegotiationList.length / itemsPerPage)
+    Math.ceil(eNegotiationRequestList.length / itemsPerPage)
   );
   const goToPage = (page: number): void => {
     if (page >= 1 && page <= totalPages) {
@@ -147,7 +144,7 @@ const PriceChangeRequest: React.FC = () => {
 
   const handleSearchChange = (
     key: keyof typeof searchConditions,
-    value: string | string[] | Date | undefined
+    value: string | number | string[] | Date | undefined
   ): void => {
     setSearchConditions((prev) => ({
       ...prev,
@@ -156,22 +153,44 @@ const PriceChangeRequest: React.FC = () => {
   };
 
   const handleSearchClick = (): void => {
-    const filters = {
-      ...searchConditions,
-      expectedeffectivedatefrom: searchConditions.ExpectedEffectiveDateFrom
-        ? new Date(searchConditions.ExpectedEffectiveDateFrom)
-        : "",
-      expectedeffectivedateto: searchConditions.ExpectedEffectiveDateTo
-        ? new Date(searchConditions.ExpectedEffectiveDateTo)
-        : "",
-    };
     setCurrentPage(1);
-    requestPiceChangeENegotiationData(filters);
+    requestPiceChangeENegotiationData(searchConditions);
   };
 
-  const handleCreateENegotiation = (formData: any): void => {
-    console.log("Create e-negotiation Request Data:", formData);
-    setIsCreateENegotiationDialogOpen(false);
+  const handleCreateENegotiation = async (
+    formData: IENegotiationRequestFormModel
+  ) => {
+    // 创建e-negotiation request，以parma+buyer作为key去查询有没有已经创建的request，若存在并且关联的rfq status不是closed，那么则不能创建这条request，弹出提示
+    // 若不存在，或者存在并且关联的rfq status是closed，则允许创建request
+    // 创建request，post一条数据，触发flow生成equest id并上传文件
+    const { Parma, Porg, Handler } = formData;
+    const list = await getENegotiationRequestList({ Parma, Porg, Handler });
+    if (
+      list &&
+      list.length &&
+      !list.every((item) => item.RFQStatus === STATUS.CLOSED)
+    ) {
+      alert(
+        "There is active e-Negotation for Parma xxxx, please be aware and close previous one and then reqeust new one"
+      );
+    } else {
+      await createENegotiationRequest(formData);
+      setIsCreateENegotiationDialogOpen(false);
+      getENegotiationRequestList(searchConditions);
+    }
+  };
+
+  const [buyerOptions, setBuyerOptions] = useState<IComboBoxOption[]>([]);
+  const handleBuyerInputValueChange = async (query: string) => {
+    const result = await getGPSUserByQueryRequest({ query });
+    if (result && result instanceof Object) {
+      const options: IComboBoxOption[] = result.map((item) => {
+        const key = `${item.porg} ${item.handlercode}`;
+        const text = `${item.porg} ${item.handlercode} (${item.name})`;
+        return { key, text, title: text };
+      });
+      setBuyerOptions(options);
+    }
   };
 
   const StatusOptions = [
@@ -216,9 +235,8 @@ const PriceChangeRequest: React.FC = () => {
       fieldName: "ExpectedEffectiveDateFrom",
       minWidth: 150,
       isResizable: true,
-      onRender: (item: IENegotiationRequest) => (
-        <span>{formatDate(item.ExpectedEffectiveDateFrom)}</span>
-      ),
+      onRender: (item: IENegotiationRequest) =>
+        getJapanDate(item.ExpectedEffectiveDateFrom),
     },
     {
       key: "ReasonCode",
@@ -261,6 +279,24 @@ const PriceChangeRequest: React.FC = () => {
       fieldName: "SupplierRequestIDRef",
       minWidth: 150,
       isResizable: true,
+      onRender: (item) => (
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("/pricechange/detail", {
+              state: { ID: item.SupplierRequestIDRef },
+            });
+          }}
+          style={{
+            color: "#0078D4",
+            textDecoration: "underline",
+            cursor: "pointer",
+          }}
+        >
+          {item.SupplierRequestIDRef}
+        </a>
+      ),
     },
     {
       key: "SupplierContact",
@@ -273,61 +309,15 @@ const PriceChangeRequest: React.FC = () => {
 
   const selection = new Selection({
     onSelectionChanged: () => {
-      console.log("Selected Items:", selection.getSelection());
+      const items = selection.getSelection();
+      setSelectedItems(items as IENegotiationRequest[]);
     },
   });
 
-  const fieldWithTooltip = (
-    label: string,
-    tooltip: string,
-    field: JSX.Element
-  ) => {
-    return (
-      <div
-        style={{ display: "grid", gridTemplateRows: "auto auto", gap: "3px" }}
-      >
-        <div
-          style={{ display: "flex", alignItems: "center", marginBottom: "2px" }}
-        >
-          <span
-            style={{ marginRight: "8px", fontSize: "14px", fontWeight: "500" }}
-          >
-            {label}
-          </span>
-          <TooltipHost content={tooltip} calloutProps={{ gapSpace: 0 }}>
-            <Icon
-              iconName="Info"
-              styles={{
-                root: {
-                  fontSize: "16px",
-                  cursor: "pointer",
-                  color: "#0078D4",
-                },
-              }}
-            />
-          </TooltipHost>
-        </div>
-        {field}
-      </div>
-    );
-  };
-
   return (
-    <Stack
-      tokens={{ childrenGap: 20 }}
-      styles={{
-        root: {
-          width: "100%",
-          paddingTop: 0, // 去掉顶部空白
-          paddingLeft: 20, // 保留左右空白
-          paddingRight: 20,
-          paddingBottom: 0, // 保留左右空白
-          margin: "0",
-        },
-      }}
-    >
+    <Stack tokens={{ childrenGap: 20, padding: "0 20px" }}>
       <h2 className={styles.mainTitle}>Price Change E-Negotiation</h2>
-      {/* 搜索栏 */}
+      {/* search bar */}
       <Stack
         horizontal
         verticalAlign="center"
@@ -349,7 +339,7 @@ const PriceChangeRequest: React.FC = () => {
         />
         <Label styles={{ root: { fontWeight: "bold" } }}>{t("Search")}</Label>
       </Stack>
-      {/* 搜索区域 */}
+      {/* search content */}
       {isSearchVisible && (
         <Stack
           className={styles.noMargin}
@@ -358,16 +348,20 @@ const PriceChangeRequest: React.FC = () => {
               ...theme.searchbarforPriceChange,
             },
           }}
-          tokens={{ childrenGap: 10 }}
         >
-          {fieldWithTooltip(
+          {FieldWithTooltip(
             t("Buyer"),
             t("Search by Org/Handler Code/Name"),
-            <TextField
-              styles={theme.TextfieldStyles}
-              value={searchConditions.Buyer}
-              onChange={(e, newValue) =>
-                handleSearchChange("Buyer", newValue || "")
+            <ComboBox
+              options={buyerOptions}
+              autoComplete="on"
+              allowFreeform={true}
+              openOnKeyboardFocus={true}
+              onInputValueChange={handleBuyerInputValueChange}
+              useComboBoxAsMenuWidth={false}
+              selectedKey={searchConditions.Buyer}
+              onChange={(e, option) =>
+                handleSearchChange("Buyer", option?.key || "")
               }
             />
           )}
@@ -382,21 +376,7 @@ const PriceChangeRequest: React.FC = () => {
           <DatePicker
             label={t("Expected Effective Date From")}
             allowTextInput
-            styles={{
-              root: {
-                width: "100%",
-                maxWidth: "300px",
-                marginBottom: "10px",
-              },
-              textField: {
-                height: "30px", // 控制输入框高度
-                fontSize: "12px",
-              },
-
-              callout: {
-                fontSize: "12px", // 日期选择器的字体大小
-              },
-            }}
+            styles={theme.datePickerStyles}
             value={
               searchConditions.ExpectedEffectiveDateFrom
                 ? new Date(searchConditions.ExpectedEffectiveDateFrom)
@@ -404,8 +384,8 @@ const PriceChangeRequest: React.FC = () => {
             }
             onSelectDate={(date) => {
               if (date) {
-                const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
-                handleSearchChange("ExpectedEffectiveDateFrom", formattedDate); // 保存格式化后的日期
+                const formattedDate = formatDate(date);
+                handleSearchChange("ExpectedEffectiveDateFrom", formattedDate);
               } else {
                 handleSearchChange("ExpectedEffectiveDateFrom", "");
               }
@@ -415,21 +395,7 @@ const PriceChangeRequest: React.FC = () => {
           <DatePicker
             label={t("Expected Effective Date To")}
             allowTextInput
-            styles={{
-              root: {
-                width: "100%",
-                maxWidth: "300px",
-                marginBottom: "10px",
-              },
-              textField: {
-                height: "30px", // 控制输入框高度
-                fontSize: "12px",
-              },
-
-              callout: {
-                fontSize: "12px", // 日期选择器的字体大小
-              },
-            }}
+            styles={theme.datePickerStyles}
             value={
               searchConditions.ExpectedEffectiveDateTo
                 ? new Date(searchConditions.ExpectedEffectiveDateTo)
@@ -437,8 +403,8 @@ const PriceChangeRequest: React.FC = () => {
             }
             onSelectDate={(date) => {
               if (date) {
-                const formattedDate = formatDate(date); // 格式化日期为 yyyy/mm/dd
-                handleSearchChange("ExpectedEffectiveDateTo", formattedDate); // 保存格式化后的日期
+                const formattedDate = formatDate(date);
+                handleSearchChange("ExpectedEffectiveDateTo", formattedDate);
               } else {
                 handleSearchChange("ExpectedEffectiveDateTo", "");
               }
@@ -464,20 +430,24 @@ const PriceChangeRequest: React.FC = () => {
           <Dropdown
             label={t("Status")}
             styles={theme.DropDownfieldStyles}
-            selectedKey={searchConditions.Status}
+            selectedKeys={searchConditions.RFQStatus}
+            multiSelect
             options={StatusOptions}
-            onChange={(e, option) =>
-              handleSearchChange("Status", option ? [option.key as string] : [])
+            onChange={(e, option: IDropdownOption) =>
+              handleSearchChange(
+                "RFQStatus",
+                option.selected
+                  ? [
+                      ...(searchConditions.RFQStatus || []),
+                      option.key as string,
+                    ]
+                  : (searchConditions.RFQStatus || []).filter(
+                      (key) => key !== option.key
+                    )
+              )
             }
           />
-          <Stack.Item
-            style={{
-              gridRow: "2",
-              gridColumn: "4",
-              justifySelf: "end",
-              alignSelf: "end",
-            }}
-          >
+          <Stack.Item className={styles.searchButtonContent}>
             <PrimaryButton
               text={t("Search")}
               styles={buttonStyles}
@@ -486,158 +456,72 @@ const PriceChangeRequest: React.FC = () => {
           </Stack.Item>
         </Stack>
       )}
-      {/* 表格区域 */}
-      {isFetching ? (
-        <Spinner label={t("Loading...")} size={SpinnerSize.large} />
-      ) : (
-        <Stack>
-          <DetailsList
-            items={paginatedItems}
-            columns={columns}
-            getKey={(item: IENegotiationRequest) => item.ID}
-            selectionMode={SelectionMode.single}
-            selection={selection}
-            styles={{
-              root: theme.detaillist.root,
-              contentWrapper: theme.detaillist.contentWrapper,
-              headerWrapper: theme.detaillist.headerWrapper,
-            }}
-            viewport={{
-              height: 0,
-              width: 0,
-            }}
-          />
-          {/* 页码 */}
-          <Stack
-            horizontal
-            horizontalAlign="space-between"
-            verticalAlign="center"
-            tokens={{ childrenGap: 10 }}
-            styles={{
-              root: {
-                ...theme.paginated.paginatedbackground,
-              },
-            }}
-          >
-            <IconButton
-              iconProps={{ iconName: "DoubleChevronLeft" }}
-              title="First Page"
-              ariaLabel="First Page"
-              disabled={currentPage === 1}
-              onClick={() => goToPage(1)}
-              styles={{
-                root: {
-                  ...theme.paginated.paginatedicon.root,
-                },
-                icon: {
-                  ...theme.paginated.paginatedicon.icon,
-                },
-                rootHovered: {
-                  ...theme.paginated.paginatedicon.rootHovered,
-                },
-                rootDisabled: {
-                  ...theme.paginated.paginatedicon.rootDisabled,
-                },
-              }}
-            />
-            <IconButton
-              iconProps={{ iconName: "ChevronLeft" }}
-              title="Previous Page"
-              ariaLabel="Previous Page"
-              disabled={currentPage === 1}
-              onClick={() => goToPage(currentPage - 1)}
-              styles={{
-                root: {
-                  ...theme.paginated.paginatedicon.root,
-                },
-                icon: {
-                  ...theme.paginated.paginatedicon.icon,
-                },
-                rootHovered: {
-                  ...theme.paginated.paginatedicon.rootHovered,
-                },
-                rootDisabled: {
-                  ...theme.paginated.paginatedicon.rootDisabled,
-                },
-              }}
-            />
-            <Label styles={{ root: { alignSelf: "center" } }}>
-              Page {currentPage} of {totalPages}
-            </Label>
-            <IconButton
-              iconProps={{ iconName: "ChevronRight" }}
-              title="Next Page"
-              ariaLabel="Next Page"
-              disabled={currentPage === totalPages}
-              onClick={() => goToPage(currentPage + 1)}
-              styles={{
-                root: {
-                  ...theme.paginated.paginatedicon.root,
-                },
-                icon: {
-                  ...theme.paginated.paginatedicon.icon,
-                },
-                rootHovered: {
-                  ...theme.paginated.paginatedicon.rootHovered,
-                },
-                rootDisabled: {
-                  ...theme.paginated.paginatedicon.rootDisabled,
-                },
-              }}
-            />
-            <IconButton
-              iconProps={{ iconName: "DoubleChevronRight" }}
-              title="Last Page"
-              ariaLabel="Last Page"
-              disabled={currentPage === totalPages}
-              onClick={() => goToPage(totalPages)}
-              styles={{
-                root: {
-                  ...theme.paginated.paginatedicon.root,
-                },
-                icon: {
-                  ...theme.paginated.paginatedicon.icon,
-                },
-                rootHovered: {
-                  ...theme.paginated.paginatedicon.rootHovered,
-                },
-                rootDisabled: {
-                  ...theme.paginated.paginatedicon.rootDisabled,
-                },
-              }}
-            />
-          </Stack>
-        </Stack>
-      )}
-      {userDetails.porg && (
-        <Stack
-          horizontal
-          tokens={{ childrenGap: 10 }}
-          horizontalAlign="start"
-          style={{ alignItems: "center" }}
-        >
-          <PrimaryButton
-            text={t("Create E-Negotiation")}
-            onClick={() => setIsCreateENegotiationDialogOpen(true)}
-            styles={{
-              ...theme.buttonStyles,
-              root: { ...buttonStyles.root, width: "180px" },
-            }}
-          />
-          <PrimaryButton
-            text={t("Create RFQ")}
-            onClick={() => setIsCreateEFQDialogOpen(true)}
-            styles={{
-              ...theme.buttonStyles,
-              root: { ...buttonStyles.root, width: "120px" },
-            }}
-          />
-        </Stack>
-      )}
+      {/* search list */}
+      <Stack>
+        <DetailsList
+          items={paginatedItems}
+          columns={columns}
+          getKey={(item: IENegotiationRequest) => item.ID}
+          selectionMode={SelectionMode.single}
+          selection={selection}
+          styles={{
+            root: theme.detaillist.root,
+            contentWrapper: theme.detaillist.contentWrapper,
+            headerWrapper: theme.detaillist.headerWrapper,
+          }}
+          viewport={{
+            height: 0,
+            width: 0,
+          }}
+        />
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageClick={goToPage}
+        />
+      </Stack>
+      {/* footer buttons */}
+      <Stack
+        horizontal
+        tokens={{ childrenGap: 10 }}
+        horizontalAlign="start"
+        style={{ alignItems: "center" }}
+      >
+        <PrimaryButton
+          text={t("Create E-Negotiation")}
+          onClick={() => setIsCreateENegotiationDialogOpen(true)}
+          styles={{
+            ...theme.buttonStyles,
+            root: { ...buttonStyles.root, width: "180px" },
+          }}
+          disabled={!createButtonsEnable}
+        />
+        <PrimaryButton
+          text={t("Create RFQ")}
+          onClick={() => {
+            // 首先判断negotiation nuber是否存在，并且rfq number是否是空，如果都满足，则跳转到rfq create page，否则弹出提示
+            const item = selectedItems[0];
+            if (item.NegotiationNo && !item.RFQNo) {
+              navigate("/pce/create-price-rfq", { state: { ...item } });
+            } else {
+              alert(
+                "User can only create RFQ if e-Negotiaion has been created in GPS and RFQ not created yet"
+              );
+            }
+          }}
+          styles={{
+            ...theme.buttonStyles,
+            root: { ...buttonStyles.root, width: "120px" },
+          }}
+          disabled={!createButtonsEnable || !selectedItems.length}
+        />
+      </Stack>
+      {/* dialog */}
       {userDetails.porg && (
         <CreateENegotiationDialog
           Porg={userDetails.porg}
-          Handler={userDetails.handlercode}
+          Handler={Number(userDetails.handlercode)}
           isOpen={isCreateENegotiationDialogOpen}
           onCancel={() => setIsCreateENegotiationDialogOpen(false)}
           onCreate={handleCreateENegotiation}

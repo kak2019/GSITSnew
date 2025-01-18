@@ -13,6 +13,7 @@ import PriceChangeRequestDetail from "../PriceChangeRequestDetail";
 import PriceCreateRFQ from "../PriceCreateRFQ";
 import PriceChangeENegotiation from "../PriceChangeENegotiation";
 import PriceChangePriceBreakDown from "../PriceChangePriceBreakDown";
+import CreateRFQPart2 from "../PriceCreateRFQPart2";
 
 const GSITSRoutes: React.FC = () => {
   return (
@@ -43,6 +44,9 @@ const GSITSRoutes: React.FC = () => {
         <Route index element={<PriceChangeENegotiation />} />
           <Route path="create-price-rfq" element={<Outlet />}>
               <Route index element={<PriceCreateRFQ />} />
+          </Route>
+          <Route path="create-price-rfqPart2" element={<Outlet />}>
+              <Route index element={<CreateRFQPart2 />} />
           </Route>
       </Route>
       {/* 传递 userType */}

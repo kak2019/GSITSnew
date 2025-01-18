@@ -1,11 +1,14 @@
 export interface IENegotiationRequestCreteriaModel {
   Buyer?: string;
-  Status?: string[];
+  Porg?: string;
+  Handler?: number;
+  RFQNo?: string;
   ExpectedEffectiveDateFrom?: string;
   ExpectedEffectiveDateTo?: string;
   Parma?: string;
   SupplierRequestID?: string;
-  RFQNo?: string;
+  RFQStatus?: string[];
+  RFQIDRefs?: number[];
 }
 
 export interface IENegotiationRequestFormModel {
@@ -14,10 +17,12 @@ export interface IENegotiationRequestFormModel {
   Parma?: string;
   SupplierContact?: string;
   Porg?: string;
-  Handler?: string;
+  Handler?: number;
   ExpectedEffectiveDateFrom?: Date;
   ReasonCode?: string;
-  Status?: string;
+  RFQNo?: string;
+  RFQIDRef?: number;
+  SupplierRequestIDRef?: string;
 }
 
 export interface IENegotiationRequest {
@@ -28,14 +33,14 @@ export interface IENegotiationRequest {
   SupplierName?: string;
   SupplierContact?: string;
   Porg?: string;
-  Handler?: string;
+  Handler?: number;
   ExpectedEffectiveDateFrom?: Date;
   ReasonCode?: string;
   RFQNo?: string;
-  RFQIDRef?: string;
+  RFQIDRef?: number;
   NegotiationNo?: string;
-  Status?: string;
   RFQStatus?: string;
+  Buyer?: string;
   CreatedDate?: Date;
   CreatedBy?: string;
   ModifiedDate?: Date;

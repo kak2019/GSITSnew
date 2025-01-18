@@ -244,7 +244,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue =item.FreePartText|| "";
                             break;
                         case "Amount 1":
-                            cellValue =matchedRecord.MaterialsCostsTtl|| "";
+                            cellValue =matchedRecord.MaterialsCostsTtl|| 0;
                             break;
                         case "Price Breakdown 1":
                             cellValue = "MTRL";
@@ -253,7 +253,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 2":
-                            cellValue = matchedRecord.PurchasedPartsCostsTtl||"";
+                            cellValue = matchedRecord.PurchasedPartsCostsTtl|| 0;
                             break;
                         case "Price Breakdown 2":
                             cellValue = "PSPC";
@@ -262,7 +262,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 3":
-                            cellValue = matchedRecord.ProcessingCostsTtl||"";
+                            cellValue = matchedRecord.ProcessingCostsTtl|| 0;
                             break;
                         case "Price Breakdown 3":
                             cellValue = "PRCF";
@@ -271,7 +271,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 4":
-                            cellValue = matchedRecord.ToolingJigDeprCostTtl||"";
+                            cellValue = matchedRecord.ToolingJigDeprCostTtl|| 0;
                             break;
                         case "Price Breakdown 4":
                             cellValue = "TOCS";
@@ -280,7 +280,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 5":
-                            cellValue = matchedRecord.AdminExpProfit||"";
+                            cellValue = matchedRecord.AdminExpProfit|| 0;
                             break;
                         case "Price Breakdown 5":
                             cellValue = "MGPC";
@@ -289,7 +289,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 6":
-                            cellValue = matchedRecord.PackingandDistributionCosts||"";
+                            cellValue = matchedRecord.PackingandDistributionCosts|| 0;
                             break;
                         case "Price Breakdown 6":
                             cellValue = "PACK";
@@ -298,7 +298,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 7":
-                            cellValue = matchedRecord.Other||"";
+                            cellValue = matchedRecord.Other|| 0;
                             break;
                         case "Price Breakdown 7":
                             cellValue = "MISC";
@@ -307,7 +307,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "I";
                             break;
                         case "Amount 8":
-                            cellValue = matchedRecord.PaidProvPartsCost||"";
+                            cellValue = matchedRecord.PaidProvPartsCost|| 0;
                             break;
                         case "Price Breakdown 8":
                             cellValue = "SPPC";
@@ -317,6 +317,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             break;
                         case "Amount 10":
                             cellValue = "";
+                            //cellValue = 0;
                             break;
                         case "Price Breakdown 10":
                             cellValue = "";
@@ -325,7 +326,7 @@ const exportToExcelWithTemplate = async (selectedItems: any[], Site_Relative_Lin
                             cellValue = "";
                             break;
                         case "Amount 9":
-                            cellValue = matchedRecord.SuppliedMtrCost||"";
+                            cellValue = matchedRecord.SuppliedMtrCost|| 0;
                             break;
                         case "Price Breakdown 9":
                             cellValue = "SPMC";

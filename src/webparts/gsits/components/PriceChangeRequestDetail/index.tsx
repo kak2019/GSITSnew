@@ -14,8 +14,6 @@ import {
   Selection,
   Link,
   IconButton,
-  Spinner,
-  SpinnerSize,
 } from "@fluentui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -40,12 +38,12 @@ import {
 import { BackDialog, FeedbackDialog, FeedbackType } from "./Dialog";
 import ForwardDialog from "../PriceChangeRequest/ForwardDialog";
 import { getSupplierInfoRequest, ISupplierInfoResponse } from "../../../../api";
-import { STATUS, USER_TYPE } from "../../../../config/const";
+import { STATUS, USER_TYPE, CONST, ROLE_TYPE } from "../../../../config/const";
 import { formatDate } from "../../../../utils";
 import { usePriceChange } from "../../../../hooks/usePriceChange";
 import {
+  ISupplierRequest,
   ISupplierRequestSubItem,
-  ISupplierRequestSubItemFormModel,
 } from "../../../../model/priceChange";
 import { useUDGSAttachment } from "../../../../hooks-v2/use-udgs-attachment";
 import { useENegotiation } from "../../../../hooks/useENegotiation";
@@ -58,8 +56,6 @@ const PriceChangeRequestDetail: React.FC = () => {
   const { ID: id } = location.state;
   if (!id) throw new Error("ID is required");
 
-  // Joy guest测试邮箱
-  // const userEmail = "1986432132@qq.com";
   let userEmail = "";
   let userName = "";
   const ctx = useContext(AppContext);
@@ -70,24 +66,32 @@ const PriceChangeRequestDetail: React.FC = () => {
     userName = ctx.context._pageContext._user?.displayName;
   }
 
+  const [currentPriceChangeRequest, setCurrentPriceChangeRequest] =
+    useState<ISupplierRequest>();
   const [
-    isFetching,
-    ,
-    ,
-    currentPriceChangeRequest,
     currentPriceChangeRequestSubItemList,
+    setCurrentPriceChangeRequestSubItemList,
+  ] = useState<ISupplierRequestSubItem[]>([]);
+  const [
+    ,
+    ,
+    ,
+    ,
+    ,
     ,
     getSupplierRequest,
     getSupplierRequestSubitemList,
     ,
     updateSupplierRequest,
-    setCurrentPriceChangeRequest,
-    createSupplierRequestSubitems,
+    ,
+    ,
     updateSupplierRequestSubitems,
+    deleteSupplierRequestSubitems,
   ] = usePriceChange();
 
-  // detail信息是否有编辑过
+  // detail info changed？
   const [detailInfoChange, setDetailInfoChange] = useState(false);
+  const [attachFileChange, setAttachFileChange] = useState(false);
 
   const [commentValue, setCommentValue] = useState("");
   const [commentHistoryValue, setCommentHistoryValue] = useState<IComment[]>(
@@ -102,8 +106,7 @@ const PriceChangeRequestDetail: React.FC = () => {
     IUDGSAttachmentGridModel[]
   >([]);
 
-  const [, , , , createENegotiationRequest, , deleteENegotiationRequests] =
-    useENegotiation();
+  const [, , , , createENegotiationRequest, ,] = useENegotiation();
   const [selectedItems, setSelectedItems] = useState<ISupplierRequestSubItem[]>(
     []
   );
@@ -114,7 +117,7 @@ const PriceChangeRequestDetail: React.FC = () => {
 
   const { getUserType, getGPSUser, getSupplierHostBuyerMapping } = useUser();
   const [userType, setUserType] = useState<string>("Unknown");
-  const [supplierinfo, setSupplierinfo] = useState<ISupplierInfoResponse>({
+  const [supplierInfo, setSupplierInfo] = useState<ISupplierInfoResponse>({
     supplierName: "",
     isSME: false,
     isJP: false,
@@ -126,29 +129,30 @@ const PriceChangeRequestDetail: React.FC = () => {
     handlercode: "",
     porg: "",
     isHostBuyer: false,
+    isBuyer: false,
   });
 
   const requestGPSUserData = async () => {
-    // 获取parma和hostbuyer的mapping
+    // get parma and hostbuyer mapping
     if (!currentPriceChangeRequest?.Parma) return;
     const res = await getSupplierHostBuyerMapping(
       currentPriceChangeRequest?.Parma
     );
     if (res && res instanceof Object) {
-      // 获取user detail
+      // get user detail
       const result = await getGPSUser(userEmail);
       if (result && result instanceof Object) {
-        // 如果所有字段都有值，更新状态
         setUserDetails({
           role: result.role,
           name: result.name,
           sectionCode: result.sectionCode,
           handlercode: result.handlercode,
           porg: result.porg,
-          // 需要通过parma和buyer的mapping判断是否是hostbuyer
+          // validate is hostbuyer by parma and buyer mapping
           isHostBuyer:
             res.SupplierHostPorg === result.porg &&
             res.SupplierHostCd === result.handlercode,
+          isBuyer: result.role === ROLE_TYPE.BUYER,
         });
       }
     }
@@ -160,7 +164,7 @@ const PriceChangeRequestDetail: React.FC = () => {
       parma: currentPriceChangeRequest?.Parma,
     });
     if (result && result instanceof Object) {
-      setSupplierinfo(result);
+      setSupplierInfo(result);
     }
   };
 
@@ -169,15 +173,25 @@ const PriceChangeRequestDetail: React.FC = () => {
     if (userType !== type) setUserType(type);
     if (type !== USER_TYPE.GUEST) {
       requestGPSUserData();
+      requestSupplierInfoData();
     } else {
       requestSupplierInfoData();
     }
   };
 
-  const supplierRequestFolderName = "Supplier Request Attachments";
+  const requestSupplierRequest = async () => {
+    const request = await getSupplierRequest(id);
+    setCurrentPriceChangeRequest(request);
+  };
+
+  const requestSupplierRequestSubitemList = async () => {
+    const subitemList = await getSupplierRequestSubitemList(id);
+    setCurrentPriceChangeRequestSubItemList(subitemList);
+  };
+
   const requestAttachmentsData = async () => {
     const initialAttachmentsValue = await getAttachments({
-      FolderName: supplierRequestFolderName,
+      FolderName: CONST.LIBRARY_NAME_SUPPLIERREQUESTATTACHMENTS,
       SubFolderName: id,
       IsDataNeeded: true,
     });
@@ -185,20 +199,20 @@ const PriceChangeRequestDetail: React.FC = () => {
   };
 
   const requestPiceChangeData = async () => {
-    await getSupplierRequest(id);
-    await getSupplierRequestSubitemList(id);
+    requestSupplierRequest();
+    requestSupplierRequestSubitemList();
     requestAttachmentsData();
   };
 
   useEffect(() => {
-    // 首次渲染请求price change详情数据和responsible buyers数据
+    // get price change detail info and responsible buyers list
     requestPiceChangeData();
   }, []);
 
   useEffect(() => {
-    // 请求完详情数据，再请求user相关数据
+    // get user info
     requestUserTypeData();
-    // 处理comment
+    // handle comment
     if (currentPriceChangeRequest && currentPriceChangeRequest.CommentHistory) {
       const comments = JSON.parse(
         currentPriceChangeRequest.CommentHistory
@@ -206,6 +220,8 @@ const PriceChangeRequestDetail: React.FC = () => {
       setCommentHistoryValue(comments);
     }
   }, [currentPriceChangeRequest]);
+
+  const [, , , getENegotiationRequestList] = useENegotiation();
 
   const columns = [
     {
@@ -226,7 +242,7 @@ const PriceChangeRequestDetail: React.FC = () => {
     {
       key: "Status",
       name: t("Status"),
-      fieldName: "SupplierRequestSubitemStatus",
+      fieldName: "SupplierRequestSubItemStatus",
       minWidth: 150,
       isResizable: true,
     },
@@ -263,10 +279,9 @@ const PriceChangeRequestDetail: React.FC = () => {
       });
       setCommentHistoryValue(commentHistoryValue);
       setCommentValue("");
-      setDetailInfoChange(true);
       // update comment api
       updateSupplierRequest({
-        ...currentPriceChangeRequest,
+        ID: currentPriceChangeRequest?.ID,
         CommentHistory: JSON.stringify(commentHistoryValue),
       });
     }
@@ -291,12 +306,13 @@ const PriceChangeRequestDetail: React.FC = () => {
           FileItem: file,
           FileID: "",
           URL: "",
-          Name: userName,
+          Name: file.name,
+          CreatedBy: userName,
         })
       );
       const currentAttachments = [...newAttachments, ...tempAttachmentsValue];
       setTempAttachmentsValue(currentAttachments);
-      setDetailInfoChange(true);
+      setAttachFileChange(true);
     }
   };
 
@@ -305,54 +321,39 @@ const PriceChangeRequestDetail: React.FC = () => {
   };
 
   const handleUploadAdd = async () => {
-    await postAttachments({
-      FolderName: supplierRequestFolderName,
-      SubFolderName: id,
-      NewFileItems: tempAttachmentsValue.map((i) => i.FileItem!),
-    });
-    // 上传新attachment后，刷新和重置attachment数据
-    requestAttachmentsData();
-    setTempAttachmentsValue([]);
+    try {
+      await postAttachments({
+        FolderName: CONST.LIBRARY_NAME_SUPPLIERREQUESTATTACHMENTS,
+        SubFolderName: id,
+        NewFileItems: tempAttachmentsValue.map((i) => i.FileItem!),
+      });
+      // upload new attachment，refresh and reset attachment
+      requestAttachmentsData();
+      setTempAttachmentsValue([]);
+      setAttachFileChange(false);
+    } catch (error) {
+      console.log("postAttachments", error);
+    }
   };
 
-  const requestCreateSupplierRequestSubItem = async (items: any[]) => {
-    const forms: ISupplierRequestSubItemFormModel[] = items.map((item) => ({
-      Porg: item.porg,
-      Handler: item.handlerCode,
-      HandlerName: item.handlerName,
-      Section: item.sectionCode,
-      RequestIDRef: id,
-    }));
-    await createSupplierRequestSubitems(forms);
+  const handleForwardConfirm = (): void => {
+    // refresh page
     setForwardDialogVisible(false);
-    getSupplierRequestSubitemList(id);
-    // update supplier request status to in progress
-    await updateSupplierRequest({
-      ...currentPriceChangeRequest,
-      SupplierRequestStatus: STATUS.INPROGRESS,
-    });
-    getSupplierRequest(id);
-  };
-  const handleForwardConfirm = (items: any[]): void => {
-    requestCreateSupplierRequestSubItem(items);
+    requestSupplierRequestSubitemList();
+    requestSupplierRequest();
   };
 
   // buttons show and enable
-  // 通过role和status判断哪些内容可编辑，可显示，可点击，
-  // 如何判断是supplier和buyer，buyer如何判断是host和responsible
-  // 获取usertype（member和guest），如果是guest那就是supllier，如果是member那就是buyer
-  // 确定是buyer后，再通过getGPSUser获取具体的用户信息
   const supplierButtonShow = useMemo(
-    () => !!supplierinfo.supplierName,
-    [supplierinfo]
+    () => !!supplierInfo.supplierName && !userDetails.name,
+    [supplierInfo, userDetails]
   );
   const cancelOrResubmitSelectedButtonEnable = useMemo(() => {
     const condition =
-      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED &&
       currentPriceChangeRequestSubItemList.length &&
       selectedItems.length &&
       selectedItems.every(
-        (item) => item.SupplierRequestSubitemStatus === STATUS.RETURNED
+        (item) => item.SupplierRequestSubItemStatus === STATUS.RETURNED
       );
     return condition;
   }, [
@@ -368,43 +369,35 @@ const PriceChangeRequestDetail: React.FC = () => {
   }, [currentPriceChangeRequest, currentPriceChangeRequestSubItemList]);
   const fieldsEditable = useMemo(
     () =>
-      !!supplierinfo.supplierName &&
+      supplierButtonShow &&
       currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED,
-    [supplierinfo, currentPriceChangeRequest]
+    [supplierButtonShow, currentPriceChangeRequest]
   );
   const attachmentEditable = useMemo(
     () =>
-      (!!supplierinfo.supplierName &&
+      (supplierButtonShow &&
         currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED) ||
-      (!!userDetails.name &&
+      (userDetails.isBuyer &&
         ![STATUS.CANCELLED, STATUS.RETURNED, STATUS.CLOSED].includes(
           currentPriceChangeRequest?.SupplierRequestStatus || ""
         )),
-    [supplierinfo, userDetails, currentPriceChangeRequest]
+    [supplierButtonShow, userDetails, currentPriceChangeRequest]
   );
   const commentEditable = useMemo(
     () =>
-      (!!supplierinfo.supplierName &&
+      (supplierButtonShow &&
         [STATUS.RETURNED, STATUS.NEW, STATUS.INPROGRESS].includes(
           currentPriceChangeRequest?.SupplierRequestStatus || ""
         )) ||
-      !!userDetails.name,
-    [supplierinfo, userDetails, currentPriceChangeRequest]
+      userDetails.isBuyer,
+    [supplierButtonShow, userDetails, currentPriceChangeRequest]
   );
   const returnRequestButtonEnable = useMemo(() => {
     const condition =
-      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.RETURNED;
+      currentPriceChangeRequest?.SupplierRequestStatus === STATUS.NEW;
     return condition;
   }, [currentPriceChangeRequest]);
-  const forwardToResponsibleBuyerButtonEnable = useMemo(() => {
-    const condition = ![
-      STATUS.RETURNED,
-      STATUS.CANCELLED,
-      STATUS.CLOSED,
-    ].includes(currentPriceChangeRequest?.SupplierRequestStatus || "");
-    return condition;
-  }, [currentPriceChangeRequest]);
-  const removeResponsibleBuyerButtonEnable = useMemo(() => {
+  const forwardToOrRemoveResponsibleBuyerButtonEnable = useMemo(() => {
     const condition = ![
       STATUS.RETURNED,
       STATUS.CANCELLED,
@@ -414,11 +407,10 @@ const PriceChangeRequestDetail: React.FC = () => {
   }, [currentPriceChangeRequest]);
   const responsibleBuyerActionButtonEnable = useMemo(() => {
     const condition =
-      !userDetails.isHostBuyer &&
       currentPriceChangeRequest?.SupplierRequestStatus === STATUS.INPROGRESS &&
-      selectedItems.length === 1;
+      userDetails.isBuyer;
     return condition;
-  }, [currentPriceChangeRequest, userDetails, selectedItems]);
+  }, [currentPriceChangeRequest, userDetails]);
 
   const validateFields = (): boolean => {
     if (!currentPriceChangeRequest) return false;
@@ -440,16 +432,105 @@ const PriceChangeRequestDetail: React.FC = () => {
     return undefined;
   }
 
-  function getLatestCommentHistory(newComment: string): string {
-    const tempCommentHistoryValue = { ...commentHistoryValue };
-    tempCommentHistoryValue.unshift({
-      CommentDate: new Date(),
-      CommentBy: userDetails.name ?? "",
-      CommentText: newComment,
-      CommentType: "Common",
-    });
+  function getLatestCommentHistory(
+    newComment: string,
+    isFeedback?: boolean
+  ): string {
+    const tempCommentHistoryValue = [...commentHistoryValue];
+    if (newComment) {
+      tempCommentHistoryValue.unshift({
+        CommentDate: new Date(),
+        CommentBy: userDetails.name ?? "",
+        CommentText: newComment,
+        CommentType: isFeedback ? "Feedback" : "Common",
+      });
+    }
     const tempCommentHistoryValueStr = JSON.stringify(tempCommentHistoryValue);
     return tempCommentHistoryValueStr;
+  }
+
+  // sbuitems status change，update request status
+  async function handleRequestStatusUpdateBySubitems() {
+    // subitems的status统一处理，subitems的status对request的status的影响逻辑总结？
+    // subitems全是cancelled，request是cancel
+    // subitems既有cancel也有closed，request是closed
+    // subitems至少有一个retnrned，其他的都是returned/calcel/closed中，request是returned
+    const subitems = await getSupplierRequestSubitemList(id);
+    setCurrentPriceChangeRequestSubItemList(subitems);
+    if (
+      subitems.every((item) =>
+        [STATUS.RETURNED, STATUS.CANCELLED, STATUS.CLOSED].includes(
+          item.SupplierRequestSubItemStatus || ""
+        )
+      ) &&
+      subitems.some(
+        (item) => item.SupplierRequestSubItemStatus === STATUS.RETURNED
+      )
+    ) {
+      await updateSupplierRequest({
+        ID: currentPriceChangeRequest?.ID,
+        SupplierRequestStatus: STATUS.RETURNED,
+      });
+    }
+    if (
+      subitems.every(
+        (item) => item.SupplierRequestSubItemStatus === STATUS.CANCELLED
+      )
+    ) {
+      await updateSupplierRequest({
+        ID: currentPriceChangeRequest?.ID,
+        SupplierRequestStatus: STATUS.CANCELLED,
+      });
+    }
+    if (
+      subitems.every((item) =>
+        [STATUS.CANCELLED, STATUS.CLOSED].includes(
+          item.SupplierRequestSubItemStatus || ""
+        )
+      ) &&
+      subitems.some(
+        (item) => item.SupplierRequestSubItemStatus === STATUS.CLOSED
+      )
+    ) {
+      await updateSupplierRequest({
+        ID: currentPriceChangeRequest?.ID,
+        SupplierRequestStatus: STATUS.CLOSED,
+      });
+    }
+    // refresh page
+    requestSupplierRequest();
+  }
+
+  async function updateSupplierRequestCommentHistory(
+    newComment: string,
+    isFeedback?: boolean
+  ) {
+    if (newComment) {
+      const tempCommentHistoryValueStr = getLatestCommentHistory(
+        newComment,
+        isFeedback
+      );
+      await updateSupplierRequest({
+        ID: currentPriceChangeRequest?.ID,
+        CommentHistory: tempCommentHistoryValueStr,
+      });
+      await requestSupplierRequest();
+    }
+  }
+
+  async function updateSupplierRequestSubitemsInfo(
+    date: string,
+    reason: string,
+    status?: string
+  ) {
+    const forms = selectedItems.map((item) => ({
+      ...item,
+      ExpectedEffectiveDateFrom: new Date(date),
+      ReasonCode: reason,
+      SupplierRequestSubItemStatus: status ?? item.SupplierRequestSubItemStatus,
+    }));
+    await updateSupplierRequestSubitems(forms);
+    await requestSupplierRequestSubitemList();
   }
 
   return (
@@ -471,7 +552,7 @@ const PriceChangeRequestDetail: React.FC = () => {
           >
             <BasicInfoItem
               itemLabel={t("Request ID")}
-              itemValue={currentPriceChangeRequest?.ID}
+              itemValue={currentPriceChangeRequest?.RequestID}
             />
             <BasicInfoParmaItem
               itemLabel={t("Parma")}
@@ -599,6 +680,7 @@ const PriceChangeRequestDetail: React.FC = () => {
                 <TextField
                   styles={inputCommentsStyles}
                   onChange={handleCommentChange}
+                  value={commentValue}
                 />
               </Stack.Item>
               <Stack.Item>
@@ -621,7 +703,7 @@ const PriceChangeRequestDetail: React.FC = () => {
               value={commentHistoryValue
                 .map(
                   (item) =>
-                    `${item.CommentDate.toLocaleString()} ${item.CommentBy}: ${
+                    `${formatDate(item.CommentDate)} ${item.CommentBy}: ${
                       item.CommentText
                     }`
                 )
@@ -694,7 +776,9 @@ const PriceChangeRequestDetail: React.FC = () => {
                   >
                     {file.FileItem?.name}
                   </Text>
-                  <span className={styles.fileItemExtraInfo}>{file.Name}</span>
+                  <span className={styles.fileItemExtraInfo}>
+                    {file.CreatedBy}
+                  </span>
                   <span className={styles.fileItemExtraInfo}>
                     <IconButton
                       iconProps={{ iconName: "Delete" }}
@@ -730,9 +814,9 @@ const PriceChangeRequestDetail: React.FC = () => {
                     </Link>
                     <span
                       className={`${styles.fileItemExtraInfo} ${styles.textEllipsis}`}
-                      title={val.Name}
+                      title={val.CreatedBy}
                     >
-                      {val.Name}
+                      {val.CreatedBy}
                     </span>
                     <span
                       className={`${styles.fileItemExtraInfo} ${styles.textEllipsis}`}
@@ -772,10 +856,10 @@ const PriceChangeRequestDetail: React.FC = () => {
             onClick={async () => {
               // update request status to Returned and send email to supplier
               await updateSupplierRequest({
-                ...currentPriceChangeRequest,
+                ID: currentPriceChangeRequest?.ID,
                 SupplierRequestStatus: STATUS.RETURNED,
               });
-              getSupplierRequest(id);
+              requestSupplierRequest();
             }}
             styles={buttonStyles}
             disabled={!returnRequestButtonEnable}
@@ -784,19 +868,19 @@ const PriceChangeRequestDetail: React.FC = () => {
             text={t("Forward to Responsible Buyer")}
             onClick={() => setForwardDialogVisible(true)}
             styles={buttonStyles}
-            disabled={!forwardToResponsibleBuyerButtonEnable}
+            disabled={!forwardToOrRemoveResponsibleBuyerButtonEnable}
           />
           <PrimaryButton
             text={t("Remove Responsible Buyer")}
-            onClick={() => {
-              // 如果没有selected items，弹出提示
-              // 如果selected items，判断选择的buyers有没有创建negotiation，没有创建则可以删除，否则弹出提示
-              // status是in progress，则表示这个responsible buyer已创建eNegotiation
+            onClick={async () => {
+              // if no selected items，show warning
+              // if selected validate buyers had created negotiation，if no, items can be removed, if yes, show warning
+              // status is in progress，responsible buyer had created eNegotiation
               if (selectedItems.length) {
                 if (
                   selectedItems.some(
                     (item) =>
-                      item.SupplierRequestSubitemStatus === STATUS.INPROGRESS
+                      item.SupplierRequestSubItemStatus === STATUS.INPROGRESS
                   )
                 ) {
                   alert(
@@ -804,14 +888,15 @@ const PriceChangeRequestDetail: React.FC = () => {
                   );
                 } else {
                   const ids = selectedItems.map((item) => item.ID);
-                  deleteENegotiationRequests(ids);
+                  await deleteSupplierRequestSubitems(ids);
+                  handleRequestStatusUpdateBySubitems();
                 }
               } else {
                 alert("Please select responsible buyer and then remove.");
               }
             }}
             styles={buttonStyles}
-            disabled={!removeResponsibleBuyerButtonEnable}
+            disabled={!forwardToOrRemoveResponsibleBuyerButtonEnable}
           />
         </Stack>
       )}
@@ -820,18 +905,14 @@ const PriceChangeRequestDetail: React.FC = () => {
         <Text className={styles.subHeader} variant="large">
           {t("Responsible Buyer Processing Status")}
         </Text>
-        {isFetching ? (
-          <Spinner label={t("Loading...")} size={SpinnerSize.large} />
-        ) : (
-          <DetailsList
-            items={currentPriceChangeRequestSubItemList}
-            columns={columns}
-            layoutMode={DetailsListLayoutMode.fixedColumns}
-            selectionMode={SelectionMode.multiple}
-            selection={selection}
-            styles={detailsListStyles}
-          />
-        )}
+        <DetailsList
+          items={currentPriceChangeRequestSubItemList}
+          columns={columns}
+          layoutMode={DetailsListLayoutMode.fixedColumns}
+          selectionMode={SelectionMode.multiple}
+          selection={selection}
+          styles={detailsListStyles}
+        />
       </Stack>
       {/* Footer */}
       {supplierButtonShow && (
@@ -844,73 +925,41 @@ const PriceChangeRequestDetail: React.FC = () => {
               // all res buyers status are cancelled or returned，update request status to returned
               const forms = selectedItems.map((item) => ({
                 ...item,
-                SupplierRequestSubitemStatus: STATUS.CANCELLED,
+                SupplierRequestSubItemStatus: STATUS.CANCELLED,
               }));
               await updateSupplierRequestSubitems(forms);
-              // refresh
-              const updatedSubitems = await getSupplierRequestSubitemList(id);
-              // 后续判断status的逻辑
-              if (
-                updatedSubitems.every(
-                  (item) =>
-                    item.SupplierRequestSubitemStatus === STATUS.CANCELLED
-                )
-              ) {
-                await updateSupplierRequest({
-                  ...currentPriceChangeRequest,
-                  SupplierRequestStatus: STATUS.CANCELLED,
-                });
-                getSupplierRequest(id);
-              }
-              const subitemStatusList = Array.from(
-                new Set(
-                  updatedSubitems
-                    .filter((item) => !!item.SupplierRequestSubitemStatus)
-                    .map((item) => item.SupplierRequestSubitemStatus)
-                )
-              );
-              if (
-                subitemStatusList.length === 2 &&
-                subitemStatusList.every((item) =>
-                  [STATUS.CANCELLED, STATUS.RETURNED].includes(item!)
-                )
-              ) {
-                await updateSupplierRequest({
-                  ...currentPriceChangeRequest,
-                  SupplierRequestStatus: STATUS.RETURNED,
-                });
-                getSupplierRequest(id);
-              }
+              handleRequestStatusUpdateBySubitems();
             }}
             disabled={!cancelOrResubmitSelectedButtonEnable}
           />
           <DefaultButton
             text={t("Resubmit Selected")}
             onClick={async () => {
-              // 需要校验表单数据（必填和格式），失败则弹框提示，成功则更新request数据
-              // selected items status都是returned，更新selected items status到new，更新request status到in progress，并发送邮件
+              // validate form data(mandatory and format)，if fail show warning，if success update request data
+              // selected items status is returned，update selected items status to new，update request status to in progress，then send email
               const validateResult = validateFields();
               if (validateResult) {
-                // update
                 if (
                   selectedItems.every(
                     (item) =>
-                      item.SupplierRequestSubitemStatus === STATUS.RETURNED
+                      item.SupplierRequestSubItemStatus === STATUS.RETURNED
                   )
                 ) {
-                  // update subitems
+                  const bo = confirm(
+                    "Please confirm you have uploaded corresponding documents and add clear comment."
+                  );
+                  if (!bo) return;
                   const forms = selectedItems.map((item) => ({
                     ...item,
-                    SupplierRequestSubitemStatus: STATUS.NEW,
+                    SupplierRequestSubItemStatus: STATUS.NEW,
                   }));
                   await updateSupplierRequestSubitems(forms);
-                  await getSupplierRequestSubitemList(id);
-                  // update request
+                  requestSupplierRequestSubitemList();
                   await updateSupplierRequest({
-                    ...currentPriceChangeRequest,
+                    ID: currentPriceChangeRequest?.ID,
                     SupplierRequestStatus: STATUS.INPROGRESS,
                   });
-                  getSupplierRequest(id);
+                  requestSupplierRequest();
                 }
               }
             }}
@@ -923,10 +972,10 @@ const PriceChangeRequestDetail: React.FC = () => {
         <DefaultButton
           text={t("Back")}
           onClick={() => {
-            if (detailInfoChange) {
+            if (detailInfoChange || attachFileChange) {
               setBackDialogVisible(true);
             } else {
-              navigate("/pricechange");
+              navigate(-1);
             }
           }}
         />
@@ -937,28 +986,26 @@ const PriceChangeRequestDetail: React.FC = () => {
               onClick={async () => {
                 // update request status to Cancelled and send email to host buyer
                 await updateSupplierRequest({
-                  ...currentPriceChangeRequest,
+                  ID: currentPriceChangeRequest?.ID,
                   SupplierRequestStatus: STATUS.CANCELLED,
                 });
-                // 更新完刷新页面
-                getSupplierRequest(id);
+                requestSupplierRequest();
               }}
               disabled={!cancelOrResubmitRequestButtonEnable}
             />
             <DefaultButton
               text={t("Resubmit Request")}
               onClick={async () => {
-                // 需要校验表单数据（必填和格式），失败则弹框提示，成功则更新request数据
-                // 若无responsible buyers，request status是returned，更新request status到new，并发送邮件
+                // validate form data(mandatory and format)，if fail show warning，if success update request data
+                // if no responsible buyers，request status is returned，update request status to new，then send email
+                // TODO: need validate expected effective date？
                 const validateResult = validateFields();
                 if (validateResult) {
-                  // update
                   await updateSupplierRequest({
-                    ...currentPriceChangeRequest,
+                    ID: currentPriceChangeRequest?.ID,
                     SupplierRequestStatus: STATUS.NEW,
                   });
-                  // 更新完刷新页面
-                  getSupplierRequest(id);
+                  requestSupplierRequest();
                 }
               }}
               styles={buttonStyles}
@@ -966,19 +1013,19 @@ const PriceChangeRequestDetail: React.FC = () => {
             />
           </>
         )}
-        {!!userDetails.name && !userDetails.isHostBuyer && (
+        {!!userDetails.name && (
           <DefaultButton
             text={t("Responsible Buyer Action")}
             onClick={() => {
-              // 校验items有没有被选择，没有的话弹出提示；若选择了，需要判断选择的items是否match userinfo，不满足弹出提示
-              // 若选择是user自己的items，校验items status；如果是new则正常流程弹出responsible buyer action弹框，如果不是new，弹出提示
+              // validate items had been selected，if not show warning；if yes，validate selected items is match userinfo，if not show warning
+              // if selected items match userinfo，validate items status；if is new, show responsible buyer action dialog，if not new show warning
               if (
                 selectedItems.length &&
                 selectedItems[0].Porg === userDetails.porg &&
                 String(selectedItems[0].Handler) === userDetails.handlercode
               ) {
                 if (
-                  selectedItems[0].SupplierRequestSubitemStatus === STATUS.NEW
+                  selectedItems[0].SupplierRequestSubItemStatus === STATUS.NEW
                 ) {
                   setFeedbackDialogVisible(true);
                 } else {
@@ -999,86 +1046,81 @@ const PriceChangeRequestDetail: React.FC = () => {
       <BackDialog
         visible={backDialogVisible}
         onCancel={() => setBackDialogVisible(false)}
-        onOk={() => navigate("/pricechange")}
+        onOk={() => navigate(-1)}
       />
       <FeedbackDialog
         detailInfo={currentPriceChangeRequest}
-        supplierinfo={supplierinfo}
+        supplierInfo={supplierInfo}
         visible={feedbackDialogVisible}
         onCancel={() => setFeedbackDialogVisible(false)}
         onOk={async (type, formData) => {
-          console.log(type, formData, selectedItems);
-          // request api
           if (type === FeedbackType.ProceedToENegotiationNotJP) {
+            setFeedbackDialogVisible(false);
             const forms = selectedItems.map((item) => ({
               ...item,
-              SupplierRequestSubitemStatus: STATUS.REQUESTED,
+              SupplierRequestSubItemStatus: STATUS.INPROGRESS,
             }));
             await updateSupplierRequestSubitems(forms);
-            setFeedbackDialogVisible(false);
-            await getSupplierRequestSubitemList(id);
+            requestSupplierRequestSubitemList();
           } else if (type === FeedbackType.ProceedToENegotiationCreate) {
-            // 生成e-negotiation
-            const form: IENegotiationRequestFormModel = {
-              RequestID: "", // TODO 生成规则在8.3, 应该通过flow生成
-              Parma: formData.Parma,
-              SupplierContact: currentPriceChangeRequest.SupplierContact,
-              Porg: selectedItems[0].Porg,
-              Handler: String(selectedItems[0].Handler),
-              ExpectedEffectiveDateFrom: formData.ExpectedEffectiveDateFrom,
-              ReasonCode: formData.reasonCodeKey,
-            };
-            await createENegotiationRequest(form);
-            // update subitems
-            const forms = selectedItems.map((item) => ({
-              ...item,
-              SupplierRequestSubitemStatus: STATUS.INPROGRESS,
-            }));
-            await updateSupplierRequestSubitems(forms);
             setFeedbackDialogVisible(false);
-            await getSupplierRequestSubitemList(id);
-          } else if (type === FeedbackType.ReturnRequest) {
-            const tempCommentHistoryValueStr = getLatestCommentHistory(
-              formData.newComment
-            );
-            // update
-            const forms = selectedItems.map((item) => ({
-              ...item,
-              SupplierRequestSubitemStatus: STATUS.RETURNED,
-            }));
-            await updateSupplierRequestSubitems(forms);
-            const updatedSubitems = await getSupplierRequestSubitemList(id);
-            if (
-              updatedSubitems.every((item) =>
-                [STATUS.RETURNED, STATUS.CANCELLED, STATUS.CLOSED].includes(
-                  item.SupplierRequestSubitemStatus || ""
-                )
-              )
-            ) {
-              await updateSupplierRequest({
-                ...currentPriceChangeRequest,
-                CommentHistory: tempCommentHistoryValueStr,
-                SupplierRequestStatus: STATUS.RETURNED,
-              });
-            } else {
-              await updateSupplierRequest({
-                ...currentPriceChangeRequest,
-                CommentHistory: tempCommentHistoryValueStr,
-              });
-            }
-            // 更新完刷新页面
-            getSupplierRequest(id);
-          } else if (type === FeedbackType.FeedbackToHostbuyer) {
-            const tempCommentHistoryValueStr = getLatestCommentHistory(
-              formData.newComment
-            );
-            // 只更新comment
-            await updateSupplierRequest({
-              ...currentPriceChangeRequest,
-              CommentHistory: tempCommentHistoryValueStr,
+            // create e-negotiation request, search and validate had created request by parma+byer,
+            // if request had created and connected rfq status is not closed, then can not create this reqeust and show warning
+            // if request not created or had created but connected rfq status is colsed, then can create reqeust
+            const { Parma, ExpectedEffectiveDateFrom, ReasonCode, newComment } =
+              formData;
+            const { Porg, Handler } = selectedItems[0];
+            const list = await getENegotiationRequestList({
+              Parma,
+              Porg,
+              Handler,
             });
-            // 更新完刷新页面
-            getSupplierRequest(id);
+            if (
+              list &&
+              list.length &&
+              !list.every((item) => item.RFQStatus === STATUS.CLOSED)
+            ) {
+              alert(
+                `There is active e-Negotation for Parma ${Parma}, please be aware and close previous one and then reqeust new one`
+              );
+            } else {
+              const form: IENegotiationRequestFormModel = {
+                Parma,
+                SupplierContact: currentPriceChangeRequest?.SupplierContact,
+                Porg,
+                Handler,
+                ExpectedEffectiveDateFrom: new Date(ExpectedEffectiveDateFrom),
+                ReasonCode,
+                SupplierRequestIDRef: currentPriceChangeRequest?.ID,
+              };
+              await createENegotiationRequest(form);
+              await updateSupplierRequestCommentHistory(newComment);
+              await updateSupplierRequestSubitemsInfo(
+                ExpectedEffectiveDateFrom,
+                ReasonCode,
+                STATUS.INPROGRESS
+              );
+            }
+          } else if (type === FeedbackType.ReturnRequest) {
+            setFeedbackDialogVisible(false);
+            const { ExpectedEffectiveDateFrom, ReasonCode, newComment } =
+              formData;
+            await updateSupplierRequestCommentHistory(newComment);
+            await updateSupplierRequestSubitemsInfo(
+              ExpectedEffectiveDateFrom,
+              ReasonCode,
+              STATUS.RETURNED
+            );
+            handleRequestStatusUpdateBySubitems();
+          } else if (type === FeedbackType.FeedbackToHostbuyer) {
+            setFeedbackDialogVisible(false);
+            const { ExpectedEffectiveDateFrom, ReasonCode, newComment } =
+              formData;
+            await updateSupplierRequestCommentHistory(newComment, true);
+            await updateSupplierRequestSubitemsInfo(
+              ExpectedEffectiveDateFrom,
+              ReasonCode
+            );
           }
         }}
       />
@@ -1086,6 +1128,10 @@ const PriceChangeRequestDetail: React.FC = () => {
         isOpen={forwardDialogVisible}
         onDismiss={() => setForwardDialogVisible(false)}
         onConfirm={handleForwardConfirm}
+        RequestIDRef={currentPriceChangeRequest?.ID || ""}
+        SelectedItemStatus={
+          currentPriceChangeRequest?.SupplierRequestStatus || ""
+        }
       />
     </Stack>
   );

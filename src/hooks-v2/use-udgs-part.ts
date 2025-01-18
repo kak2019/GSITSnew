@@ -20,6 +20,7 @@ import {
   IUDGSNewPartGridModel,
   IUDGSNewPartQuotationGridModel,
 } from "../model-v2/udgs-part-model";
+import {IUDGSNegotiationPartGridModel} from "../model-v2/udgs-negotiation-model";
 
 type PartOperators = [
   isFetching: boolean,
@@ -30,7 +31,7 @@ type PartOperators = [
   queryParts: (
     creteria: IUDGSNewPartCreteriaModel
   ) => Promise<IUDGSNewPartGridModel[]>,
-  getPartWithQuotationByRFQID: (rfqID: number) => Promise<void>,
+  getPartWithQuotationByRFQID: (arg:{rfqID: number,type:string}) => Promise<void>,
   getPartByID: (partID: number) => Promise<IUDGSNewPartGridModel>,
   getPartsByRFQID: (rfqID: number) => Promise<IUDGSNewPartGridModel[]>,
   putPart: (part: IUDGSNewPartFormModel) => Promise<void>,
@@ -41,7 +42,7 @@ export const useUDGSPart = (): Readonly<PartOperators> => {
   const dispatch = useAppDispatch();
   const isFetching = useAppSelector(isFetchingSelector);
   const errorMessage = useAppSelector(messageSelector);
-  const currentPartWithQuotation = useAppSelector(
+  const currentPartWithQuotation:IUDGSNewPartQuotationGridModel[] | IUDGSNegotiationPartGridModel[] = useAppSelector(
     currentPartWithQuotationSelector
   );
   const currentPart = useAppSelector(currentPartSelector);
@@ -59,9 +60,9 @@ export const useUDGSPart = (): Readonly<PartOperators> => {
     [dispatch]
   );
   const getPartWithQuotationByRFQID = useCallback(
-    async (rfqID: number): Promise<void> => {
+    async (arg:{rfqID: number,type:string}): Promise<void> => {
       const actionResult = await dispatch(
-        getPartWithQuotationByRFQIDAction(rfqID)
+        getPartWithQuotationByRFQIDAction(arg)
       );
       if (getPartWithQuotationByRFQIDAction.fulfilled.match(actionResult)) {
         return;

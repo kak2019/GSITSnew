@@ -16,7 +16,7 @@ import {
   camlOr,
 } from "../../common/camlHelper";
 import { AppInsightsService } from "../../config/AppInsightsService";
-import { FeatureKey, CONST } from "../../config/const";
+import { FeatureKey, CONST} from "../../config/const";
 import { MESSAGE } from "../../config/message";
 import { getSP } from "../../pnpjsConfig";
 import {
@@ -32,6 +32,11 @@ import {
   getLastCommentBy,
   parseNumberFixedDigit,
 } from "../../common/commonHelper";
+import {
+  IUDGSNegotiationPartGridModel,
+  IUDGSNegotiationPartQuotationGridModel
+} from "../../model-v2/udgs-negotiation-model";
+
 
 //#region actions
 export const queryPartsAction = createAsyncThunk(
@@ -159,10 +164,13 @@ export const queryPartsAction = createAsyncThunk(
     }
   }
 );
+
+
 export const getPartWithQuotationByRFQIDAction = createAsyncThunk(
   `${FeatureKey.PARTS}/getPartWithQuotationByRFQID`,
-  async (rfqID: number): Promise<IUDGSNewPartQuotationGridModel[]> => {
+  async (arg:{rfqID: number,type:string}): Promise<IUDGSNewPartQuotationGridModel[] | IUDGSNegotiationPartGridModel[]> => {
     const sp = spfi(getSP());
+    let parts:IUDGSNewPartGridModel[] | IUDGSNegotiationPartGridModel[] = []
     try {
       const responsePart = await sp.web.lists
         .getByTitle(CONST.LIST_NAME_PART)
@@ -170,7 +178,7 @@ export const getPartWithQuotationByRFQIDAction = createAsyncThunk(
           ViewXml: `<View>
         <Query>
         <Where>
-        ${camlEqNumber(rfqID, "RFQIDRef")}
+        ${camlEqNumber(arg.rfqID, "RFQIDRef")}
         </Where>
         <OrderBy>
           <FieldRef Name="ID" Ascending="FALSE" />
@@ -178,7 +186,8 @@ export const getPartWithQuotationByRFQIDAction = createAsyncThunk(
         </Query>
         </View>`,
         });
-      const parts = responsePart.Row.map((item) => {
+      if(arg.type === CONST.RFQTypePart){
+       parts = responsePart.Row.map((item) => {
         return {
           ID: item.ID,
           Modified: new Date(item["Modified."]),
@@ -226,7 +235,43 @@ export const getPartWithQuotationByRFQIDAction = createAsyncThunk(
           WBS: item.WBS,
           //Parma:item.Parma
         } as IUDGSNewPartGridModel;
-      });
+      })}else {
+        parts = responsePart.Row.map((item) => {
+          return {
+            ID: item.ID,
+            Modified: new Date(item["Modified."]),
+            BuyerBasePrice: Number(item["BuyerBasePrice."]),
+            BuyerName: item.BuyerName,
+            CreateDate: new Date(item["CreateDate."]),
+            Currency: item.Currency,
+            CurrentBasePrice: Number(item["CurrentBasePrice."]),
+            ForecastQuantity: Number(item["ForecastQuantity."]),
+            MaterialUser: Number(item["MaterialUser."]),
+            MaterialUserName: item.MaterialUserName,
+            NegotiationBuyer: item.NegotiationBuyer,
+            NegotiationRefNo: item.NegotiationRefNo,
+            NegotiationUopDetailNbr: Number(item["NegotiationUopDetailNbr."]),
+            Parma: item.Parma,
+            PartDescription: item.PartDescription,
+            PartNumber: item.PartNumber,
+            PartStatus: item.PartStatus,
+            Porg: item.Porg,
+            Qualifier: item.Qualifier,
+            RequisitionBuyer: item.RequisitionBuyer,
+            RFQIDRef: Number(item["RFQIDRef."]),
+            RFQNo: item.RFQNo,
+            SupplierBasePrice: Number(item["SupplierBasePrice."]),
+            SupplierName: item.SupplierName,
+            SupplierPartNumber: item.SupplierPartNumber,
+            SystemPartID: item.SystemPartID,
+            //Unit: Number(item["Unit."]),
+            Unit: item.Unit,
+            Ver: Number(item["Ver."]),
+            Handler:item.Handler,
+            // UOP:''
+          }as IUDGSNegotiationPartGridModel;
+      })
+      }
       const partIDs = parts.map((item) => item.ID);
       const responseQuotation = await sp.web.lists
         .getByTitle(CONST.LIST_NAME_QUOTATION)
@@ -242,11 +287,31 @@ export const getPartWithQuotationByRFQIDAction = createAsyncThunk(
         </Query>
         </View>`,
         });
+      const responseEnegotion  = await sp.web.lists
+          .getByTitle(CONST.LIST_NAME_ENEGOTIATIONREQUESTS)
+          .renderListDataAsStream({
+            ViewXml: `<View>
+        <Query>
+        <Where>
+        ${camlEqNumber(arg.rfqID, "RFQIDRef")}
+        </Where>
+        <OrderBy>
+          <FieldRef Name="ID" Ascending="FALSE" />
+        </OrderBy>
+        </Query>
+        </View>`,
+          });
+
       const partWithQuotation = parts.map((partData) => {
         const quotationData = responseQuotation.Row.find(
           (x) => x.PartIDRef === partData.ID
         );
+        // 在这里合并谈判请求数据
+        const negotiationData = responseEnegotion.Row.find(
+            (x) => x.RFQIDRef === String(partData.RFQIDRef) // 根据PartIDRef进行匹配，假设存在此字段
+        );
         return {
+          ReasonCode:negotiationData? negotiationData.ReasonCode:'',
           ...partData,
           QuotationModified: quotationData ? quotationData["Modified."] : null,
           QuotationID: quotationData ? quotationData.ID : 0,
@@ -334,10 +399,59 @@ export const getPartWithQuotationByRFQIDAction = createAsyncThunk(
             ? quotationData.OrderPriceStatusCode
             : "",
           OrderNumber: quotationData ? quotationData.OrderNumber : "",
-        } as IUDGSNewPartQuotationGridModel;
+          CurrentUnitPrice:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentUnitPrice."],
+              3
+          ):"",
+          CurrentMaterialsCostsTtl:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentMaterialsCostsTtl."],
+              3
+          ):"",
+          CurrentPurchasedPartsCostsTtl:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentPurchasedPartsCostsTtl."],
+              3
+          ):"",
+          CurrentProcessingCostsTtl:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentProcessingCostsTtl."],
+              3
+          ):"",
+          CurrentToolingJigDeprCostTtl:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentToolingJigDeprCostTtl."],
+              3
+          ):"",
+          CurrentAdminExpProfit:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentAdminExpProfit."],
+              3
+          ):"",
+          CurrentPackingAndDistributionCos:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentPackingAndDistributionCos."],
+              3
+          ):"",
+          PackingAndDistributionCosts:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentPackingAndDistributionCos."],
+              3
+          ):"",
+          CurrentOther:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentOther."],
+              3
+          ):"",
+          CurrentPaidProvPartsCost:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentPaidProvPartsCost."],
+              3
+          ):"",
+          CurrentSuppliedMtrCost:quotationData?parseNumberFixedDigit(
+              quotationData["CurrentSuppliedMtrCost."],
+              3
+          ):"",
+          CSDBTagNumber:quotationData?parseNumberFixedDigit(
+              quotationData["CSDBTagNumber."],
+              3
+          ):"",
+
+        } as IUDGSNegotiationPartQuotationGridModel;
       });
       return partWithQuotation;
-    } catch (err) {
+    }catch (err) {
       Logger.write(
         `${CONST.LOG_SOURCE} (_getPartWithQuotationByRFQID) - ${JSON.stringify(
           err

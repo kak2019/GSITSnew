@@ -8,6 +8,8 @@ import {
 } from '../pnpjsConfig';
 import { AadHttpClient } from '@microsoft/sp-http';
 import "@pnp/graph/users";
+import "@pnp/graph/groups";
+import "@pnp/graph/members";
 import { spfi } from '@pnp/sp';
 import { Logger, LogLevel } from '@pnp/logging';
 import { IGPSUser, ISupplierHostBuyerMapping } from '../model/user';
@@ -15,8 +17,10 @@ import { CONST } from '../config/const';
 import { AppContextProps } from '../AppContext';
 
 type UseUser = {
-    getUserEmail:(ctx:AppContextProps | undefined)=>string,
+    getUserEmail: (ctx: AppContextProps | undefined) => string,
     getUserIDCode: (identifier: string) => Promise<string>,
+    getGroupMembers(groupName: string): Promise<GraphUser[]>,
+    checkCurrentUserInGroup(groupName: string, ctx: AppContextProps | undefined): Promise<boolean>,
     getUserType: (identifier: string) => Promise<string>,
     getUserSupplierId: (identifier: string) => Promise<string>,
     getGPSUser: (email: string) => Promise<IGPSUser | undefined>,
@@ -24,24 +28,42 @@ type UseUser = {
     getSupplierHostBuyerMapping: (parmaId: string) => Promise<ISupplierHostBuyerMapping | undefined>,
 };
 type UserOperators = [userPicture: string];
+type GraphUser = {
+    accountEnabled: boolean,
+    city?: string,
+    companyName?: string,
+    country?: string,
+    department?: string,
+    displayName: string,
+    employeeId?: string,
+    id: string,
+    jobTitle?: string,
+    mail: string,
+    mailNickname?: string,
+    onPremisesSamAccountName?: string,
+    onPremisesUserPrincipalName?: string,
+    postalCode?: string,
+    streetAddress?: string,
+    userPrincipalName: string,
+    userType: string,
+}
 
 export function useUser(): UseUser {
-    function getUserEmail(ctx:AppContextProps | undefined):string {
+    function getUserEmail(ctx: AppContextProps | undefined): string {
 
-            let userEmail='';
-            try {
-                
-                if (!ctx || !ctx.context) {
-                    throw new Error("AppContext is not provided or context is undefined");
-                } else {
-                    userEmail = ctx.context._pageContext._user.email;
-                }
+        let userEmail = '';
+        try {
+
+            if (!ctx || !ctx.context) {
+                throw new Error("AppContext is not provided or context is undefined");
+            } else {
+                userEmail = ctx.context._pageContext._user.email;
             }
-            catch (error)
-            {
-                Logger.write(`Fetch user email error: ${error}`, LogLevel.Error);
-            }
-            return userEmail;
+        }
+        catch (error) {
+            Logger.write(`Fetch user email error: ${error}`, LogLevel.Error);
+        }
+        return userEmail;
 
     }
     //graph functiton logic will go here for UserIDCode :EX133xx
@@ -59,6 +81,65 @@ export function useUser(): UseUser {
         } catch (error) {
             Logger.write(`No UserIDCode found ${error}`, LogLevel.Error);
             return '';
+        }
+    }
+    async function getGroupIdByName(groupName: string): Promise<string | null | undefined> {
+        try {
+            const graph = getGraph();
+            const groups = await graph.groups.filter(`displayName eq '${groupName}'`)();
+            return groups.length > 0 ? groups[0].id : null;
+        } catch (error) {
+            Logger.write(`Error fetching group ID: ${error}`, LogLevel.Error);
+            return null;
+        }
+    }
+
+    async function getGroupMembers(groupName: string): Promise<GraphUser[]> {
+        try {
+            const graph = getGraph();
+            const groupId = await getGroupIdByName(groupName);
+            if (!groupId) {
+                throw new Error("Group not found");
+            }
+            const members = await graph.groups.getById(groupId).members();
+            return members.map(member => ({
+                accountEnabled: member.accountEnabled,
+                city: member.city || '',
+                companyName: member.companyName || '',
+                country: member.country || '',
+                department: member.department || '',
+                displayName: member.displayName,
+                employeeId: member.employeeId || '',
+                id: member.id,
+                jobTitle: member.jobTitle || '',
+                mail: member.mail,
+                mailNickname: member.mailNickname || '',
+                onPremisesSamAccountName: member.onPremisesSamAccountName || '',
+                onPremisesUserPrincipalName: member.onPremisesUserPrincipalName || '',
+                postalCode: member.postalCode || '',
+                streetAddress: member.streetAddress || '',
+                userPrincipalName: member.userPrincipalName,
+                userType: member.userType,
+              })) as GraphUser[];
+        } catch (error) {
+            Logger.write(`Error fetching group members:${error}`, LogLevel.Error);
+            return [];
+        }
+    }
+
+    async function checkCurrentUserInGroup(groupName: string, ctx: AppContextProps | undefined): Promise<boolean> {
+        try {
+            if (!ctx || !ctx.context) {
+                throw new Error("AppContext is not provided or context is undefined");
+            } else {
+                const userId = ctx.context._pageContext._aadInfo.userId._guid;
+                const members = await getGroupMembers(groupName);
+                return members.some(member => member.id === userId);
+            }
+
+        } catch (error) {
+            Logger.write(`Error checking user group membership: ${error}`, LogLevel.Error);
+            return false;
         }
     }
     async function getUserType(identifier: string): Promise<string> {
@@ -89,7 +170,7 @@ export function useUser(): UseUser {
             console.log(JSON.stringify(response));
             if (response.length > 0) {
                 const extensionAttributes = response[0].onPremisesExtensionAttributes;
-                return extensionAttributes?.extensionAttribute5 || '';
+                return extensionAttributes?.extensionAttribute3 || '';
             } else {
                 Logger.write(`No SupplierId found for ${identifier}`, LogLevel.Error);
                 return '';
@@ -118,7 +199,7 @@ export function useUser(): UseUser {
                     handlercode: result.handlercode,
                     porg: result.porg
                 } as IGPSUser;
-            } 
+            }
             return undefined;
         } catch (error) {
             Logger.write(`No GPSUser found ${error}`, LogLevel.Error);
@@ -140,12 +221,11 @@ export function useUser(): UseUser {
                 Logger.write(`No UserPicture found ${error}`, LogLevel.Error);
             }
         }
-        else
-        {
+        else {
             try {
                 const sp = spfi(getSP());
                 const profile = await sp.profiles.userProfile;
-                userPicture=profile?.PictureUrl || '';
+                userPicture = profile?.PictureUrl || '';
             }
             catch (error) {
                 Logger.write(`No UserPicture found ${error}`, LogLevel.Error);
@@ -158,9 +238,9 @@ export function useUser(): UseUser {
     ): Promise<ISupplierHostBuyerMapping | undefined> {
         const sp = spfi(getSP());
         const response = await sp.web.lists
-        .getByTitle(CONST.LIST_NAME_SUPPLIERHOSTBUYERMAPPING)
-        .renderListDataAsStream({
-            ViewXml: `<View>
+            .getByTitle(CONST.LIST_NAME_SUPPLIERHOSTBUYERMAPPING)
+            .renderListDataAsStream({
+                ViewXml: `<View>
                         <Query>
                                 <Where>
                                 <Eq>
@@ -173,7 +253,7 @@ export function useUser(): UseUser {
                             </OrderBy>
                         </Query>
                     </View>`,
-        });
+            });
         if (response && response.Row && response.Row.length) {
             return {
                 PARMANbr: response.Row[0].PARMANbr,
@@ -189,6 +269,8 @@ export function useUser(): UseUser {
     return {
         getUserEmail,
         getUserIDCode,
+        getGroupMembers,
+        checkCurrentUserInGroup,
         getUserType,
         getUserSupplierId,
         getGPSUser,

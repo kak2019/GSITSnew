@@ -14,6 +14,7 @@ import {
   IENegotiationRequestCreteriaModel,
   IENegotiationRequest,
 } from "../model/eNegotiation";
+import { getRFQs } from "../actions/get-rfqs";
 
 type ENegotiationOperators = [
   isFetching: boolean,
@@ -43,9 +44,49 @@ export const useENegotiation = (): Readonly<ENegotiationOperators> => {
     async (
       query: IENegotiationRequestCreteriaModel
     ): Promise<IENegotiationRequest[]> => {
-      const result = await dispatch(getENegotiationRequestListAction(query));
-      if (getENegotiationRequestListAction.fulfilled.match(result)) {
-        return result.payload as IENegotiationRequest[];
+      // Buyer得拆成porg和handler
+      const tempQuery = { ...query };
+      if (query.Buyer) {
+        const splitBuyer = query.Buyer.split(" ");
+        if (splitBuyer.length !== 2) {
+          throw new Error("Error get ENegotiation Request List");
+        }
+        const Porg = splitBuyer[0];
+        const Handler = Number(splitBuyer[1]);
+        tempQuery.Porg = Porg;
+        tempQuery.Handler = Handler;
+      }
+      // 获取rfq id和status的mapping
+      const mapping: Record<number, string> = {};
+      if (query.RFQStatus && query.RFQStatus.length) {
+        // 需要去rfq表查这个status的数据，把所有数据的id拿回来
+        const rfqs = await getRFQs({ RFQStatus: query.RFQStatus });
+        const ids = rfqs.map((item) => {
+          mapping[item.ID] = item.RFQStatus;
+          return item.ID;
+        });
+        tempQuery.RFQIDRefs = ids;
+      } else {
+        // 查所有的rfq数据
+        const rfqs = await getRFQs({});
+        rfqs.forEach((item) => {
+          mapping[item.ID] = item.RFQStatus;
+        });
+      }
+      // 拿到的result没有rfq status
+      const tempResult = await dispatch(
+        getENegotiationRequestListAction(tempQuery)
+      );
+      if (getENegotiationRequestListAction.fulfilled.match(tempResult)) {
+        const result = tempResult.payload.map((item) => {
+          const id = item.RFQIDRef ?? -1;
+          const RFQStatus = mapping[id] ?? "";
+          return {
+            ...item,
+            RFQStatus,
+          };
+        });
+        return result as IENegotiationRequest[];
       } else {
         throw new Error("Error get ENegotiation Request List");
       }

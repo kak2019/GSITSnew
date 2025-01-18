@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-floating-promises */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogFooter,
@@ -10,15 +14,30 @@ import {
   Stack,
   Dropdown,
   IDropdownOption,
+  ComboBox,
+  IComboBox,
+  IComboBoxOption,
+  IDatePickerStrings,
+  defaultDatePickerStrings,
 } from "@fluentui/react";
+import { useConst } from "@fluentui/react-hooks";
 import { formatDate } from "../../../../utils";
 import { buttonStyles } from "../../../../config/theme";
 import { IENegotiationRequestFormModel } from "../../../../model/eNegotiation";
+import { REASON_CODE_OPTIONS } from "../../../../config/const";
+import {
+  ISupplierInfoResponse,
+  getParmaListRequest,
+  getSupplierInfoRequest,
+} from "../../../../api";
+import {
+  getNextNextMonthFirstDayDate,
+  getFirstDayOfPreviousMonth,
+} from "../../../../utils";
 
-// 定义 Props 接口
 interface CreateENegotiationDialogProps {
   Porg: string;
-  Handler: string;
+  Handler: number;
   isOpen: boolean;
   onCancel: () => void;
   onCreate: (formData: IENegotiationRequestFormModel) => void;
@@ -31,49 +50,147 @@ const CreateENegotiationDialog: React.FC<CreateENegotiationDialogProps> = ({
   onCancel,
   onCreate,
 }) => {
-  // 表单数据状态
-  const [formData, setFormData] = useState<IENegotiationRequestFormModel>({
-    Parma: "",
-    SupplierContact: "",
-    Porg,
-    Handler,
-    ExpectedEffectiveDateFrom: undefined,
-    ReasonCode: "",
-  });
+  const [formData, setFormData] = useState<IENegotiationRequestFormModel>();
 
-  // 处理表单输入变化
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [parmaOptions, setParmaOptions] = useState<IComboBoxOption[]>([]);
+  const [supplierInfo, setSupplierInfo] = useState<
+    ISupplierInfoResponse | undefined
+  >();
+  const [minDate, setMinDate] = useState<Date>(getFirstDayOfPreviousMonth(5));
+  const [expectedEffectiveDateFromError, setExpectedEffectiveDateFromError] =
+    useState(false);
+
+  const requestSupplierName = async (parma: string) => {
+    try {
+      const result = await getSupplierInfoRequest({ parma });
+      if (result && result instanceof Object) {
+        setSupplierInfo(result);
+      } else {
+        setSupplierInfo(undefined);
+      }
+    } catch (error) {
+      console.log(error);
+      setSupplierInfo(undefined);
+    }
+  };
+
   const handleChange = (field: string, value: any): void => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const validateEmail = (value: string): string | undefined => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // 简单的邮箱验证正则
-    if (!value) {
-      return "Email is required"; // 如果为空，返回错误信息
+  const handleParmaChange = async (
+    event: React.FormEvent<IComboBox>,
+    option?: IComboBoxOption
+  ): Promise<void> => {
+    if (option) {
+      setFormData((prev) => ({ ...prev, Parma: option.text }));
+      requestSupplierName(option.text as string);
     }
-    if (!emailRegex.test(value)) {
-      return "Please enter a valid email address."; // 如果格式不正确，返回错误信息
-    }
-    return undefined; // 如果没有错误，返回 undefined
   };
 
-  const generateRequestNo = (): string => {
-    const now = new Date();
-    const year = now.getFullYear(); // 年份
-    const month = String(now.getMonth() + 1).padStart(2, "0"); // 月份，补零
-    const day = String(now.getDate()).padStart(2, "0"); // 日期，补零
-    const hours = String(now.getHours()).padStart(2, "0"); // 小时，补零
-    const minutes = String(now.getMinutes()).padStart(2, "0"); // 分钟，补零
-    const seconds = String(now.getSeconds()).padStart(2, "0"); // 秒钟，补零
-    const milliseconds = String(now.getMilliseconds()).padStart(3, "0"); // 毫秒，补零
-    return `${formData.Parma}${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`; // 拼接 RequestNo
+  const handleParmaInputValueChange = async (text: string) => {
+    if (text.length < 3) {
+      setParmaOptions([]);
+    } else {
+      try {
+        const response = await getParmaListRequest(text);
+        if (response && Array.isArray(response)) {
+          const options = response.map((item) => ({
+            key: item,
+            text: item,
+            title: item,
+          }));
+          setParmaOptions(options);
+        }
+      } catch (error) {
+        console.error("Error fetching options:", error);
+      }
+    }
   };
+
+  const dateValidateStrings: IDatePickerStrings = useConst(() => ({
+    ...defaultDatePickerStrings,
+    isOutOfBoundsErrorMessage: `Error`,
+  }));
+
+  const validateDate = (): boolean => {
+    if (!supplierInfo || !formData || !formData?.ExpectedEffectiveDateFrom)
+      return false;
+    if (supplierInfo.isSME) {
+      const nextNextMonthFirstDayDate = getNextNextMonthFirstDayDate();
+      const selectDate = formData.ExpectedEffectiveDateFrom as Date;
+      const flag = selectDate.getTime() < nextNextMonthFirstDayDate.getTime();
+      setExpectedEffectiveDateFromError(flag);
+      return !flag;
+    } else {
+      const firstDayOf5MonthsAgo = getFirstDayOfPreviousMonth(5);
+      const selectDate = formData.ExpectedEffectiveDateFrom as Date;
+      const flag = selectDate.getTime() < firstDayOf5MonthsAgo.getTime();
+      return !flag;
+    }
+  };
+
+  useEffect(() => {
+    if (supplierInfo) {
+      if (supplierInfo.isSME) {
+        setMinDate(getNextNextMonthFirstDayDate());
+      } else {
+        setMinDate(getFirstDayOfPreviousMonth(5));
+      }
+      validateDate();
+    }
+  }, [supplierInfo, formData?.ExpectedEffectiveDateFrom]);
+
+  const validateEmail = (value: string): string | undefined => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!value) {
+      return "Email is required";
+    }
+    if (!emailRegex.test(value)) {
+      return "Please enter a valid email address.";
+    }
+    return undefined;
+  };
+
+  const validateFields = (): boolean => {
+    if (!formData) return false;
+    return (
+      !!formData.Parma &&
+      !!formData.Parma.trim() &&
+      !!formData.SupplierContact &&
+      !!formData.SupplierContact.trim() &&
+      !!formData.ExpectedEffectiveDateFrom &&
+      !!formData.ReasonCode
+    );
+  };
+
+  function ExpectedEffectiveDateFromErrorMessage() {
+    return (
+      <div style={{ color: "red", fontSize: 14 }}>
+        <div style={{ marginBottom: 4 }}>
+          The effective date is available only the 1st day of next next month
+          onwards.
+        </div>
+        <div style={{ marginBottom: 4 }}>
+          (For Japan Subcontract act objective suppliers)
+        </div>
+        <div>
+          If you have any case does not suite the condition, please contact with
+          the UD buyer.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Dialog
       hidden={!isOpen}
-      onDismiss={onCancel}
+      onDismiss={() => {
+        setFormData(undefined);
+        setExpectedEffectiveDateFromError(false);
+        setSupplierInfo(undefined);
+        onCancel();
+      }}
       dialogContentProps={{
         type: DialogType.normal,
         title: "Create Price Change E-Negotiation",
@@ -85,6 +202,9 @@ const CreateENegotiationDialog: React.FC<CreateENegotiationDialogProps> = ({
       maxWidth={1200}
     >
       <Stack tokens={{ childrenGap: 10 }}>
+        {expectedEffectiveDateFromError && (
+          <ExpectedEffectiveDateFromErrorMessage />
+        )}
         <Stack
           horizontal
           tokens={{ childrenGap: 40 }}
@@ -92,12 +212,19 @@ const CreateENegotiationDialog: React.FC<CreateENegotiationDialogProps> = ({
           style={{ alignItems: "center" }}
         >
           <Stack styles={{ root: { width: "30%" } }}>
-            <TextField
+            <ComboBox
               label="Parma"
-              value={formData.Parma}
+              placeholder="Please Input"
+              options={parmaOptions}
               required={true}
-              onChange={(e, newValue) => handleChange("Parma", newValue)}
-              errorMessage={formData.Parma ? "" : "Value is required"}
+              autoComplete="on"
+              allowFreeform={true}
+              openOnKeyboardFocus={true}
+              onInputValueChange={handleParmaInputValueChange}
+              useComboBoxAsMenuWidth={true}
+              selectedKey={formData?.Parma}
+              onChange={handleParmaChange}
+              errorMessage={formData?.Parma ? "" : "Value is required"}
             />
           </Stack>
           <Stack
@@ -111,7 +238,7 @@ const CreateENegotiationDialog: React.FC<CreateENegotiationDialogProps> = ({
               },
             }}
           >
-            <span>{formData.Parma}</span>
+            <span>{supplierInfo?.supplierName}</span>
           </Stack>
         </Stack>
         <Stack
@@ -122,22 +249,25 @@ const CreateENegotiationDialog: React.FC<CreateENegotiationDialogProps> = ({
           <TextField
             styles={{ root: { width: "30%" } }}
             label="Supplier Contact (Email)"
-            value={formData.SupplierContact}
+            placeholder="Please Input"
+            value={formData?.SupplierContact}
             required={true}
-            onChange={(e, newValue) => handleChange("supplierEmail", newValue)}
-            onGetErrorMessage={(value) => validateEmail(value || "")} // 验证邮箱格式
-            validateOnFocusOut // 在失去焦点时验证
+            onChange={(e, newValue) =>
+              handleChange("SupplierContact", newValue)
+            }
+            onGetErrorMessage={(value) => validateEmail(value || "")}
+            validateOnFocusOut
           />
           <TextField
             styles={{ root: { width: "30%" } }}
             label="Porg"
-            value={formData.Porg}
+            value={Porg}
             disabled
           />
           <TextField
             styles={{ root: { width: "30%" } }}
             label="Handler"
-            value={formData.Handler}
+            value={String(Handler)}
             disabled
           />
         </Stack>
@@ -149,48 +279,63 @@ const CreateENegotiationDialog: React.FC<CreateENegotiationDialogProps> = ({
           <Stack styles={{ root: { width: "30%" } }}>
             <DatePicker
               label="Expected Effective Date"
-              placeholder="Please select date"
+              placeholder="Please Select"
+              strings={dateValidateStrings}
               isRequired
-              value={
-                formData.ExpectedEffectiveDateFrom
-                  ? new Date(formData.ExpectedEffectiveDateFrom)
-                  : undefined
-              }
+              value={formData?.ExpectedEffectiveDateFrom}
               onSelectDate={(date) => {
                 if (date) {
-                  const formattedDate = formatDate(date);
-                  handleChange("expectedEffectiveDate", formattedDate);
+                  handleChange("ExpectedEffectiveDateFrom", date);
                 }
               }}
-              formatDate={formatDate} // 控制显示的日期格式
+              formatDate={formatDate}
+              minDate={minDate}
             />
           </Stack>
           <Dropdown
-            styles={{ root: { width: "30%" } }}
+            styles={{ root: { width: "40%" } }}
             label="ReasonCode"
             placeholder="Please Select"
-            selectedKey={formData.ReasonCode}
+            selectedKey={formData?.ReasonCode}
             onChange={(_, option?: IDropdownOption) => {
               handleChange("ReasonCode", option?.key);
             }}
-            options={[
-              { key: "0", text: "0" },
-              { key: "1", text: "1" },
-            ]}
+            options={REASON_CODE_OPTIONS}
             required={true}
-            errorMessage={formData.ReasonCode ? "" : "Value is required"}
+            errorMessage={formData?.ReasonCode ? "" : "Value is required"}
           />
-          <Stack styles={{ root: { width: "30%" } }} />
+          <Stack styles={{ root: { width: "20%" } }} />
         </Stack>
       </Stack>
-      {/* 底部按钮 */}
+      {/* footer button */}
       <DialogFooter>
-        <DefaultButton onClick={onCancel} text="Cancel" />
+        <DefaultButton
+          onClick={() => {
+            setFormData(undefined);
+            setExpectedEffectiveDateFromError(false);
+            setSupplierInfo(undefined);
+            onCancel();
+          }}
+          text="Cancel"
+        />
         <PrimaryButton
           styles={buttonStyles}
           onClick={() => {
-            const RequestID = generateRequestNo(); //generate reqeust no
-            onCreate({ ...formData, RequestID });
+            if (!supplierInfo) {
+              alert("Please select a available parma.");
+              return;
+            }
+            if (!supplierInfo.isJP) {
+              alert(
+                "Selected Parma is not Japanese supplier, please continue use CSDB system to proceed. "
+              );
+              return;
+            }
+            if (validateFields()) {
+              if (validateDate()) {
+                onCreate({ ...formData, Porg, Handler });
+              }
+            }
           }}
           text="Create"
         />

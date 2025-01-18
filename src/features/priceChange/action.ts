@@ -14,6 +14,7 @@ import {
   camlEqText,
   camlGeqDate,
   camlLtDate,
+  camlContainsText,
 } from "../../common/camlHelper";
 import {
   ISupplierRequestCreteriaModel,
@@ -25,7 +26,6 @@ import {
 } from "../../model/priceChange";
 import { setCurrentPriceChangeRequest } from "./reducer";
 
-// 异步操作
 export const getSupplierRequestListAction = createAsyncThunk(
   `${FeatureKey.PRICECHANGE}/getSupplierRequestList`,
   async (Query: ISupplierRequestCreteriaModel): Promise<ISupplierRequest[]> => {
@@ -49,7 +49,9 @@ export const getSupplierRequestListAction = createAsyncThunk(
           ID: item.ID,
           CommentHistory: item.CommentHistory,
           DetailedDescription: item.DetailedDescription,
-          ExpectedEffectiveDateFrom: item.ExpectedEffectiveDateFrom,
+          ExpectedEffectiveDateFrom: item.ExpectedEffectiveDateFrom
+            ? new Date(item.ExpectedEffectiveDateFrom)
+            : "",
           HostBuyer: item.HostBuyer,
           HostBuyerName: item.HostBuyerName,
           IsReturned: item.IsReturned,
@@ -87,10 +89,6 @@ export const getSupplierRequestAction = createAsyncThunk(
   async (id: string): Promise<ISupplierRequest> => {
     const sp = spfi(getSP());
     try {
-      // 这种方式缺一些字段
-      // const response = await sp.web.lists
-      //   .getByTitle(CONST.LIST_NAME_SUPPLIERREQUESTS)
-      //   .items.getById(Number(id))();
       const response = await sp.web.lists
         .getByTitle(CONST.LIST_NAME_SUPPLIERREQUESTS)
         .renderListDataAsStream({
@@ -109,7 +107,9 @@ export const getSupplierRequestAction = createAsyncThunk(
         ID: response.Row[0].ID,
         CommentHistory: response.Row[0].CommentHistory || "",
         DetailedDescription: response.Row[0].DetailedDescription,
-        ExpectedEffectiveDateFrom: response.Row[0].ExpectedEffectiveDateFrom,
+        ExpectedEffectiveDateFrom: response.Row[0].ExpectedEffectiveDateFrom
+          ? new Date(response.Row[0].ExpectedEffectiveDateFrom)
+          : "",
         HostBuyer: response.Row[0].HostBuyer,
         HostBuyerName: response.Row[0].HostBuyerName,
         LastUpdateDate: response.Row[0].ModifiedDate,
@@ -178,10 +178,9 @@ export const updateSupplierRequestAction = createAsyncThunk(
           ExpectedEffectiveDateFrom: form.ExpectedEffectiveDateFrom,
           SupplierContact: form.SupplierContact,
           DetailedDescription: form.DetailedDescription,
-          // comment传参需要提前拼接好历史记录
           CommentHistory: form.CommentHistory,
+          SupplierRequestStatus: form.SupplierRequestStatus,
         });
-      // host buyer更新request的responsible buyers，应该是创建subitems，然后通过Request ID关联上
     } catch (err) {
       Logger.write(
         `${CONST.LOG_SOURCE} (_updateSupplierRequest) - ${JSON.stringify(err)}`,
@@ -205,7 +204,9 @@ export const getSupplierRequestSubitemListAction = createAsyncThunk(
         .renderListDataAsStream({
           ViewXml: `<View>
           <Query>
-          ${camlEqNumber(Number(id), "Request ID Ref")}
+          <Where>
+          ${camlEqText(id, "RequestIDRef")}
+          </Where>
           <OrderBy>
             <FieldRef Name="ID" Ascending="FALSE" />
           </OrderBy>
@@ -215,7 +216,7 @@ export const getSupplierRequestSubitemListAction = createAsyncThunk(
       return response.Row.map((item) => {
         return {
           ID: item.ID,
-          ExpectedEffectiveDateFrom: item.ExpectedEffectiveDateFrom,
+          ExpectedEffectiveDateFrom: new Date(item.ExpectedEffectiveDateFrom),
           Handler: item.Handler,
           HandlerName: item.HandlerName,
           IsSenttoHostBuyer: item.IsSenttoHostBuyer,
@@ -226,7 +227,7 @@ export const getSupplierRequestSubitemListAction = createAsyncThunk(
           RequestIDRef: item.RequestIDRef,
           Section: item.Section,
           SectionDescription: item.SectionDescription,
-          SupplierRequestSubitemStatus: item.SupplierRequestSubitemStatus,
+          SupplierRequestSubItemStatus: item.SupplierRequestSubItemStatus,
           CreatedDate: item.Created,
           CreatedBy: item.Author && item.Author[0] ? item.Author[0].title : "",
           ModifiedDate: item.Modified,
@@ -271,7 +272,9 @@ export const getSupplierRequestSubitemListByFilterAction = createAsyncThunk(
       return response.Row.map((item) => {
         return {
           ID: item.ID,
-          ExpectedEffectiveDateFrom: item.ExpectedEffectiveDateFrom,
+          ExpectedEffectiveDateFrom: item.ExpectedEffectiveDateFrom
+            ? new Date(item.ExpectedEffectiveDateFrom)
+            : "",
           Handler: item.Handler,
           HandlerName: item.HandlerName,
           IsSenttoHostBuyer: item.IsSenttoHostBuyer,
@@ -282,7 +285,7 @@ export const getSupplierRequestSubitemListByFilterAction = createAsyncThunk(
           RequestIDRef: item.RequestIDRef,
           Section: item.Section,
           SectionDescription: item.SectionDescription,
-          SupplierRequestSubitemStatus: item.SupplierRequestSubitemStatus,
+          SupplierRequestSubItemStatus: item.SupplierRequestSubItemStatus,
           CreatedDate: item.Created,
           CreatedBy: item.Author && item.Author[0] ? item.Author[0].title : "",
           ModifiedDate: item.Modified,
@@ -351,7 +354,9 @@ export const updateSupplierRequestSubitemsAction = createAsyncThunk(
           Handler: form.Handler,
           Section: form.Section,
           RequestIDRef: form.RequestIDRef,
-          SupplierRequestSubitemStatus: form.SupplierRequestSubitemStatus,
+          SupplierRequestSubItemStatus: form.SupplierRequestSubItemStatus,
+          ReasonCode: form.ReasonCode,
+          ExpectedEffectiveDateFrom: form.ExpectedEffectiveDateFrom,
         });
       });
       await execute();
@@ -399,7 +404,6 @@ export const deleteSupplierRequestSubitemsAction = createAsyncThunk(
   }
 );
 
-// 同步操作
 export const setCurrentPriceChangeRequestAction = createAction(
   `${FeatureKey.PRICECHANGE}/setCurrentPriceChangeRequest`,
   setCurrentPriceChangeRequest
@@ -424,17 +428,26 @@ function GetQueryInfo(queryCreteria: ISupplierRequestCreteriaModel): string {
       )
     );
   }
-  if (queryCreteria.Parma) {
-    creterias.push(camlEqText(queryCreteria.Parma, "Parma"));
+  if (queryCreteria.ParmaAccurate) {
+    creterias.push(camlEqText(queryCreteria.ParmaAccurate, "Parma"));
+  }
+  if (queryCreteria.ParmaBlur) {
+    creterias.push(camlContainsText(queryCreteria.ParmaBlur, "Parma"));
   }
   if (queryCreteria.ExpectedEffectiveDateFrom) {
     creterias.push(
-      camlGeqDate(queryCreteria.ExpectedEffectiveDateFrom, "Created")
+      camlGeqDate(
+        queryCreteria.ExpectedEffectiveDateFrom,
+        "ExpectedEffectiveDateFrom"
+      )
     );
   }
   if (queryCreteria.ExpectedEffectiveDateTo) {
     creterias.push(
-      camlLtDate(queryCreteria.ExpectedEffectiveDateTo, "Created")
+      camlLtDate(
+        queryCreteria.ExpectedEffectiveDateTo,
+        "ExpectedEffectiveDateFrom"
+      )
     );
   }
   return camlAndFinal(creterias);
@@ -445,13 +458,13 @@ function GetSubitemQueryInfo(
 ): string {
   const creterias: string[] = [];
   if (
-    queryCreteria.SupplierRequestSubitemStatus &&
-    queryCreteria.SupplierRequestSubitemStatus.length
+    queryCreteria.SupplierRequestSubItemStatus &&
+    queryCreteria.SupplierRequestSubItemStatus.length
   ) {
     creterias.push(
       camlChoiceMultipleText(
-        "SupplierRequestSubitemStatus",
-        queryCreteria.SupplierRequestSubitemStatus
+        "SupplierRequestSubItemStatus",
+        queryCreteria.SupplierRequestSubItemStatus
       )
     );
   }

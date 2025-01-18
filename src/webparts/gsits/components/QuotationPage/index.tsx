@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, {useEffect, useState} from "react";
 import {
     Dialog,
     DialogType,
@@ -19,40 +19,46 @@ import {
     IDropdownOption,
     Dropdown,
     Spinner, IColumn,
-    IconButton,
+    IconButton, DatePicker,
 } from "@fluentui/react";
-import { useTranslation } from "react-i18next";
+import {useTranslation} from "react-i18next";
 import AppContext from "../../../../AppContext";
-import { getAADClient } from "../../../../pnpjsConfig";
-import { CONST } from "../../../../config/const";
-import { AadHttpClient } from "@microsoft/sp-http";
+import {getAADClient} from "../../../../pnpjsConfig";
+import {CONST, REASON_CODE_OPTIONS} from "../../../../config/const";
+import {AadHttpClient} from "@microsoft/sp-http";
 //import { useRFQ } from "../../../../hooks/useRFQ";
 //import { useDocument, useUser } from "../../../../hooks";
-import { useUser } from "../../../../hooks";
-import { useLocation, useNavigate } from "react-router-dom";
-import { IComment } from "../../../../model/comment";
+import {useUser} from "../../../../hooks";
+import {useLocation, useNavigate} from "react-router-dom";
+import {IComment} from "../../../../model/comment";
 //import { useQuotation } from "../../../../hooks/useQuotation";
 import exportToExcel from "./download";
 import EditIcon from "./icon";
-import { mergeStyles } from "@fluentui/react/lib/Styling";
+import {mergeStyles} from "@fluentui/react/lib/Styling";
 import "./index.css";
-import { IMasterData } from "../PriceBreakDown/IPriceBreakDown";
-import { boolean } from "yup";
-//import { IProceedToPoFields } from "../../../../model/requisition";
+import {IMasterData} from "../PriceBreakDown/IPriceBreakDown";
+import {boolean} from "yup";
 import Download from "./generateFourTypesFile";
-import { KnowledgeArticleIcon } from "@fluentui/react-icons-mdl2";
+import {KnowledgeArticleIcon} from "@fluentui/react-icons-mdl2";
 import theme from "../../../../config/theme";
-//import {useUDGSQuotation} from "../../../../hooks-v2/use-udgs-quotation";
-import { useUDGSPart } from "../../../../hooks-v2/use-udgs-part";
-import { useUDGSRFQ } from "../../../../hooks-v2/use-udgs-rfq";
-import { useUDGSAttachment } from "../../../../hooks-v2/use-udgs-attachment";
-import { IUDGSAttachmentCreteriaModel } from "../../../../model-v2/udgs-attachment-model";
-import { IUDGSAcceptReturnModel } from "../../../../model-v2/udgs-part-model";
-import { IUDGSCommentModel } from "../../../../model-v2/udgs-comment-model";
-import { useUDGSActionlog } from "../../../../hooks-v2/use-udgs-actionlog";
-import { IUDGSActionlogFormModel } from "../../../../model-v2/udgs-actionlog-model";
-import { useUDGSQuotation } from "../../../../hooks-v2/use-udgs-quotation";
-import { IUDGSQuotationFormModel } from "../../../../model-v2/udgs-quotation-model";
+import {useUDGSPart} from "../../../../hooks-v2/use-udgs-part";
+import {useUDGSRFQ} from "../../../../hooks-v2/use-udgs-rfq";
+import {useUDGSAttachment} from "../../../../hooks-v2/use-udgs-attachment";
+import {IUDGSAttachmentCreteriaModel} from "../../../../model-v2/udgs-attachment-model";
+import {IUDGSAcceptReturnModel} from "../../../../model-v2/udgs-part-model";
+import {IUDGSCommentModel} from "../../../../model-v2/udgs-comment-model";
+import {useUDGSActionlog} from "../../../../hooks-v2/use-udgs-actionlog";
+import {IUDGSActionlogFormModel} from "../../../../model-v2/udgs-actionlog-model";
+import {useUDGSQuotation} from "../../../../hooks-v2/use-udgs-quotation";
+import {IUDGSQuotationFormModel} from "../../../../model-v2/udgs-quotation-model";
+import Pricedownloadexcel from "./downloadPrice"
+import {updateListItems} from "./batchupdatePartList";
+import pricePOGenerateFile from "./pricePOGenerateFile";
+import {
+    IUDGSNegotiationPartQuotationGridModel
+} from "../../../../model-v2/udgs-negotiation-model";
+import {deepCopy} from "../../../../common/commonHelper";
+import {columnSetPriceProceed, columnSetPartProceed, columnSetPart} from './columnDefinitions';
 
 const iconClass = mergeStyles({
     fontSize: 20,
@@ -167,9 +173,6 @@ const fetchData = async (parmaValue: string): Promise<any> => {
 const QuoteCreation: React.FC = () => {
 
     const [isLoading, setIsLoading] = useState(false);
-    //const [, , , , , , , , , , , , createActionLog, acceptOrReturn, , , proceedToPo,] = useQuotation();
-    //const [, , , , , , , , , , , , createActionLog, acceptOrReturn, , , proceedToPo,] = useQuotation();
-    //const [, , currentPartWithQuotation, , , , getPartWithQuotationByRFQID, , , , ] = useUDGSPart()
     const [, , , , , postActionlog] = useUDGSActionlog();
     const [, , , , , , putQuotation] = useUDGSQuotation()
     const [, , currentPartWithQuotation, , , , getPartWithQuotationByRFQID, , getPartsByRFQID, putPart, acceptReturn] = useUDGSPart()
@@ -189,7 +192,7 @@ const QuoteCreation: React.FC = () => {
             const allItems = selection.getItems()
             const selets = selection.getSelection()
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            allItems.forEach((val:any) => {
+            allItems.forEach((val: any) => {
                 if (selets.includes(val)) {
                     sets[val.ID] = true
                 } else {
@@ -233,8 +236,7 @@ const QuoteCreation: React.FC = () => {
         IsSme: boolean,
         CountryCode: "",
     });
-    const { t } = useTranslation();
-    // const [, , , rfqAttachments, , , , , getRFQAttachments] = useDocument();
+    const {t} = useTranslation();
     const [, , currentAttachments, getAttachments] = useUDGSAttachment()
     const [, , , currentRFQ, , getRFQByID, , putRFQ] = useUDGSRFQ()
     let userEmail = "";
@@ -242,11 +244,12 @@ const QuoteCreation: React.FC = () => {
     let webURL = "";
     let Site_Relative_Links = "";
     const [userType, setUserType] = useState<string>("Unknown");
-    const { getUserType } = useUser();
+    const {getUserType} = useUser();
     const location = useLocation();
     const state = location.state;
     const parma = state.selectedItems[0].Parma;
-    console.log(state, "status");
+    const isPriceChangeOrder = state.selectedItems[0].RFQType === "Price Change"
+    console.log(state, "status", isPriceChangeOrder);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [text, setText] = useState<any>("");
     const [userDetails, setUserDetails] = useState({
@@ -264,24 +267,26 @@ const QuoteCreation: React.FC = () => {
     const [isHintPageDialogVisible, setIsHintPageDialogVisible] = useState(false);
     const closeHintPageDialog = (): void => setIsHintPageDialogVisible(false);
     const openHintePageDialog = (): void => setIsHintPageDialogVisible(true);
+    const [selectedDate, setSelectedDate] = useState<Date>();
     // 在 QuoteCreation 组件或者相应父组件中
-    const [dialogTitle, setDialogTitle] = useState("Hint information"); // 初始化标题
+    const [dialogTitle, setDialogTitle] = useState("Hint information");
     const [dialogSubText, setDialogSubText] = useState("File Document Generation Successful"); // 初始化子标题
-
-    // 处理输入框变化的方法
+    // if(isPriceChangeOrder){
+    // const {parts} = usePartsByRfqID(state.selectedItems[0].ID? state.selectedItems[0].ID : "1");
+    // console.log("parts",parts);
+    // }
     const handleInputChange = (
         event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
         newValue?: string
     ): void => {
-        setreturnComments(newValue || ""); // 更新状态
+        setreturnComments(newValue || "");
     };
 
-    // 输入框变化处理函数
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleInputChangeOrderno = (newValue: string | undefined, props: any, i?: any): void => {
         console.log("Changed Value:", newValue, "Row Data:", props);
 
-        const obj = selectedItems.map((val) => ({ ...val }));
+        const obj = selectedItems.map((val) => ({...val}));
         obj[i].OrderNumber = newValue;
         setSelectedItems(obj);
     };
@@ -295,7 +300,7 @@ const QuoteCreation: React.FC = () => {
         userEmail = ctx.context._pageContext._user.email;
         userName = ctx.context._pageContext._user?.displayName;
         webURL = ctx.context?._pageContext?._web?.absoluteUrl;
-        console.log("weburl: ",webURL);
+        console.log("weburl: ", webURL);
         Site_Relative_Links = webURL.slice(webURL.indexOf("/sites"));
         console.log("Site_Relative_Links", Site_Relative_Links);
         // console.log("useremail1", userEmail1)
@@ -304,17 +309,14 @@ const QuoteCreation: React.FC = () => {
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
         const fetchData = async () => {
             try {
-                const client = getAADClient(); // 请确保getAADClient()已正确实现
+                const client = getAADClient();
 
-                // 使用模板字符串构建完整的函数URL
                 const functionUrl = `${CONST.azureFunctionBaseUrl}/api/GetGPSUser/${userEmail}`;
 
                 const response = await client.get(
                     functionUrl,
                     AadHttpClient.configurations.v1
                 );
-
-                // 确保解析 response 时不抛出错误
                 const result = await response.json();
                 console.log(result, "dsdsd");
                 if (
@@ -369,14 +371,23 @@ const QuoteCreation: React.FC = () => {
             IsDataNeeded: false
         }
         // 使用 Promise.all 并行调用两个 API
+
         await Promise.all([
-            getPartWithQuotationByRFQID(ID && ID),
+            getPartWithQuotationByRFQID({
+                rfqID: Number(ID),
+                type: isPriceChangeOrder ? CONST.RFQTypePrice : CONST.RFQTypePart
+            }),
             getRFQByID(ID && ID + ""),
             //getRFQAttachments(ID && ID + ""),
             getAttachments(attobj),
         ]);
 
+        setSelectedDate(currentRFQ.EffectiveDateSupplier)
         setIsLoading(false);
+    };
+    // 处理日期变化的函数
+    const onDateChange = (date: Date): void => {
+        setSelectedDate(date);
     };
     console.log("currentPartWithQuotation", currentPartWithQuotation)
     React.useEffect(() => {
@@ -452,7 +463,7 @@ const QuoteCreation: React.FC = () => {
             partID: Number(PartID),
         };
         //console.log("priceObi_temp", PriceObi_temp,supplierinfo.IsSme,typeof(supplierinfo.IsSme));
-        navigate("price-breakdown", { state: PriceObi_temp });
+        navigate("price-breakdown", {state: PriceObi_temp});
     };
 
     // 处理 Dropdown 值变化的函数
@@ -460,12 +471,12 @@ const QuoteCreation: React.FC = () => {
     const handleDropdownChange = (event: React.FormEvent<HTMLDivElement>, option?: IDropdownOption, props?: any, i?: any, columnObj?: any
     ): void => {
         console.log("Selected Option:", option?.text, "Row Data:", columnObj);
-        const obj = selectedItems.map((val) => ({ ...val }));
+        const obj = selectedItems.map((val) => ({...val}));
         obj[i][columnObj.fieldName] = option?.key;
         setSelectedItems(obj);
     };
 
-    const columns:IColumn[] = [
+    const columns: IColumn[] = [
         {
             key: "column1",
             name: t("Part Number"),
@@ -483,6 +494,7 @@ const QuoteCreation: React.FC = () => {
             name: t("Part Description"),
             fieldName: "PartDescription",
             minWidth: 150,
+            isResizable: true,
         },
         {
             key: "column4",
@@ -520,19 +532,33 @@ const QuoteCreation: React.FC = () => {
             fieldName: "Currency",
             minWidth: 100,
         },
-        { key: "column10", name: t("UOP"), fieldName: "UOP", minWidth: 100 },
-        // {
-        //     key: "column11",
-        //     name: t("Effective Date"),
-        //     fieldName: "EffectiveDate",
-        //     minWidth: 150,
-        // },
+        {key: "column10", name: t("UOP"), fieldName: "UOP", minWidth: 100},
+        {
+            key: "column11",
+            name: t("Expected Effective Date"),
+            fieldName: "EffectiveDateSupplier",
+            minWidth: 150,
+            onRender: (item) => {
+                return <span>{formatDate(currentRFQ?.EffectiveDateSupplier)}</span>
+            }
+        },
+        {
+            key: "column22",
+            name: t("Forecast Qty"),
+            fieldName: "ForecastQuantity",
+            minWidth: 120,
+        }, {
+            key: "column23",
+            name: t("Current Unit Price"),
+            fieldName: "CurrentUnitPrice",
+            minWidth: 120,
+        },
         {
             key: "column12",
             name: t("Part Status"),
             fieldName: "PartStatus",
             minWidth: 100,
-            onRender:(item) =>{
+            onRender: (item) => {
                 let displayStatus;
 
                 // 检查用户类型是否为 Guest
@@ -552,11 +578,12 @@ const QuoteCreation: React.FC = () => {
                 }
 
                 return <span>{displayStatus}</span>;
-            }},
+            }
+        },
         {
             key: "column13", name: t("Parma"), fieldName: "Parma", minWidth: 100,
             onRender: () => {
-                return <span >{currentRFQ?.Parma}</span>
+                return <span>{currentRFQ?.Parma}</span>
             }
         },
         {
@@ -573,7 +600,7 @@ const QuoteCreation: React.FC = () => {
             fieldName: "Action",
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onRender: (props: any) => {
-                console.log("props", props, userDetails);
+                // console.log("props", props, userDetails);
                 return (
                     <>
                         {
@@ -582,16 +609,16 @@ const QuoteCreation: React.FC = () => {
                         {userType === "Guest" &&
                         ["New", "Draft", "Returned"].includes(props.PartStatus) ? (
                             <button
-                                style={{ margin: "5px", width: "56px", border: 0 }}
+                                style={{margin: "5px", width: "56px", border: 0}}
                                 onClick={() => {
                                     navigateToPriceBreakDown(props.ID, props.QuotationID);
                                 }}
                             >
-                                <EditIcon />
+                                <EditIcon/>
                             </button>
                         ) : (
                             <button
-                                style={{ margin: "5px", width: "56px", border: 0 }}
+                                style={{margin: "5px", width: "56px", border: 0}}
                                 disabled={["New", "Draft"].includes(props.PartStatus)}
                             >
                                 <KnowledgeArticleIcon
@@ -617,7 +644,7 @@ const QuoteCreation: React.FC = () => {
             name: t("Order No."),
             fieldName: "OrderNumber",
             minWidth: 75,
-            styles: { root: { minHeight: "40px" } },
+            styles: {root: {minHeight: "40px"}},
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onRender: (props: any, i: any) => {
                 return (
@@ -627,8 +654,8 @@ const QuoteCreation: React.FC = () => {
                             handleInputChangeOrderno(newValue, props, i)
                         } // 输入框变化时处理函数
                         styles={{
-                            root: { width: "100%" }, // 输入框宽度与单元格匹配
-                            field: { padding: "0 4px" }, // 可选：调整内部样式
+                            root: {width: "100%"}, // 输入框宽度与单元格匹配
+                            field: {padding: "0 4px"}, // 可选：调整内部样式
                         }}
                     />
                 );
@@ -643,9 +670,9 @@ const QuoteCreation: React.FC = () => {
             onRender: (props: any, i: any, column: any) => {
                 // 定义 Dropdown 的选项
                 const options: IDropdownOption[] = [
-                    { key: "Std Text 1", text: "Std Text 1" },
-                    { key: "Option2", text: "Option 2" },
-                    { key: "Option3", text: "Option 3" },
+                    {key: "Std Text 1", text: "Std Text 1"},
+                    {key: "Option2", text: "Option 2"},
+                    {key: "Option3", text: "Option 3"},
                 ];
 
                 // 渲染 Dropdown 组件
@@ -676,9 +703,9 @@ const QuoteCreation: React.FC = () => {
             onRender: (props: any, i: any, column: any) => {
                 // 定义 Dropdown 的选项
                 const options: IDropdownOption[] = [
-                    { key: "Std Text 1", text: "Std Text 1" },
-                    { key: "Option2", text: "Option 2" },
-                    { key: "Option3", text: "Option 3" },
+                    {key: "Std Text 1", text: "Std Text 1"},
+                    {key: "Option2", text: "Option 2"},
+                    {key: "Option3", text: "Option 3"},
                 ];
 
                 // 渲染 Dropdown 组件
@@ -709,9 +736,9 @@ const QuoteCreation: React.FC = () => {
             onRender: (props: any, i: any, column: any) => {
                 // 定义 Dropdown 的选项
                 const options: IDropdownOption[] = [
-                    { key: "Std Text 1", text: "Std Text 1" },
-                    { key: "Option2", text: "Option 2" },
-                    { key: "Option3", text: "Option 3" },
+                    {key: "Std Text 1", text: "Std Text 1"},
+                    {key: "Option2", text: "Option 2"},
+                    {key: "Option3", text: "Option 3"},
                 ];
 
                 // 渲染 Dropdown 组件
@@ -744,13 +771,65 @@ const QuoteCreation: React.FC = () => {
                     <TextField
                         value={props.FreePartText} // 当前单元格的值
                         onChange={(event, newValue) => {
-                            const obj = selectedItems.map((val) => ({ ...val }));
+                            const obj = selectedItems.map((val) => ({...val}));
                             obj[i].FreePartText = newValue;
                             setSelectedItems(obj);
                         }} // 输入框变化时处理函数
                         styles={{
-                            root: { width: "100%" }, // 输入框宽度与单元格匹配
-                            field: { padding: "0 4px" }, // 可选：调整内部样式
+                            root: {width: "100%"}, // 输入框宽度与单元格匹配
+                            field: {padding: "0 4px"}, // 可选：调整内部样式
+                        }}
+                    />
+                );
+            },
+        },
+        {
+            key: "column22",
+            name: t("Reason Code"),
+            fieldName: "ReasonCode",
+            minWidth: 220,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onRender: (props: any, i: any, column: any) => {
+                // 定义 Dropdown 的选项
+                const options: IDropdownOption[] = REASON_CODE_OPTIONS
+
+                // 渲染 Dropdown 组件
+                return (
+                    <Dropdown
+                        selectedKey={props[column.fieldName]} // 传入当前选中的值
+                        options={options} // 传入选项
+                        onChange={(e, option) =>
+                            handleDropdownChange(e, option, props, i, column)
+                        }
+                        styles={{
+                            dropdown: {
+                                margin: "1px",
+                                border: "1px solid #cccccc",
+                                width: 120,
+                            },
+                        }}
+                    />
+                );
+            },
+        },
+        {
+            key: "column21",
+            name: t("CSDB Tag Number"),
+            fieldName: "CSDBTagNumber",
+            minWidth: 120,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            onRender: (props: any, i: any) => {
+                return (
+                    <TextField
+                        value={props.CSDBTagNumber} // 当前单元格的值
+                        onChange={(event, newValue) => {
+                            const obj = selectedItems.map((val) => ({...val}));
+                            obj[i].CSDBTagNumber = newValue;
+                            setSelectedItems(obj);
+                        }} // 输入框变化时处理函数
+                        styles={{
+                            root: {width: "100%"},
+                            field: {padding: "0 4px"},
                         }}
                     />
                 );
@@ -911,15 +990,15 @@ const QuoteCreation: React.FC = () => {
                     .then((a) => {
                         if (a) {
                             openHintePageDialog();
-                            setDialog({ isOpen: false });
+                            setDialog({isOpen: false});
                             setIsLoading(false);
-                            setDialog({ isOpen: false });
+                            setDialog({isOpen: false});
                             //setIsLoading(false)
                         } else {
                             setDialogTitle("Hint information");
                             setDialogSubText("Document Generation Failed");
                             openHintePageDialog();
-                            setDialog({ isOpen: false });
+                            setDialog({isOpen: false});
                             setIsLoading(false);
                         }
                     })
@@ -927,18 +1006,32 @@ const QuoteCreation: React.FC = () => {
                         console.log(e);
                     });
             } else {
-                setDialog({ isOpen: false });
+                setDialog({isOpen: false});
                 setIsLoading(false);
             }
-            // 关闭对话框
+
             // setDialog({isOpen: false});
             // setIsLoading(false)
-            await getPartWithQuotationByRFQID(ID)
-            await getRFQByID(ID);
+            //await getPartWithQuotationByRFQID(ID)
+            await Promise.all([
+                getPartWithQuotationByRFQID({
+                    rfqID: Number(ID),
+                    type: isPriceChangeOrder ? CONST.RFQTypePrice : CONST.RFQTypePart
+                }),
+                getRFQByID(ID && ID + ""),
+
+            ]);
+            //await getRFQByID(ID);
         } catch (error) {
             console.error("Error in changeRequisition method:", error);
         }
     };
+    // useEffect(() => {
+    //     // 默认选中前 10 条记录
+    //     if (paginatedItems.length > 0) {
+    //         selection.setItems(paginatedItems);
+    //     }
+    // }, [paginatedItems]);
 
     return (
         <Stack tokens={{childrenGap: 20}} styles={{
@@ -951,19 +1044,12 @@ const QuoteCreation: React.FC = () => {
                 margin: "0"
             }
         }}>
-            {/* Header */}
-            {/*<Text*/}
-            {/*    variant="xxLarge"*/}
-            {/*    style={{ backgroundColor: "#99CCFF", padding: "10px" }}*/}
-            {/*>*/}
-            {/*    {t("Creation of Quote")}*/}
-            {/*</Text>*/}
             <h2 className="mainTitle">{t("Creation of Quote")}</h2>
 
             {/* RFQ Basic Info */}
             <Stack
                 tokens={{childrenGap: 10}}
-                styles={{root: {border: "1px solid #0f6cbd", paddingLeft: 10,paddingRight:10}}}
+                styles={{root: {border: "1px solid #0f6cbd", paddingLeft: 10, paddingRight: 10}}}
             >
                 <Text variant="large">{t("RFQ Basic Info")}</Text>
                 <Stack horizontal tokens={{childrenGap: 100}}>
@@ -1007,12 +1093,18 @@ const QuoteCreation: React.FC = () => {
                                         {currentRFQ.SupplierName}
                                     </div>
                                 </div>
-                                <div className={classes.labelItem}>
-                                    <div className={classes.label}> {t("Order Type")}</div>
-                                    <div className={classes.labelValue}>
-                                        {currentRFQ?.OrderType}
-                                    </div>
-                                </div>
+                                {isPriceChangeOrder ?
+                                    <div className={classes.labelItem}>
+                                        <div className={classes.label}> {t("Expected Effective Date (Buyer)")}</div>
+                                        <div className={classes.labelValue}>
+                                            {formatDate(currentRFQ?.EffectiveDateBuyer)}
+                                        </div>
+                                    </div> : <div className={classes.labelItem}>
+                                        <div className={classes.label}> {t("Order Type")}</div>
+                                        <div className={classes.labelValue}>
+                                            {currentRFQ?.OrderType}
+                                        </div>
+                                    </div>}
                             </Stack>
                         </Stack>
                         <Label className={classes.label}>{t("RFQ Attachments")}</Label>
@@ -1120,7 +1212,7 @@ const QuoteCreation: React.FC = () => {
                             //horizontalAlign="space-between"
                             horizontalAlign="start"
                         >
-                            <div className={classes.labelItem} >
+                            <div className={classes.labelItem}>
                                 <div className={classes.label}> {t("Status")}</div>
                                 <div className={classes.labelValue}>
                                     {
@@ -1131,12 +1223,26 @@ const QuoteCreation: React.FC = () => {
                                     }
                                 </div>
                             </div>
-                            <div className={classes.labelItem} style={{ marginLeft: 100 }}>
+                            <div className={classes.labelItem} style={{marginLeft: 50}}>
                                 <div className={classes.label}>{t("Last Quote Date")}</div>
                                 <div className={classes.labelValue}>
                                     {formatDate(currentRFQ?.LatestQuoteDate)}
                                 </div>
                             </div>
+                            {isPriceChangeOrder && <div className={classes.labelItem} style={{marginLeft: 50}}>
+                                <div className={classes.label}>{t("Expected Effective Date (Supplier)")}</div>
+                                <div className={classes.labelValue}>
+                                    {/*{formatDate(currentRFQ?.LatestQuoteDate)}*/}
+                                    <DatePicker
+                                        value={selectedDate}
+                                        onSelectDate={onDateChange}
+                                        formatDate={formatDate}
+                                        disabled={!(userType === "Guest" && (["New", "Draft", "Returned"].includes(currentPartWithQuotation[0]?.PartStatus)))}
+                                    />
+
+
+                                </div>
+                            </div>}
                         </Stack>
                         <Stack tokens={{childrenGap: 10}} grow>
                             <TextField
@@ -1178,60 +1284,64 @@ const QuoteCreation: React.FC = () => {
                 <Text className="mainTitle" variant="large">
                     {t("Quote Breakdown Info")}
                 </Text>
-                <DetailsList
-                    items={paginatedItems}
-                    //items={currentPartWithQuotation}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    columns={columns.filter((item) => [
-                            "PartNumber",
-                            "Qualifier",
-                            "PartDescription",
-                            "MaterialUser",
-                            "PriceType",
-                            "PriceType",
-                            "AnnualQty",
-                            "OrderQty",
-                            "QuotedUnitPriceTtl",
-                            "Currency",
-                            "UOP",
-                            "EffectiveDate",
-                            "PartStatus",
-                            "LastCommentBy",
-                            "Action",
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        ].includes(item.fieldName as any)
-                    )}
-                    layoutMode={DetailsListLayoutMode.fixedColumns}
-                    selectionMode={SelectionMode.multiple}
-                    selection={selection}
-                    // styles={{
-                    //     root: {
-                    //         backgroundColor: "#FFFFFF",
-                    //         border: "1px solid #ddd",
-                    //         borderRadius: "4px",
-                    //     },
-                    //     headerWrapper: {
-                    //         backgroundColor: "#AFAFAF",
-                    //         selectors: {
-                    //             ".ms-DetailsHeader": {
-                    //                 backgroundColor: "#BDBDBD",
-                    //                 fontWeight: 600,
-                    //             },
-                    //         },
-                    //     },
-                    // }}
-                    styles={{
-                        root: theme.detaillist.root,
-                        contentWrapper: theme.detaillist.contentWrapper,
-                        headerWrapper: theme.detaillist.headerWrapper,
-                    }}
-                />
+                <div style={{height: '300px', overflowY: 'auto'}}>
+                    <DetailsList
+                        items={paginatedItems}
+                        //items={currentPartWithQuotation}
+                        columns={columns.filter((item) => {
+                            const isIncluded = isPriceChangeOrder
+                                ? [
+                                    "PartNumber",
+                                    "Qualifier",
+                                    "PartDescription",
+                                    "MaterialUser",
+                                    "ForecastQuantity",
+                                    "Currency",
+                                    "UOP",
+                                    "CurrentUnitPrice",
+                                    "QuotedUnitPriceTtl",
+                                    // "EffectiveDate",
+                                    "PartStatus",
+                                    "LastCommentBy",
+                                    "Action"
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                ].includes(item.fieldName as any)
+                                : [
+                                    "PartNumber",
+                                    "Qualifier",
+                                    "PartDescription",
+                                    "MaterialUser",
+                                    "PriceType",
+                                    "AnnualQty",
+                                    "OrderQty",
+                                    "QuotedUnitPriceTtl",
+                                    "Currency",
+                                    "UOP",
+                                    "EffectiveDate",
+                                    "PartStatus",
+                                    "LastCommentBy",
+                                    "Action"
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                ].includes(item.fieldName as any);
+
+                            return isIncluded;
+                        })}
+                        layoutMode={DetailsListLayoutMode.fixedColumns}
+                        selectionMode={isPriceChangeOrder ? SelectionMode.none : SelectionMode.multiple}
+                        selection={selection}
+                        styles={{
+                            root: theme.detaillist.root,
+                            contentWrapper: theme.detaillist.contentWrapper,
+                            headerWrapper: theme.detaillist.headerWrapper,
+                        }}
+                    />
+                </div>
                 {/* 分页控件 */}
-                <Stack
+                {!isPriceChangeOrder && <Stack
                     horizontal
                     horizontalAlign="space-between"
                     verticalAlign="center"
-                    tokens={{ childrenGap: 10 }}
+                    tokens={{childrenGap: 10}}
                     styles={{
                         root: {
 
@@ -1241,7 +1351,7 @@ const QuoteCreation: React.FC = () => {
                     }}
                 >
                     <IconButton
-                        iconProps={{ iconName: "DoubleChevronLeft" }}
+                        iconProps={{iconName: "DoubleChevronLeft"}}
                         title="First Page"
                         ariaLabel="First Page"
                         disabled={currentPage === 1}
@@ -1263,7 +1373,7 @@ const QuoteCreation: React.FC = () => {
                         }}
                     />
                     <IconButton
-                        iconProps={{ iconName: "ChevronLeft" }}
+                        iconProps={{iconName: "ChevronLeft"}}
                         title="Previous Page"
                         ariaLabel="Previous Page"
                         disabled={currentPage === 1}
@@ -1284,11 +1394,11 @@ const QuoteCreation: React.FC = () => {
                             },
                         }}
                     />
-                    <Label styles={{ root: { alignSelf: "center" } }}>
+                    <Label styles={{root: {alignSelf: "center"}}}>
                         Page {currentPage} of {totalPages}
                     </Label>
                     <IconButton
-                        iconProps={{ iconName: "ChevronRight" }}
+                        iconProps={{iconName: "ChevronRight"}}
                         title="Next Page"
                         ariaLabel="Next Page"
                         disabled={currentPage === totalPages}
@@ -1310,7 +1420,7 @@ const QuoteCreation: React.FC = () => {
                         }}
                     />
                     <IconButton
-                        iconProps={{ iconName: "DoubleChevronRight" }}
+                        iconProps={{iconName: "DoubleChevronRight"}}
                         title="Last Page"
                         ariaLabel="Last Page"
                         disabled={currentPage === totalPages}
@@ -1331,7 +1441,7 @@ const QuoteCreation: React.FC = () => {
                             },
                         }}
                     />
-                </Stack>
+                </Stack>}
 
 
             </Stack>
@@ -1356,18 +1466,37 @@ const QuoteCreation: React.FC = () => {
                     <DefaultButton
                         text={t("Excel Download")}
                         styles={buttonStyles}
-                        disabled={selectedItems.length === 0}
-                        onClick={() =>
-                            exportToExcel(
-                                selectedItems,
-                                Site_Relative_Links,
-                                currentRFQ,
-                                currentPartWithQuotation
-                                //currentRFQRequisitions
+                        disabled={(!(isPriceChangeOrder || (selectedItems.length > 0)))}
 
-                            )
+                        onClick={async () => {
+                            const currentPartWithQuotationDup = deepCopy<unknown>(currentPartWithQuotation as unknown)
+                            // 更新 RFQ 数据
+                            const ID = state.selectedItems[0]?.ID;
+                            if (isPriceChangeOrder) {
+                                await Promise.all([
+                                    getPartWithQuotationByRFQID({
+                                        rfqID: Number(ID),
+                                        type: isPriceChangeOrder ? CONST.RFQTypePrice : CONST.RFQTypePart
+                                    }),
+                                    getRFQByID(ID && ID + ""),
+
+                                ]);
+                                await Pricedownloadexcel(
+                                    Site_Relative_Links,
+                                    currentRFQ,
+                                    currentPartWithQuotationDup as IUDGSNegotiationPartQuotationGridModel[])
+                            } else {
+                                await exportToExcel(
+                                    selectedItems,
+                                    Site_Relative_Links,
+                                    currentRFQ,
+                                    currentPartWithQuotation
+                                    //currentRFQRequisitions
+
+                                )
+                            }
                         }
-                    />
+                        }/>
                     {userType !== "Guest" && <DefaultButton
                         text={t("Accept")}
                         onClick={() => {
@@ -1421,27 +1550,41 @@ const QuoteCreation: React.FC = () => {
                 {userType !== "Guest" && <DefaultButton
                     text={t("Proceed to PO Creation")}
                     onClick={() => {
-                        setDialog({
-                            isOpen: true,
-                            title: t("Proceed to PO Creation"),
-                            tip: t(
-                                "Fields (i.e. “Order No.”) will follow UD-GPS default set up if no designated input/selection. " +
-                                "Refer to UD-GPS screen 9.2.18 for Standard Text Contents."
-                            ),
-                            isProceed: true,
-                            selectedItems: selectedItems || [],
-                        });
+                        if (isPriceChangeOrder) {
+                            setDialog({
+                                isOpen: true,
+                                title: t("Proceed to PO Creation"),
+                                tip: t(
+                                    "Fields (i.e. “Order No.”) will follow UD-GPS default set up if no designated input/selection. " +
+                                    "Refer to UD-GPS screen 9.2.18 for Standard Text Contents."
+                                ),
+                                isProceed: true,
+                                selectedItems: currentPartWithQuotation || [],
+                                isPriceChangeOrder: true
+                            })
+                        } else {
+                            setDialog({
+                                isOpen: true,
+                                title: t("Proceed to PO Creation"),
+                                tip: t(
+                                    "Fields (i.e. “Order No.”) will follow UD-GPS default set up if no designated input/selection. " +
+                                    "Refer to UD-GPS screen 9.2.18 for Standard Text Contents."
+                                ),
+                                isProceed: true,
+                                selectedItems: selectedItems || [],
+                            })
+                        }
                     }}
                     //                onClick={() => Download(selectedItems, Site_Relative_Links, currentRFQ, currentRFQRequisitions)}
                     styles={PObuttonStyles}
-                    disabled={
-                        selectedItems.length === 0 ||
-                        !selectedItems.every(
-                            (item) =>
-                                item.PartStatus === "Accepted" &&
-                                String(item.Handler) === String(userDetails.handlercode)
-                        )
-                    }
+                    // disabled={
+                    //     selectedItems.length === 0 ||
+                    //     !selectedItems.every(
+                    //         (item) =>
+                    //             item.PartStatus === "Accepted" &&
+                    //             String(item.Handler) === String(userDetails.handlercode)
+                    //     )
+                    // }
                 />}
             </Stack>
 
@@ -1459,37 +1602,23 @@ const QuoteCreation: React.FC = () => {
                 minWidth={800}
             >
                 <span style={{marginBottom: 10}}>{dialog.tip}</span>
-                <DetailsList
-                    items={selectedItems || []} //dialog.selectedItems
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                {!isPriceChangeOrder || (isPriceChangeOrder && dialog.isProceed) && <DetailsList
+                    items={(isPriceChangeOrder ? [{ Parma: currentRFQ.Parma,
+                        EffectiveDateSupplier:currentRFQ.EffectiveDateSupplier,
+                        ReasonCode: (currentPartWithQuotation as unknown as IUDGSNegotiationPartQuotationGridModel[])[0].ReasonCode,
+                        CSDBTagNumber:(currentPartWithQuotation as unknown as IUDGSNegotiationPartQuotationGridModel[])[0].CSDBTagNumber}] : selectedItems) || []} //dialog.selectedItems
+
                     columns={
-                        dialog.isProceed
-                            ? columns.filter((item) =>
-                                [
-                                    "PartNumber",
-                                    "Qualifier",
-                                    "PartDescription",
-                                    "MaterialUser",
-                                    "Parma",
-                                    "FirstLot",
-                                    "OrderNumber",
-                                    "StandardOrderText1",
-                                    "StandardOrderText2",
-                                    "StandardOrderText3",
-                                    "FreePartText",
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                ].includes(item.fieldName as any)
-                            )
-                            : columns.filter((item) =>
-                                [
-                                    "PartNumber",
-                                    "Qualifier",
-                                    "PartDescription",
-                                    "MaterialUser",
-                                    "QuotedUnitPriceTtl",
-                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                ].includes(item.fieldName as any)
-                            )
+                        dialog.isProceed && dialog.isPriceChangeOrder
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            ? columns.filter((item) => columnSetPriceProceed.includes(item.fieldName as any))
+                            : dialog.isProceed
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                ? columns.filter((item) => columnSetPartProceed.includes(item.fieldName as any))
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                : columns.filter((item) => columnSetPart.includes(item.fieldName as any))
+
+
                     }
                     layoutMode={DetailsListLayoutMode.justified}
                     selectionMode={0} // Disable selection mode on DetailsList
@@ -1519,7 +1648,7 @@ const QuoteCreation: React.FC = () => {
                             },
                         },
                     }}
-                />
+                />}
 
                 {dialog.isInput && (
                     <Stack style={{marginBottom: 10}}>
@@ -1539,8 +1668,12 @@ const QuoteCreation: React.FC = () => {
                         text={t("Cancel")}
                     />
                     <PrimaryButton
-                        onClick={() => {
-                            if (returncomments.length === 0 && dialog.isProceed) {
+                        onClick={async () => {
+                            if (returncomments.length === 0 && dialog.isProceed && isPriceChangeOrder) {
+                                const currentPartWithQuotationDup = deepCopy<unknown>(currentPartWithQuotation as unknown)
+                                await updateListItems(currentPartWithQuotationDup as IUDGSNegotiationPartQuotationGridModel[])
+                                await pricePOGenerateFile(Site_Relative_Links,currentRFQ,currentPartWithQuotationDup as IUDGSNegotiationPartQuotationGridModel[])
+                            } else if (returncomments.length === 0 && dialog.isProceed) {
                                 changeRequisition("Sent to GPS", "").then(
                                     (_) => _,
                                     (e) => console.log(e)

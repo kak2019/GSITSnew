@@ -24,6 +24,8 @@ import {
   ISupplierRequestSubItemFormModel,
   ISupplierRequestSubItem,
 } from "../model/priceChange";
+import { getENegotiationRequestListAction } from "../features/eNegotiation";
+import { IENegotiationRequest } from "../model/eNegotiation";
 
 type PriceChangeOperators = [
   isFetching: boolean,
@@ -65,8 +67,7 @@ export const usePriceChange = (): Readonly<PriceChangeOperators> => {
     async (
       query: ISupplierRequestCreteriaModel
     ): Promise<ISupplierRequest[]> => {
-      // 筛选条件除了responsible buyer字段，其他的都在supplier request表上有，只有responsible buyer需要特殊处理
-      // ResponsibleBuyer参数是‘porg handler'
+      // ResponsibleBuyer param is ‘porg handler'
       const tempQuery = { ...query };
       if (query.ResponsibleBuyer) {
         const splitResponsibleBuyer = query.ResponsibleBuyer.split(" ");
@@ -75,7 +76,7 @@ export const usePriceChange = (): Readonly<PriceChangeOperators> => {
         }
         const Porg = splitResponsibleBuyer[0];
         const Handler = Number(splitResponsibleBuyer[1]);
-        // 先去subitem表查
+        // fitst search subitems
         const subitemsResult = await dispatch(
           getSupplierRequestSubitemListByFilterAction({ Porg, Handler })
         );
@@ -87,7 +88,7 @@ export const usePriceChange = (): Readonly<PriceChangeOperators> => {
           const supplierRequestIds = subitemsResult.payload.map((item) =>
             Number(item.RequestIDRef)
           );
-          // 处理query
+          // handle query
           tempQuery.IDS = supplierRequestIds;
         } else {
           throw new Error("Error Get Supplier Request List");
@@ -115,9 +116,41 @@ export const usePriceChange = (): Readonly<PriceChangeOperators> => {
   );
   const getSupplierRequestSubitemList = useCallback(
     async (id: string): Promise<ISupplierRequestSubItem[]> => {
-      const result = await dispatch(getSupplierRequestSubitemListAction(id));
-      if (getSupplierRequestSubitemListAction.fulfilled.match(result)) {
-        return result.payload as ISupplierRequestSubItem[];
+      const subitemsResult = await dispatch(
+        getSupplierRequestSubitemListAction(id)
+      );
+      if (getSupplierRequestSubitemListAction.fulfilled.match(subitemsResult)) {
+        const tempSubitemsResult =
+          subitemsResult.payload as ISupplierRequestSubItem[];
+        const eNegotiationListResult = await dispatch(
+          getENegotiationRequestListAction({
+            SupplierRequestID: id,
+          })
+        );
+        if (
+          getENegotiationRequestListAction.fulfilled.match(
+            eNegotiationListResult
+          )
+        ) {
+          const tempENegotiationListResult =
+            eNegotiationListResult.payload as IENegotiationRequest[];
+          const mapping: Record<string, string> = {};
+          tempENegotiationListResult.forEach((item) => {
+            if (item.RFQNo) {
+              const key = `${item.Porg} ${item.Handler}`;
+              mapping[key] = item.RFQNo;
+            }
+          });
+          tempSubitemsResult.forEach((item) => {
+            const key = `${item.Porg} ${item.Handler}`;
+            if (mapping[key]) {
+              item.RFQNo = mapping[key];
+            }
+          });
+          return tempSubitemsResult;
+        } else {
+          throw new Error("Error Get Supplier Request Subitem List");
+        }
       } else {
         throw new Error("Error Get Supplier Request Subitem List");
       }

@@ -51,7 +51,6 @@ export const getUserRoleAction = createAsyncThunk(
   `${FeatureKey.USERROLES}/getUserRole`,
   async (): Promise<IUserRole[]> => {
     const sp = spfi(getSP());
-
     try {
       let items: IUserRole[] = [];
       let hasNext = true;

@@ -194,7 +194,7 @@ const Requisition: React.FC = () => {
 
     // 跳转到 Create RFQ 页面，并传递选中的记录
     const handleCreateRFQ = (): void => {
-        navigate("/requisition/create-rfq", {state: {selectedItems, userDetails}});
+        navigate("/requisition/create-rfq", {state: {selectedItems, userDetails,type:"Part"}});
     };
 
     // 切换搜索区域的显示状态

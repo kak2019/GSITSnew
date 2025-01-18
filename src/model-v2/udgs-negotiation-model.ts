@@ -26,6 +26,61 @@ export interface IUDGSNegotiationPartGridModel {
   SystemPartID: string;
   Unit: number;
   Ver: number;
+  Handler:string;
+  // UOP:string;
+}
+export interface IUDGSNegotiationPartQuotationGridModel extends IUDGSNegotiationPartGridModel {
+  QuotationID: number;
+  QuotationModified: Date;
+  PriceType: string;
+  QuotedUnitPriceTtl: string;
+  Currency: string;
+  UOP: string;
+  EffectiveDate?: Date;
+  CommentHistory: string;
+  LastCommentBy: string;
+  StandardOrderText1: string;
+  StandardOrderText2: string;
+  StandardOrderText3: string;
+  FreePartText: string;
+  NamedPlace: string;
+  NamedPlaceDescription: string;
+  CountryofOrigin: string;
+  OrderCoverageTime: number;
+  FirstLot: string;
+  SupplierPartNumber: string;
+  QuotedToolingPriceTtl: string;
+  QuotedOneTimePaymentTtl: string;
+  MaterialsCostsTtl: string;
+  PurchasedPartsCostsTtl: string;
+  ProcessingCostsTtl: string;
+  ToolingJigDeprCostTtl: string;
+  AdminExpProfit: string;
+  Other: string;
+  QuotedBasicUnitPriceTtl: string;
+  PaidProvPartsCost: string;
+  SuppliedMtrCost: string;
+  PackingandDistributionCosts: string;
+  SurfaceTreatmentCode: string;
+  OrderPriceStatusCode: string;
+  OrderNumber: string;
+  PartNumber: string;
+  Qualifier: string;
+  ID: number;
+  Parma:string;
+  CurrentUnitPrice:string;
+  CurrentMaterialsCostsTtl:string;
+  CurrentPurchasedPartsCostsTtl:string;
+  CurrentProcessingCostsTtl:string;
+  CurrentToolingJigDeprCostTtl:string;
+  CurrentAdminExpProfit:string;
+  CurrentPackingAndDistributionCos:string;
+  PackingAndDistributionCosts:string;
+  CurrentOther:string;
+  CurrentPaidProvPartsCost:string;
+  CurrentSuppliedMtrCost:string;
+  ReasonCode:string;
+  CSDBTagNumber:string
 }
 export interface IUDGSNegotiationPartFormModel {
   ID: number;

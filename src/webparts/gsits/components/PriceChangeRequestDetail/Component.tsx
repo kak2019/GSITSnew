@@ -81,7 +81,7 @@ export const TextfieldItem: React.FC<TextfieldItemProps> = ({
       {/* <div className={styles.basicInfoItemLabel}>{itemLabel}</div> */}
       <div>
         <TextField
-          placeholder="Please input"
+          placeholder="Please Input"
           label={itemLabel}
           value={itemValue}
           required={required}

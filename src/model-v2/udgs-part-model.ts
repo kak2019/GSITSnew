@@ -86,6 +86,8 @@ export interface IUDGSNewPartQuotationGridModel extends IUDGSNewPartGridModel {
   Qualifier?: string;
   ID: number;
   Parma?:string;
+  CurrentUnitPrice:string;
+
 }
 export interface IUDGSPricePartQuotationGridModel extends IUDGSNewPartGridModel {
   QuotationID: number;

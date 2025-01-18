@@ -24,59 +24,56 @@ import {
 } from "@fluentui/react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
-import AppContext from "../../../../AppContext";
-import { usePriceBreakdownNegotiation } from "../../../../hooks-v3/use-pricebreakdown-negotiation";
 import {
   IPCActionLogColumn,
-  IPCDialogValue,
-  IPCMasterData,
-  IPCTextFieldRowPriceBreakdown,
-  PCAutoSumQuotedBasicUnitPriceTtlFields,
   PCAutoSumQuotedUnitPriceTtlFields,
   PCBasicInfo,
   PCNumberValidationFields,
   PCQuoteBreakdownInfoEdit,
   PCQuoteBreakdownInfoView,
-} from "./IPriceChangePriceBreakDown";
-import {
-  IUDGSQuotationFormModel,
-  IUDGSQuotationGridModel,
-} from "../../../../model-v2/udgs-quotation-model";
-import { IUDGSAttachmentGridModel } from "../../../../model-v2/udgs-attachment-model";
-import { IUDGSCommentModel } from "../../../../model-v2/udgs-comment-model";
-import { IUDGSRFQGridModel } from "../../../../model-v2/udgs-rfq-model";
-import { IUDGSNegotiationPartGridModel } from "../../../../model-v2/udgs-negotiation-model";
-import {
-  deepCopy,
-  getDecimalPlace,
-  parseDateFormat,
-  parseNumberOptional,
-} from "../../../../common/commonHelper";
-import { IUDGSActionlogGridModel } from "../../../../model-v2/udgs-actionlog-model";
-import { priceChangePriceBreakdownStyles } from "../../../../config/theme";
+} from "./const";
 import "./index.css";
+import { usePriceBreakdownNegotiationSP } from "./use-pricebreakdown-negotiation-sp";
+import { usePriceBreakdownNegotiation } from "./use-pricebreakdown-negotiation";
+import AppContext from "../../../../AppContext";
+import {
+  IPCDialogValue,
+  IPCMasterData,
+  IPCTextFieldRowPriceBreakdown,
+} from "./IPriceChangePriceBreakDown";
+import { deepCopy, parseDateFormat } from "../../../../common/commonHelper";
+import { priceChangePriceBreakdownStyles } from "../../../../config/theme";
+import {
+  IUDGSActionlogGridModel,
+  IUDGSAttachmentGridModel,
+  IUDGSCommentModel,
+  IUDGSNegotiationPartGridModel,
+  IUDGSQuotationGridModel,
+  IUDGSRFQGridModel,
+} from "../../../../model-v2";
 
 const PriceChangePriceBreakDown: React.FC = () => {
   //#region properties
+  const hooksSP = usePriceBreakdownNegotiationSP();
   const hooks = usePriceBreakdownNegotiation();
   const { t } = useTranslation();
   const ctx = useContext(AppContext);
   const navigate = useNavigate();
   const MAX_FILE_SIZE = 10 * 1024 * 1024;
   const location = useLocation();
-  const masterData: IPCMasterData = location.state;
-  // console.log(location.state);
-  // const masterData: IPCMasterData = {
-  //   role: "Supplier",
-  //   rfqID: 2,
-  //   partID: 3,
-  //   quotationID: 17,
-  //   supplierId: "111",
-  //   userName: "Rodger Ruan",
-  //   userEmail: "rodger.ruan@udtrucks.com",
-  //   isSME: true,
-  //   countryCode: "CN",
-  // };
+  //const masterData: IPCMasterData = location.state;
+  console.log(location.state);
+  const masterData: IPCMasterData = {
+    role: "Supplier",
+    rfqID: 2,
+    partID: 3,
+    quotationID: 17,
+    supplierId: "111",
+    userName: "Rodger Ruan",
+    userEmail: "rodger.ruan@udtrucks.com",
+    isSME: true,
+    countryCode: "CN",
+  };
   const [isDirty, setIsDirty] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isEditable, setIsEditable] = React.useState(false);
@@ -90,6 +87,9 @@ const PriceChangePriceBreakDown: React.FC = () => {
     {} as IUDGSNegotiationPartGridModel
   );
   const [quotationValue, setQuotationValue] = React.useState(
+    {} as IUDGSQuotationGridModel
+  );
+  const [currentQuotationValue, setCurrentQuoataionValue] = React.useState(
     {} as IUDGSQuotationGridModel
   );
   const [rfqValue, setRFQValue] = React.useState({} as IUDGSRFQGridModel);
@@ -113,36 +113,19 @@ const PriceChangePriceBreakDown: React.FC = () => {
     const dataInitialLoad = async (): Promise<void> => {
       try {
         setIsLoading(true);
-        const initialData = await hooks.getInitiateData(
+        const initialData = await hooksSP.getInitiateData(
           masterData.rfqID,
           masterData.partID,
           masterData.quotationID
-        );
-        const commentHistoryArray = initialData.quotationValue.CommentHistory
-          ? JSON.parse(initialData.quotationValue.CommentHistory).map(
-              (item: IUDGSCommentModel) => {
-                return {
-                  ...item,
-                  CommentDate: new Date(item.CommentDate),
-                } as IUDGSCommentModel;
-              }
-            )
-          : [];
-        commentHistoryArray.sort(
-          (a: IUDGSCommentModel, b: IUDGSCommentModel) => {
-            return (
-              new Date(b.CommentDate).getTime() -
-              new Date(a.CommentDate).getTime()
-            );
-          }
         );
         setIsEditable(masterData.role === "Supplier");
         setRFQValue(deepCopy(initialData.rfqValue));
         setPartValue(deepCopy(initialData.partValue));
         setQuotationValue(deepCopy(initialData.quotationValue));
+        setCurrentQuoataionValue(deepCopy(initialData.quotationValue));
         setAttachmentsValue(deepCopy(initialData.attachmentValue));
         setActionlogValue(deepCopy(initialData.actionlogValue));
-        setCommentHistoryValue(commentHistoryArray);
+        setCommentHistoryValue(initialData.commentHistoryValue);
       } catch (err) {
         console.log(err);
         setIsLoading(false);
@@ -157,19 +140,19 @@ const PriceChangePriceBreakDown: React.FC = () => {
         setIsLoading(false);
       });
   }, []);
-  const onChangeTextField = (
+  const onChangeTextField = async (
     event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
     fieldName: keyof IUDGSQuotationGridModel,
     newValue?: string
-  ): void => {
-    fieldUpdate(fieldName, newValue);
+  ): Promise<void> => {
+    await fieldUpdate(fieldName, newValue);
   };
-  const onChangeDropDown = (
+  const onChangeDropDown = async (
     event: React.FormEvent<HTMLDivElement>,
     item: IDropdownOption,
     fieldName: keyof IUDGSQuotationGridModel
-  ): void => {
-    fieldUpdate(fieldName, item.key as string);
+  ): Promise<void> => {
+    await fieldUpdate(fieldName, item.key as string);
   };
   const onUploadFile = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const files = event.target.files;
@@ -202,28 +185,25 @@ const PriceChangePriceBreakDown: React.FC = () => {
     }
     setIsDirty(true);
   };
-  const onDownLoadFile = (downloadFile: File): void => {
-    const url = URL.createObjectURL(downloadFile);
+  const onDownLoadFile = (file: File): void => {
+    const url = URL.createObjectURL(file);
     const a = document.createElement("a");
     a.href = url;
-    a.download = downloadFile.name;
+    a.download = file.name;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-  const onRemoveFile = (
-    fileToRemove: IUDGSAttachmentGridModel,
-    index: number
-  ): void => {
-    if (!!fileToRemove.FileID) {
+  const onRemoveFile = (fileID: string, index: number): void => {
+    if (!!fileID) {
       const attachmentsToBeRemovedValueDup = deepCopy(
         removedAttachmentIdsValue
       );
-      attachmentsToBeRemovedValueDup.push(fileToRemove.FileID);
+      attachmentsToBeRemovedValueDup.push(fileID);
       setRemovedAttachmentIdsValue(attachmentsToBeRemovedValueDup);
     }
-    const attachmentsValueDup = [...attachmentsValue];
+    const attachmentsValueDup = deepCopy(attachmentsValue);
     attachmentsValueDup.splice(index, 1);
     setAttachmentsValue(attachmentsValueDup);
   };
@@ -237,14 +217,14 @@ const PriceChangePriceBreakDown: React.FC = () => {
   const onPostComment = async (): Promise<void> => {
     if (quotationCommentValue) {
       const commentHistoryValueDup = deepCopy(commentHistoryValue);
-      commentHistoryValueDup.push({
+      commentHistoryValueDup.unshift({
         CommentDate: new Date(),
         CommentBy: masterData.userName ?? "",
         CommentText: quotationCommentValue,
         CommentType: "Common",
       } as IUDGSCommentModel);
       setCommentHistoryValue(commentHistoryValueDup);
-      const updatedData = await hooks.postComment(
+      const updatedData = await hooksSP.postComment(
         partValue.ID,
         quotationValue.ID,
         quotationValue.Modified,
@@ -271,7 +251,7 @@ const PriceChangePriceBreakDown: React.FC = () => {
     handleReturn();
   };
   const onClickSaveBtn = async (): Promise<void> => {
-    await save().then(() => {
+    await handleSave().then(() => {
       setDialogValue({
         IsOpen: true,
         Title: t("Submit Success"),
@@ -497,6 +477,13 @@ const PriceChangePriceBreakDown: React.FC = () => {
                                         onWheel={(event) => {
                                           event.currentTarget.blur();
                                         }}
+                                        placeholder={
+                                          fieldData.ShowCurrent
+                                            ? currentQuotationValue[
+                                                fieldData.Key! as keyof IUDGSQuotationGridModel
+                                              ]?.toString()
+                                            : ""
+                                        }
                                         disabled={fieldData.ReadOnly}
                                       />
                                     ) : (
@@ -547,7 +534,7 @@ const PriceChangePriceBreakDown: React.FC = () => {
                                         </div>
                                         <div className="pcpb--flex">
                                           <span className="pcpb__form__field__value--current">
-                                            {quotationValue[
+                                            {currentQuotationValue[
                                               fieldData.Key! as keyof IUDGSQuotationGridModel
                                             ]?.toString()}
                                           </span>
@@ -573,37 +560,10 @@ const PriceChangePriceBreakDown: React.FC = () => {
   };
   //#endregion
   //#region methods
-  function getDecimalFactor(
-    NewValue: IUDGSQuotationGridModel,
-    Field: "QBUPT" | "QUPT"
-  ): number {
-    let decimalPlaces: number[] = [];
-    if (Field === "QBUPT") {
-      decimalPlaces = PCAutoSumQuotedBasicUnitPriceTtlFields.map((field) =>
-        getDecimalPlace(NewValue[field].toString())
-      );
-    }
-    if (Field === "QUPT") {
-      decimalPlaces = PCAutoSumQuotedUnitPriceTtlFields.map((field) =>
-        getDecimalPlace(NewValue[field].toString())
-      );
-    }
-    if (decimalPlaces.length > 0) {
-      return 10 ** Math.max(...decimalPlaces);
-    }
-    return 1;
-  }
-  function calculateField(
-    newValue: IUDGSQuotationGridModel,
-    fieldName: keyof IUDGSQuotationGridModel,
-    factor: number
-  ): number {
-    return newValue[fieldName] ? Number(newValue[fieldName]) * factor : 0;
-  }
-  function fieldUpdate(
+  async function fieldUpdate(
     fieldName: keyof IUDGSQuotationGridModel,
     newValue?: string
-  ): void {
+  ): Promise<void> {
     if (
       PCNumberValidationFields.filter((i) => i.Field === fieldName).length > 0
     ) {
@@ -629,44 +589,10 @@ const PriceChangePriceBreakDown: React.FC = () => {
       ...currentQuotationValueDup,
       [fieldName]: newValue,
     } as IUDGSQuotationGridModel;
-    const factorNumberQBUPT = getDecimalFactor(
-      currentQuotationValueDup,
-      "QBUPT"
-    );
-    const factorNumberQUPT = getDecimalFactor(currentQuotationValueDup, "QUPT");
-    if (
-      PCAutoSumQuotedBasicUnitPriceTtlFields.indexOf(
-        fieldName as keyof IUDGSQuotationGridModel
-      ) !== -1
-    ) {
-      let resultQBUPT: number = 0;
-      PCAutoSumQuotedBasicUnitPriceTtlFields.forEach((fieldName) => {
-        resultQBUPT += calculateField(
-          currentQuotationValueDup,
-          fieldName,
-          factorNumberQBUPT
-        );
-      });
-      currentQuotationValueDup.QuotedBasicUnitPriceTtl = (
-        resultQBUPT / factorNumberQBUPT
-      ).toFixed(3);
-    }
-    if (
-      PCAutoSumQuotedUnitPriceTtlFields.indexOf(
-        fieldName as keyof IUDGSQuotationGridModel
-      ) !== -1
-    ) {
-      let resultQUPT: number = 0;
-      PCAutoSumQuotedUnitPriceTtlFields.forEach((fieldName) => {
-        resultQUPT += calculateField(
-          currentQuotationValueDup,
-          fieldName,
-          factorNumberQUPT
-        );
-      });
-      currentQuotationValueDup.QuotedUnitPriceTtl = (
-        resultQUPT / factorNumberQUPT
-      ).toFixed(3);
+    if (PCAutoSumQuotedUnitPriceTtlFields.indexOf(fieldName) !== -1) {
+      currentQuotationValueDup = await hooks.quotationCalculation(
+        currentQuotationValueDup
+      );
     }
     setQuotationValue(currentQuotationValueDup);
     setIsDirty(true);
@@ -689,11 +615,15 @@ const PriceChangePriceBreakDown: React.FC = () => {
     ];
     navigate("/rfq/quotation", { state: { selectedItems } });
   }
-  async function save(): Promise<void> {
+  async function handleSave(): Promise<void> {
     setIsLoading(true);
+    const quotationFormValue = await hooks.quotationGridToForm(
+      quotationValue,
+      partValue.ID
+    );
     try {
-      const newModifiedDate = await hooks.saveData(
-        quotationMapForm(),
+      const newModifiedDate = await hooksSP.saveData(
+        quotationFormValue,
         partValue,
         attachmentsValue,
         removedAttachmentIdsValue
@@ -708,55 +638,6 @@ const PriceChangePriceBreakDown: React.FC = () => {
       console.log(err);
       setIsLoading(false);
     }
-  }
-  function quotationMapForm(): IUDGSQuotationFormModel {
-    return {
-      ID: quotationValue.ID,
-      Modified: quotationValue.Modified,
-      ContentTypeId: quotationValue.ContentTypeId,
-      NamedPlace: quotationValue.NamedPlace,
-      NamedPlaceDescription: quotationValue.NamedPlaceDescription,
-      SurfaceTreatmentCode: quotationValue.SurfaceTreatmentCode,
-      CountryOfOrigin: quotationValue.CountryOfOrigin,
-      OrderCoverageTime: parseNumberOptional(
-        quotationValue.OrderCoverageTime.toString()
-      ),
-      FirstLot: quotationValue.FirstLot,
-      SupplierPartNumber: quotationValue.SupplierPartNumber,
-      Currency: quotationValue.Currency,
-      MaterialsCostsTtl: parseNumberOptional(quotationValue.MaterialsCostsTtl),
-      PaidProvPartsCost: parseNumberOptional(quotationValue.PaidProvPartsCost),
-      QuotedUnitPriceTtl: parseNumberOptional(
-        quotationValue.QuotedUnitPriceTtl
-      ),
-      PurchasedPartsCostsTtl: parseNumberOptional(
-        quotationValue.PurchasedPartsCostsTtl
-      ),
-      SuppliedMtrCost: parseNumberOptional(quotationValue.SuppliedMtrCost),
-      UOP: quotationValue.UOP,
-      ProcessingCostsTtl: parseNumberOptional(
-        quotationValue.ProcessingCostsTtl
-      ),
-      OrderPriceStatusCode: quotationValue.OrderPriceStatusCode,
-      ToolingJigDeprCostTtl: parseNumberOptional(
-        quotationValue.ToolingJigDeprCostTtl
-      ),
-      QuotedToolingPriceTtl: parseNumberOptional(
-        quotationValue.QuotedToolingPriceTtl
-      ),
-      AdminExpProfit: parseNumberOptional(quotationValue.AdminExpProfit),
-      QuotedOneTimePaymentTtl: parseNumberOptional(
-        quotationValue.QuotedOneTimePaymentTtl
-      ),
-      PackingAndDistributionCosts: parseNumberOptional(
-        quotationValue.PackingAndDistributionCosts
-      ),
-      Other: parseNumberOptional(quotationValue.Other),
-      QuotedBasicUnitPriceTtl: parseNumberOptional(
-        quotationValue.QuotedBasicUnitPriceTtl
-      ),
-      PartIDRef: partValue.ID,
-    };
   }
   //#endregion
   return (
@@ -936,7 +817,7 @@ const PriceChangePriceBreakDown: React.FC = () => {
                           {val.Name}
                         </Link>
                         {isEditable && (
-                          <Link onClick={() => onRemoveFile(val, i)}>
+                          <Link onClick={() => onRemoveFile(val.FileID!, i)}>
                             Remove
                           </Link>
                         )}

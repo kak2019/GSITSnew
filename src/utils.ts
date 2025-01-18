@@ -26,3 +26,17 @@ export function getDateMinus90DaysDate(): Date {
   date.setDate(date.getDate() - 90); // 当前日期减去90天
   return date;
 }
+
+export function getFirstDayOfPreviousMonth(monthsAgo: number): Date {
+  const now = new Date();
+  now.setMonth(now.getMonth() - monthsAgo);
+  now.setDate(1); // 设置为该月的第一天
+  return now;
+}
+
+export function getJapanDate(date?: Date): string {
+  if (!date) return "";
+  date = new Date(date);
+  date.setHours(date.getHours() + 9); // 转换为日本标准时间（JST）
+  return date.toISOString().slice(0, 10).replace(/-/g, "/"); // 格式化为 yyyy/mm/dd
+}

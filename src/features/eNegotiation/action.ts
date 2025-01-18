@@ -8,9 +8,8 @@ import { MESSAGE } from "../../config/message";
 import { AppInsightsService } from "../../config/AppInsightsService";
 import {
   camlAndFinal,
-  camlChoiceMultipleText,
-  camlContainsText,
   camlEqNumber,
+  camlInNumber,
   camlEqText,
   camlGeqDate,
   camlLtDate,
@@ -58,6 +57,7 @@ export const getENegotiationRequestListAction = createAsyncThunk(
           SupplierName: item.SupplierName,
           Status: item.Status,
           RFQStatus: item.RFQStatus,
+          Buyer: `${item.Porg} ${item.Handler}`,
           CreatedDate: item.Created,
           CreatedBy: item.Author && item.Author[0] ? item.Author[0].title : "",
           ModifiedDate: item.Modified,
@@ -114,6 +114,7 @@ export const getENegotiationRequestAction = createAsyncThunk(
         SupplierName: response.Row[0].SupplierName,
         Status: response.Row[0].Status,
         RFQStatus: response.Row[0].RFQStatus,
+        Buyer: `${response.Row[0].Porg} ${response.Row[0].Handler}`,
         CreatedDate: response.Row[0].Created,
         CreatedBy:
           response.Row[0].Author && response.Row[0].Author[0]
@@ -227,22 +228,21 @@ function GetQueryInfo(
   queryCreteria: IENegotiationRequestCreteriaModel
 ): string {
   const creterias: string[] = [];
-  // 得拆成porg和handler
-  if (queryCreteria.Buyer) {
-    creterias.push(camlContainsText(queryCreteria.Buyer, "Buyer"));
+  if (queryCreteria.Porg) {
+    creterias.push(camlEqText(queryCreteria.Porg, "Porg"));
   }
-  if (queryCreteria.Status && queryCreteria.Status.length) {
-    creterias.push(camlChoiceMultipleText("Status", queryCreteria.Status));
+  if (queryCreteria.Handler) {
+    creterias.push(camlEqNumber(queryCreteria.Handler, "Handler"));
+  }
+  if (queryCreteria.RFQIDRefs && queryCreteria.RFQIDRefs.length) {
+    creterias.push(camlInNumber(queryCreteria.RFQIDRefs, "RFQIDRef"));
   }
   if (queryCreteria.RFQNo) {
-    creterias.push(camlContainsText(queryCreteria.RFQNo, "RFQ No."));
+    creterias.push(camlEqText(queryCreteria.RFQNo, "RFQNo"));
   }
   if (queryCreteria.SupplierRequestID) {
     creterias.push(
-      camlContainsText(
-        queryCreteria.SupplierRequestID,
-        "Supplier Request ID Ref"
-      )
+      camlEqText(queryCreteria.SupplierRequestID, "SupplierRequestIDRef")
     );
   }
   if (queryCreteria.Parma) {
@@ -251,12 +251,12 @@ function GetQueryInfo(
 
   if (queryCreteria.ExpectedEffectiveDateFrom) {
     creterias.push(
-      camlGeqDate(queryCreteria.ExpectedEffectiveDateFrom, "Created")
+      camlGeqDate(queryCreteria.ExpectedEffectiveDateFrom, "ExpectedEffectiveDateFrom")
     );
   }
   if (queryCreteria.ExpectedEffectiveDateTo) {
     creterias.push(
-      camlLtDate(queryCreteria.ExpectedEffectiveDateTo, "Created")
+      camlLtDate(queryCreteria.ExpectedEffectiveDateTo, "ExpectedEffectiveDateFrom")
     );
   }
 

@@ -52,7 +52,7 @@ export async function getPartNegotiation(
         SupplierName: item.SupplierName,
         SupplierPartNumber: item.SupplierPartNumber,
         SystemPartID: item.SystemPartID,
-        Unit: Number(item["Unit."]),
+        Unit: item.Unit,
         Ver: Number(item["Ver."]),
       } as IUDGSNegotiationPartGridModel;
     });

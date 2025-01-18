@@ -3,7 +3,8 @@ export interface ISupplierRequestCreteriaModel {
   SupplierRequestStatus?: string[];
   ExpectedEffectiveDateFrom?: string;
   ExpectedEffectiveDateTo?: string;
-  Parma?: string;
+  ParmaAccurate?: string;
+  ParmaBlur?: string;
   ResponsibleBuyer?: string;
   IDS?: number[];
 }
@@ -48,7 +49,7 @@ export interface ISupplierRequestSubItemCreteriaModel {
   Handler?: number;
   HandlerName?: string;
   Section?: string;
-  SupplierRequestSubitemStatus?: string[];
+  SupplierRequestSubItemStatus?: string[];
 }
 
 export interface ISupplierRequestSubItemFormModel {
@@ -58,7 +59,10 @@ export interface ISupplierRequestSubItemFormModel {
   HandlerName?: string;
   Section?: string;
   RequestIDRef?: string;
-  SupplierRequestSubitemStatus?: string;
+  SupplierRequestSubItemStatus?: string;
+  NotificationDate?: Date;
+  ReasonCode?: string;
+  ExpectedEffectiveDateFrom?: Date;
 }
 
 export interface ISupplierRequestSubItem {
@@ -74,7 +78,8 @@ export interface ISupplierRequestSubItem {
   RequestIDRef?: string;
   Section?: string;
   SectionDescription?: string;
-  SupplierRequestSubitemStatus?: string;
+  SupplierRequestSubItemStatus?: string;
+  RFQNo?: string;
   CreatedDate?: Date;
   CreatedBy?: string;
   ModifiedDate?: Date;
